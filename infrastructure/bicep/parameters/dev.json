@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "westeurope"
+    },
+    "env": {
+      "value": "dev"
+    },
+    "dbAllowAllIps": {
+      "value": true
+    },
+    "dbAdminLogin": {
+      "value": "xxx"
+    },
+    "dbAdminPassword": {
+      "value": "xxx"
+    },
+    "dbTier": {
+      "value": "Basic"
+    },
+    "dbCapacity": {
+      "value": 5
+    },
+    "allowedIpRange": {
+      "value": "xxx"
+    },
+    "nodePassword": {
+      "value": "xxx"
+    },
+    "nodeWalletPassword": {
+      "value": "xxx"
+    },
+    "btcVmUser": {
+      "value": "xxx"
+    },
+    "btcVmPassword": {
+      "value": "xxx"
+    }
+  }
+}
