@@ -26,12 +26,6 @@
     "allowedIpRange": {
       "value": "xxx"
     },
-    "nodePassword": {
-      "value": "xxx"
-    },
-    "nodeWalletPassword": {
-      "value": "xxx"
-    },
     "btcVmUser": {
       "value": "xxx"
     },

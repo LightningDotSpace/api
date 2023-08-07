@@ -267,14 +267,6 @@ resource apiAppService 'Microsoft.Web/sites@2018-11-01' = if (env != 'loc') {
           value: 'lds-api'
         }
         {
-          name: 'NODE_PASSWORD'
-          value: nodePassword
-        }
-        {
-          name: 'NODE_WALLET_PASSWORD'
-          value: nodeWalletPassword
-        }
-        {
           name: 'WEBSITE_RUN_FROM_PACKAGE'
           value: '1'
         }
