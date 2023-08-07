@@ -5,6 +5,12 @@ export enum Process {
   DUMMY = 'ToDo',
 }
 
+export enum Environment {
+  LOC = 'loc',
+  DEV = 'dev',
+  PRD = 'prd',
+}
+
 export function GetConfig(): Configuration {
   return new Configuration();
 }
@@ -39,6 +45,16 @@ export class Configuration {
     },
     signMessage:
       'By_signing_this_message,_you_confirm_to_lightning.space_that_you_are_the_sole_owner_of_the_provided_Blockchain_address._Your_ID:_',
+  };
+
+  bitcoinAddressFormat =
+    this.environment === Environment.PRD
+      ? '([13]|bc1)[a-zA-HJ-NP-Z0-9]{25,62}'
+      : '(tb(0([ac-hj-np-z02-9]{39}|[ac-hj-np-z02-9]{59})|1[ac-hj-np-z02-9]{8,87})|[mn2][a-km-zA-HJ-NP-Z1-9]{25,39})';
+
+  formats = {
+    address: new RegExp(`^(${this.bitcoinAddressFormat})$`),
+    signature: /^(.{87}=|[a-f0-9]{130}|[a-f0-9x]{132}|[a-f0-9]{582}|[a-z0-9]{104}|[a-z0-9]{140,146})$/,
   };
 
   processDisabled = (processName: Process) =>
