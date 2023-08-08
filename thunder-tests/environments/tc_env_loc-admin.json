@@ -1,0 +1,15 @@
+{
+    "_id": "fb8bc472-ab0d-4eb1-b888-b488c1b327a1",
+    "name": "loc (Admin)",
+    "default": false,
+    "sortNum": 20000,
+    "created": "2023-08-08T13:28:56.064Z",
+    "modified": "2023-08-08T13:28:56.064Z",
+    "data": [
+        {
+            "name": "url",
+            "value": "http://localhost:3003"
+        }
+    ],
+    "envFile": "env/loc.admin.env"
+}

@@ -13,10 +13,6 @@ param dbCapacity int
 param jwtSecret string = newGuid()
 
 param allowedIpRange string
-@secure()
-param nodePassword string
-@secure()
-param nodeWalletPassword string
 
 param btcVmUser string
 @secure()

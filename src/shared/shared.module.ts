@@ -6,6 +6,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { GetConfig } from 'src/config/config';
 import { ConfigModule } from 'src/config/config.module';
 import { JwtStrategy } from './auth/jwt.strategy';
+import { RepositoryFactory } from './db/repository.factory';
 import { HttpService } from './services/http.service';
 
 @Module({
@@ -17,7 +18,7 @@ import { HttpService } from './services/http.service';
     ScheduleModule.forRoot(),
   ],
   controllers: [],
-  providers: [HttpService, JwtStrategy],
-  exports: [PassportModule, JwtModule, ScheduleModule, HttpService],
+  providers: [HttpService, JwtStrategy, RepositoryFactory],
+  exports: [PassportModule, JwtModule, ScheduleModule, HttpService, RepositoryFactory],
 })
 export class SharedModule {}

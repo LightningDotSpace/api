@@ -31,8 +31,10 @@ async function bootstrap() {
   app.useGlobalFilters(new ApiExceptionFilter());
 
   const swaggerOptions = new DocumentBuilder()
-    .setTitle('Lightning API')
-    .setDescription(`Lightning API ${Config.environment.toUpperCase()} (updated on ${new Date().toLocaleString()})`)
+    .setTitle('Lightning.space API')
+    .setDescription(
+      `Lightning.space API ${Config.environment.toUpperCase()} (updated on ${new Date().toLocaleString()})`,
+    )
     .setVersion(Config.version)
     .addBearerAuth()
     .build();

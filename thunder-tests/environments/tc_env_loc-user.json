@@ -1,0 +1,15 @@
+{
+    "_id": "418b5679-ba26-48e8-8965-a7171c4d1637",
+    "name": "loc (User)",
+    "default": true,
+    "sortNum": 10000,
+    "created": "2023-08-08T13:23:55.911Z",
+    "modified": "2023-08-08T13:23:55.911Z",
+    "data": [
+        {
+            "name": "url",
+            "value": "http://localhost:3003"
+        }
+    ],
+    "envFile": "env/loc.user.env"
+}
