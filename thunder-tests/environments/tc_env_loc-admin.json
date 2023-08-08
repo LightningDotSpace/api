@@ -9,6 +9,10 @@
         {
             "name": "url",
             "value": "http://localhost:3003"
+        },
+        {
+            "name": "tapdUrl",
+            "value": "https://vm-lds-btc-loc.westeurope.cloudapp.azure.com:8089"
         }
     ],
     "envFile": "env/loc.admin.env"
