@@ -1,5 +1,5 @@
 import { WalletRole } from 'src/shared/auth/wallet-role.enum';
-import { IEntity } from 'src/shared/entities/entity';
+import { IEntity } from 'src/shared/db/entity';
 import { User } from 'src/subdomains/user/domain/entities/user.entity';
 import { Column, Entity, Index, ManyToOne } from 'typeorm';
 import { WalletProvider } from './wallet-provider.entity';

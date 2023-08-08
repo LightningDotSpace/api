@@ -1,6 +1,5 @@
-import { IEntity } from 'src/shared/entities/entity';
+import { IEntity } from 'src/shared/db/entity';
 import { Entity, OneToMany } from 'typeorm';
-
 import { Wallet } from './wallet.entity';
 
 @Entity()
