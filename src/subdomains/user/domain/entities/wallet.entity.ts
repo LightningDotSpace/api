@@ -1,13 +1,12 @@
 import { WalletRole } from 'src/shared/auth/wallet-role.enum';
 import { IEntity } from 'src/shared/db/entity';
 import { User } from 'src/subdomains/user/domain/entities/user.entity';
-import { Column, Entity, Index, ManyToOne } from 'typeorm';
+import { Column, Entity, ManyToOne } from 'typeorm';
 import { WalletProvider } from './wallet-provider.entity';
 
 @Entity()
-@Index((w: Wallet) => [w.address], { unique: true })
 export class Wallet extends IEntity {
-  @Column()
+  @Column({ unique: true })
   address: string;
 
   @Column()
