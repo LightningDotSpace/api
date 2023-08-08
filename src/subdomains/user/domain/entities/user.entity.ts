@@ -7,6 +7,4 @@ import { Wallet } from './wallet.entity';
 export class User extends IEntity {
   @OneToMany(() => Wallet, (wallet) => wallet.user)
   wallets: Wallet[];
-
-  
 }

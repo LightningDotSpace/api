@@ -17,7 +17,7 @@ export function GetConfig(): Configuration {
 
 export class Configuration {
   port = process.env.PORT ?? 3000;
-  environment = process.env.ENVIRONMENT;
+  environment: Environment = process.env.ENVIRONMENT as Environment;
   version = 'v1';
 
   database: TypeOrmModuleOptions = {
@@ -54,7 +54,7 @@ export class Configuration {
 
   formats = {
     address: new RegExp(`^(${this.bitcoinAddressFormat})$`),
-    signature: /^(.{87}=|[a-f0-9]{130}|[a-f0-9x]{132}|[a-f0-9]{582}|[a-z0-9]{104}|[a-z0-9]{140,146})$/,
+    signature: /^(.{87}=)$/,
   };
 
   processDisabled = (processName: Process) =>

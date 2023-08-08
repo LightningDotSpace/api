@@ -13,12 +13,12 @@ export class Wallet extends IEntity {
   @Column()
   signature: string;
 
-  @ManyToOne(() => WalletProvider, { nullable: false })
+  @ManyToOne(() => WalletProvider, { nullable: false, eager: true })
   walletProvider: WalletProvider;
 
   @Column({ default: WalletRole.USER })
   role: WalletRole;
 
-  @ManyToOne(() => User, { nullable: false })
+  @ManyToOne(() => User, { nullable: false, eager: true })
   user: User;
 }

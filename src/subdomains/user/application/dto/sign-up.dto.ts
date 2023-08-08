@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, Matches } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
 import { GetConfig } from 'src/config/config';
 
 export class SignUpDto {
@@ -20,9 +20,9 @@ export class SignUpDto {
   signature: string;
 
   @ApiPropertyOptional({
-    description: 'Used wallet for login',
+    description: 'Name of the wallet used for login',
   })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  walletName: string;
+  wallet: string;
 }

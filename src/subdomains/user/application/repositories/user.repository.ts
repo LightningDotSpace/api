@@ -8,11 +8,4 @@ export class UserRepository extends BaseRepository<User> {
   constructor(manager: EntityManager) {
     super(User, manager);
   }
-
-  async getByAddress(address: string): Promise<User> {
-    return this.createQueryBuilder('user')
-      .innerJoin('user.wallets', 'wallets')
-      .where('wallets.addressAddress = :address', { address })
-      .getOne();
-  }
 }

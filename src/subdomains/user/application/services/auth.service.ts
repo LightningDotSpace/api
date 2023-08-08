@@ -6,8 +6,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { CryptoService } from 'src/blockchain/services/crypto.service';
 import { Config } from 'src/config/config';
+import { CryptoService } from 'src/integration/blockchain/services/crypto.service';
 import { JwtPayload } from 'src/shared/auth/jwt-payload.interface';
 import { SignMessageDto } from 'src/subdomains/user/application/dto/sign-message.dto';
 import { SignUpDto } from 'src/subdomains/user/application/dto/sign-up.dto';
@@ -25,17 +25,17 @@ export class AuthService {
   ) {}
 
   async signUp(dto: SignUpDto): Promise<AuthResponseDto> {
-    const existingWallet = await this.walletService.getByAddress(dto.address, false);
+    const existingWallet = await this.walletService.getByAddress(dto.address);
     if (existingWallet) throw new ConflictException('User already exists');
 
     if (!this.verifySignature(dto.address, dto.signature)) throw new BadRequestException('Invalid signature');
 
-    const wallet = await this.walletService.createWallet(dto);
+    const wallet = await this.walletService.create(dto);
     return { accessToken: this.generateToken(wallet) };
   }
 
   async signIn({ address, signature }: SignInDto): Promise<AuthResponseDto> {
-    const wallet = await this.walletService.getByAddress(address, true);
+    const wallet = await this.walletService.getByAddress(address);
     if (!wallet) throw new NotFoundException('User not found');
 
     if (!this.verifySignature(address, signature)) throw new UnauthorizedException('Invalid credentials');
@@ -61,7 +61,7 @@ export class AuthService {
   private generateToken(wallet: Wallet): string {
     const payload: JwtPayload = {
       walletId: wallet.id,
-      userId: wallet.user?.id,
+      userId: wallet.user.id,
       address: wallet.address,
       role: wallet.role,
     };

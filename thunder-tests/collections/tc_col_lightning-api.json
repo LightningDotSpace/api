@@ -78,6 +78,26 @@
             "headers": [],
             "params": [],
             "tests": []
+        },
+        {
+            "_id": "426b7207-6de8-4bca-ba1a-6d4c64969cb2",
+            "colId": "a4f2ed85-c972-4ee0-82d5-a5bc2b2533b3",
+            "containerId": "8c498bf3-eed7-4297-b485-a6e1849de991",
+            "name": "Get Sign Message",
+            "url": "{{url}}/v1/auth/sign-message?address=address",
+            "method": "GET",
+            "sortNum": 20000,
+            "created": "2023-08-08T13:53:27.765Z",
+            "modified": "2023-08-08T13:56:16.510Z",
+            "headers": [],
+            "params": [
+                {
+                    "name": "address",
+                    "value": "address",
+                    "isPath": false
+                }
+            ],
+            "tests": []
         }
     ],
     "settings": {

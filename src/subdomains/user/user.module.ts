@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CryptoService } from 'src/blockchain/services/crypto.service';
+import { IntegrationModule } from 'src/integration/integration.module';
 import { SharedModule } from 'src/shared/shared.module';
 import { AuthService } from 'src/subdomains/user/application/services/auth.service';
 import { AuthController } from './api/controllers/auth.controller';
@@ -16,7 +16,7 @@ import { WalletProvider } from './domain/entities/wallet-provider.entity';
 import { Wallet } from './domain/entities/wallet.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, WalletProvider, Wallet]), SharedModule],
+  imports: [TypeOrmModule.forFeature([User, WalletProvider, Wallet]), SharedModule, IntegrationModule],
   controllers: [UserController, AuthController],
   providers: [
     UserRepository,
@@ -26,7 +26,6 @@ import { Wallet } from './domain/entities/wallet.entity';
     WalletService,
     WalletProviderService,
     AuthService,
-    CryptoService,
   ],
   exports: [UserService, WalletService],
 })
