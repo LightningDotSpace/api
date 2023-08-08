@@ -1,0 +1,15 @@
+{
+    "_id": "49916af6-fe50-4e96-8e54-79ed0da3256a",
+    "name": "dev (User)",
+    "default": false,
+    "sortNum": 30000,
+    "created": "2023-08-08T13:28:58.758Z",
+    "modified": "2023-08-08T13:28:58.758Z",
+    "data": [
+        {
+            "name": "url",
+            "value": "http://localhost:3003"
+        }
+    ],
+    "envFile": "env/dev.user.env"
+}
