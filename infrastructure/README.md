@@ -37,7 +37,7 @@
 1. Adapt `addpeer` values for the current environment (peer info can be found here: https://mempool.space/de/lightning)
 1. Copy content of config file `infrastructure/config/lightning/{env}-pwd.txt` to virtual machine `~/volumes/lightning/pwd.txt`
 1. `pwd.txt`: Replace `[PASSWORD]` with empty text for the very first startup
-1. Actions after first via Docker Compose (see [below](#lightning-setup-after-first-startup))
+1. Actions after first startup via Docker Compose (see [below](#lightning-setup-after-first-startup))
 
 # Taproot Setup (tapd)
 
