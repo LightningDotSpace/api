@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
 import { IntegrationModule } from 'src/integration/integration.module';
 import { SharedModule } from 'src/shared/shared.module';
 import { AuthService } from 'src/subdomains/user/application/services/auth.service';
@@ -26,6 +27,7 @@ import { Wallet } from './domain/entities/wallet.entity';
     WalletService,
     WalletProviderService,
     AuthService,
+    LightningService,
   ],
   exports: [],
 })

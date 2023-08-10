@@ -12,6 +12,15 @@ export class Wallet extends IEntity {
   @Column()
   signature: string;
 
+  @Column({ nullable: true })
+  lightningUser: string;
+
+  @Column({ nullable: true })
+  lightningWallet: string;
+
+  @Column({ nullable: true })
+  lightningLnurlp: string;
+
   @ManyToOne(() => WalletProvider, { nullable: false, eager: true })
   walletProvider: WalletProvider;
 

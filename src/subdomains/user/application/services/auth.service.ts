@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Config } from 'src/config/config';
+import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
 import { CryptoService } from 'src/integration/blockchain/services/crypto.service';
 import { JwtPayload } from 'src/shared/auth/jwt-payload.interface';
 import { SignMessageDto } from 'src/subdomains/user/application/dto/sign-message.dto';
@@ -22,15 +23,19 @@ export class AuthService {
     private readonly walletService: WalletService,
     private readonly jwtService: JwtService,
     private readonly cryptoService: CryptoService,
+    private readonly lightningService: LightningService,
   ) {}
 
-  async signUp(dto: SignUpDto): Promise<AuthResponseDto> {
-    const existingWallet = await this.walletService.getByAddress(dto.address);
+  async signUp(signUp: SignUpDto): Promise<AuthResponseDto> {
+    const existingWallet = await this.walletService.getByAddress(signUp.address);
     if (existingWallet) throw new ConflictException('User already exists');
 
-    if (!this.verifySignature(dto.address, dto.signature)) throw new BadRequestException('Invalid signature');
+    if (!this.verifySignature(signUp.address, signUp.signature)) throw new BadRequestException('Invalid signature');
 
-    const wallet = await this.walletService.create(dto);
+    const lnbitsUser = await this.lightningService.createUser(signUp.address);
+
+    const wallet = await this.walletService.create(signUp, lnbitsUser);
+
     return { accessToken: this.generateToken(wallet) };
   }
 
