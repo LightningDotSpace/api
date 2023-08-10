@@ -6,7 +6,7 @@ import { WalletProviderRepository } from '../repositories/wallet-provider.reposi
 export class WalletProviderService {
   constructor(private repo: WalletProviderRepository) {}
 
-  async getByName(name: string): Promise<WalletProvider> {
+  async getByName(name: string): Promise<WalletProvider | null> {
     return this.repo.findOneBy({ name });
   }
 

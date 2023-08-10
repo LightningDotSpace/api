@@ -13,7 +13,7 @@ export class WalletService {
     private walletProviderService: WalletProviderService,
   ) {}
 
-  async get(id: number): Promise<Wallet | undefined> {
+  async get(id: number): Promise<Wallet | null> {
     return this.repo.findOneBy({ id });
   }
 
@@ -24,7 +24,7 @@ export class WalletService {
     return wallet;
   }
 
-  async getByAddress(address: string): Promise<Wallet | undefined> {
+  async getByAddress(address: string): Promise<Wallet | null> {
     return this.repo.findOneBy({ address });
   }
 

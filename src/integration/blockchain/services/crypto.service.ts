@@ -8,10 +8,10 @@ export class CryptoService {
     try {
       let isValid = false;
       try {
-        isValid = verify(message, address, signature, null, true);
+        isValid = verify(message, address, signature, undefined, true);
       } catch {}
 
-      if (!isValid) isValid = verify(message, address, signature, null);
+      if (!isValid) isValid = verify(message, address, signature, undefined);
 
       return isValid;
     } catch {}
