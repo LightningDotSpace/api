@@ -8,22 +8,12 @@ export class WalletDto {
   address: string;
 
   @ApiProperty({
-    description: 'Lightning User Id',
+    description: 'LNbits User Id',
   })
-  lightningUserId: string;
+  lnbitsUserId: string;
 
   @ApiProperty({
-    description: 'Lightning Wallet Id',
+    description: 'LNbits User Info',
   })
-  lightningWalletId: string;
-
-  @ApiProperty({
-    description: 'Lightning LNURLp Id',
-  })
-  lightningLnurlpId: string;
-
-  @ApiProperty({
-    description: 'Lightning User Info',
-  })
-  lightningUserInfo?: LnUserInfoDto;
+  lnbitsUserInfo?: LnUserInfoDto;
 }

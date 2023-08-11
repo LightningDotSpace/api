@@ -1,10 +1,9 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Config } from 'src/config/config';
 import { HttpService } from 'src/shared/services/http.service';
-import { Util } from 'src/shared/utils/util';
-import { LnUserInfoDto } from '../dto/ln-userinfo.dto';
+import { LnUserInfoDto, LnWalletInfoDto } from '../dto/ln-userinfo.dto';
 import { LnBitsUserDto, LnBitsUsermanagerWalletDto, LnBitsWalletDto } from '../dto/lnbits.dto';
-import { LightningClient } from '../lightning-client';
+import { LightningClient, UserFilterData } from '../lightning-client';
 
 @Injectable()
 export class LightningService {
@@ -19,47 +18,48 @@ export class LightningService {
   }
 
   async createUser(address: string): Promise<LnBitsUserDto> {
-    const addressHash = Util.createHash(address, 'sha256', 'hex');
-    const username = addressHash.slice(0, 6);
-    const walletname = `${username} wallet`;
-    const lnurlpDescription = `${username} lnurlp`;
+    const users = await this.client.getUsers({ username: address });
+    if (users.length) throw new ConflictException(`User ${address} already exists`);
 
-    const users = await this.client.getUsers({ username: username });
-    if (users.length) throw new ConflictException(`User ${username} already exists`);
+    const walletname = 'BTC';
+    const lnurlpDescription = 'BTC Payment';
 
-    const user = await this.client.createUser(username, walletname);
+    const user = await this.client.createUser(address, walletname);
     if (!user.wallets) throw new NotFoundException('Wallet not found');
 
     const wallet = user.wallets[0];
+    const lnurlp = await this.client.createLnurlpLink(wallet.adminkey, lnurlpDescription, 1, 100000000);
 
-    const lnurlp = await this.client.createLnurlpLink(wallet.adminkey, lnurlpDescription, username);
-
-    return {
-      user: {
-        id: user.id,
-        name: user.name,
-      },
-      wallet: {
-        id: wallet.id,
-        name: wallet.name,
-        adminkey: wallet.adminkey,
-        inkey: wallet.inkey,
-      },
-      lnurlp: {
-        id: lnurlp.id || '',
-        description: lnurlp.description,
-        username: lnurlp.username || '',
-      },
+    const lnbitsUser: LnBitsUserDto = {
+      id: user.id,
+      name: user.name,
+      wallets: [
+        {
+          wallet: wallet,
+          lnurlp: lnurlp,
+        },
+      ],
     };
+
+    const assets = ['USD', 'CHF', 'EUR'];
+
+    for (const asset of assets) {
+      const assetWallet = await this.client.createUserWallet(user.id, asset);
+      const assetPaylink = await this.client.createLnurlpLink(assetWallet.adminkey, asset + ' Payment', 1, 100000000);
+
+      lnbitsUser.wallets.push({
+        wallet: assetWallet,
+        lnurlp: assetPaylink,
+      });
+    }
+
+    return lnbitsUser;
   }
 
-  async removeUser(address: string): Promise<boolean> {
-    const addressHash = Util.createHash(address, 'sha256', 'hex');
-    const username = addressHash.slice(0, 6);
+  async removeUser(userFilter: UserFilterData): Promise<boolean> {
+    const users = await this.client.getUsers(userFilter);
 
-    const users = await this.client.getUsers({ username: username });
-
-    if (users) {
+    if (users.length) {
       const allWallets = await this.client.getUserWallets();
 
       for (const user of users) {
@@ -93,22 +93,32 @@ export class LightningService {
 
     const userWithWallets = usersWithWallets[0];
     const userWallets = userWithWallets.wallets;
-    if (!userWallets || 1 != userWallets.length) throw new NotFoundException('User Wallet not found');
-    const userWallet = userWallets[0];
+    if (!userWallets) throw new NotFoundException('User Wallet not found');
 
-    return {
-      address: `${userWithWallets.name}@${Config.url}`,
-      adminKey: userWallet.adminkey,
-      invoiceKey: userWallet.inkey,
-      lndhubUrl: `lndhub://invoice:${userWallet.inkey}@${Config.blockchain.lightning.lnbits.lndhubUrl}`,
-    };
+    const userInfo = new LnUserInfoDto();
+    userInfo.address = `${userWithWallets.name}@${Config.url}`;
+    userInfo.wallets = [];
+
+    for (const userWallet of userWallets) {
+      const walletInfo: LnWalletInfoDto = {
+        asset: userWallet.name,
+        balance: userWallet.balance,
+
+        lndhubInvoiceUrl: `lndhub://invoice:${userWallet.inkey}@${Config.blockchain.lightning.lnbits.lndhubUrl}`,
+        lndhubAdminUrl: `lndhub://invoice:${userWallet.adminkey}@${Config.blockchain.lightning.lnbits.lndhubUrl}`,
+      };
+
+      userInfo.wallets.push(walletInfo);
+    }
+
+    return userInfo;
   }
 
   async getLnBitsWallets(): Promise<LnBitsWalletDto[]> {
     const lnbitsWallets: LnBitsWalletDto[] = [];
 
     lnbitsWallets.push(await this.client.getLnBitsWallet(Config.blockchain.lightning.lnbits.adminKey));
-    lnbitsWallets.push(...(await this.client.getUserWallets().then(this.convertToLnbitsWallets)));
+    lnbitsWallets.push(...(await this.client.getUserWallets().then((w) => this.convertToLnbitsWallets(w))));
 
     return lnbitsWallets;
   }

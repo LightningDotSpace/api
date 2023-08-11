@@ -11,7 +11,7 @@ import {
 import { LndInfoDto } from './dto/lnd.dto';
 import { LightningHelper } from './lightning-helper';
 
-interface UserFilterData {
+export interface UserFilterData {
   userId?: string;
   username?: string;
 }
@@ -74,6 +74,18 @@ export class LightningClient {
     return users;
   }
 
+  async createUserWallet(userId: string, walletname: string): Promise<LnBitsUsermanagerWalletDto> {
+    return this.http.post<LnBitsUsermanagerWalletDto>(
+      `${Config.blockchain.lightning.lnbits.usermanagerApiUrl}/wallets`,
+      {
+        user_id: userId,
+        wallet_name: walletname,
+        admin_id: Config.blockchain.lightning.lnbits.adminUserId,
+      },
+      this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey),
+    );
+  }
+
   async getUserWallets(userFilter?: UserFilterData): Promise<LnBitsUsermanagerWalletDto[]> {
     if (!userFilter) {
       return this.http
@@ -96,10 +108,12 @@ export class LightningClient {
   }
 
   private async getUserWalletsByUserId(userId: string): Promise<LnBitsUsermanagerWalletDto[]> {
-    return this.http.get<LnBitsUsermanagerWalletDto[]>(
-      `${Config.blockchain.lightning.lnbits.usermanagerApiUrl}/wallets/${userId}`,
-      this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey),
-    );
+    return this.http
+      .get<LnBitsUsermanagerWalletDto[]>(
+        `${Config.blockchain.lightning.lnbits.usermanagerApiUrl}/wallets/${userId}`,
+        this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey),
+      )
+      .then((w) => this.fillWalletBalance(w));
   }
 
   private async fillWalletBalance(userWallets: LnBitsUsermanagerWalletDto[]): Promise<LnBitsUsermanagerWalletDto[]> {
@@ -125,16 +139,20 @@ export class LightningClient {
     );
   }
 
-  async createLnurlpLink(adminKey: string, description: string, username: string): Promise<LnBitsLnurlpLinkDto> {
+  async createLnurlpLink(
+    adminKey: string,
+    description: string,
+    min: number,
+    max: number,
+  ): Promise<LnBitsLnurlpLinkDto> {
     if (!description) throw new Error('Description is undefined');
 
     const newLnurlpLinkDto: LnBitsLnurlpLinkDto = {
       description: description,
-      min: 100,
-      max: 100000000,
+      min: min,
+      max: max,
       comment_chars: 0,
       fiat_base_multiplier: 100,
-      username: username,
     };
 
     return this.http.post<LnBitsLnurlpLinkDto>(

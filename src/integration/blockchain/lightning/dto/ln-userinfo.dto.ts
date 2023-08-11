@@ -7,17 +7,29 @@ export class LnUserInfoDto {
   address: string;
 
   @ApiProperty({
-    description: 'Lightning Admin Key',
+    description: 'Lightning User wallets',
   })
-  adminKey: string;
+  wallets: LnWalletInfoDto[];
+}
+
+export class LnWalletInfoDto {
+  @ApiProperty({
+    description: 'Lightning Wallet Asset',
+  })
+  asset: string;
 
   @ApiProperty({
-    description: 'Lightning Invoice Key',
+    description: 'Lightning Wallet Balance',
   })
-  invoiceKey: string;
+  balance: number;
 
   @ApiProperty({
-    description: 'Lightning LNDHUB URL',
+    description: 'Lightning Wallet LNDHUB Invoice URL',
   })
-  lndhubUrl: string;
+  lndhubInvoiceUrl: string;
+
+  @ApiProperty({
+    description: 'Lightning Wallet LNDHUB Admin URL',
+  })
+  lndhubAdminUrl: string;
 }

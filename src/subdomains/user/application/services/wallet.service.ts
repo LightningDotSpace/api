@@ -3,6 +3,7 @@ import { LnBitsUserDto } from 'src/integration/blockchain/lightning/dto/lnbits.d
 import { Wallet } from '../../domain/entities/wallet.entity';
 import { SignUpDto } from '../dto/sign-up.dto';
 import { WalletRepository } from '../repositories/wallet.repository';
+import { LightningWalletService } from './lightning-wallet.service';
 import { UserService } from './user.service';
 import { WalletProviderService } from './wallet-provider.service';
 
@@ -12,6 +13,7 @@ export class WalletService {
     private repo: WalletRepository,
     private userService: UserService,
     private walletProviderService: WalletProviderService,
+    private lightningWalletService: LightningWalletService,
   ) {}
 
   async get(id: number): Promise<Wallet | null> {
@@ -33,13 +35,15 @@ export class WalletService {
     const wallet = this.repo.create({
       address: signUp.address,
       signature: signUp.signature,
-      lightningUser: lnbitsUser.user.id,
-      lightningWallet: lnbitsUser.wallet.id,
-      lightningLnurlp: lnbitsUser.lnurlp.id,
+      lnbitsUserId: lnbitsUser.id,
       walletProvider: await this.walletProviderService.getByNameOrThrow(signUp.wallet),
       user: await this.userService.create(),
     });
 
-    return this.repo.save(wallet);
+    const savedWallet = await this.repo.save(wallet);
+
+    savedWallet.lightningWallets = await this.lightningWalletService.create(savedWallet, lnbitsUser);
+
+    return savedWallet;
   }
 }

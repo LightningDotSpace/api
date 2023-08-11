@@ -1,7 +1,8 @@
 import { WalletRole } from 'src/shared/auth/wallet-role.enum';
 import { IEntity } from 'src/shared/db/entity';
 import { User } from 'src/subdomains/user/domain/entities/user.entity';
-import { Column, Entity, ManyToOne } from 'typeorm';
+import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
+import { LightningWallet } from './lightning-wallet.entity';
 import { WalletProvider } from './wallet-provider.entity';
 
 @Entity()
@@ -13,13 +14,7 @@ export class Wallet extends IEntity {
   signature: string;
 
   @Column({ nullable: true })
-  lightningUser: string;
-
-  @Column({ nullable: true })
-  lightningWallet: string;
-
-  @Column({ nullable: true })
-  lightningLnurlp: string;
+  lnbitsUserId: string;
 
   @ManyToOne(() => WalletProvider, { nullable: false, eager: true })
   walletProvider: WalletProvider;
@@ -29,4 +24,7 @@ export class Wallet extends IEntity {
 
   @ManyToOne(() => User, { nullable: false, eager: true })
   user: User;
+
+  @OneToMany(() => LightningWallet, (wallet) => wallet.wallet)
+  lightningWallets: LightningWallet[];
 }

@@ -52,19 +52,12 @@ export interface LnBitsLnurlpLinkRemoveDto {
 }
 
 export interface LnBitsUserDto {
-  user: {
-    id: string;
-    name: string;
-  };
-  wallet: {
-    id: string;
-    name: string;
-    adminkey: string;
-    inkey: string;
-  };
-  lnurlp: {
-    id: string;
-    description: string;
-    username: string;
-  };
+  id: string;
+  name: string;
+  wallets: [
+    {
+      wallet: LnBitsUsermanagerWalletDto;
+      lnurlp: LnBitsLnurlpLinkDto;
+    },
+  ];
 }

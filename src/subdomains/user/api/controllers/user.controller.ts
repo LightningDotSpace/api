@@ -27,7 +27,7 @@ export class UserController {
   }
 
   private async fillLightningInfo(wallet: WalletDto) {
-    wallet.lightningUserInfo = await this.lightningService.getUserInfo(wallet.lightningUserId);
+    wallet.lnbitsUserInfo = await this.lightningService.getUserInfo(wallet.lnbitsUserId);
     return wallet;
   }
 }

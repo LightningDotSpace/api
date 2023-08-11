@@ -6,26 +6,31 @@ import { SharedModule } from 'src/shared/shared.module';
 import { AuthService } from 'src/subdomains/user/application/services/auth.service';
 import { AuthController } from './api/controllers/auth.controller';
 import { UserController } from './api/controllers/user.controller';
+import { LightningWalletRepository } from './application/repositories/lightning-wallet.repository';
 import { UserRepository } from './application/repositories/user.repository';
 import { WalletProviderRepository } from './application/repositories/wallet-provider.repository';
 import { WalletRepository } from './application/repositories/wallet.repository';
+import { LightningWalletService } from './application/services/lightning-wallet.service';
 import { UserService } from './application/services/user.service';
 import { WalletProviderService } from './application/services/wallet-provider.service';
 import { WalletService } from './application/services/wallet.service';
+import { LightningWallet } from './domain/entities/lightning-wallet.entity';
 import { User } from './domain/entities/user.entity';
 import { WalletProvider } from './domain/entities/wallet-provider.entity';
 import { Wallet } from './domain/entities/wallet.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, WalletProvider, Wallet]), SharedModule, IntegrationModule],
+  imports: [TypeOrmModule.forFeature([User, WalletProvider, Wallet, LightningWallet]), SharedModule, IntegrationModule],
   controllers: [UserController, AuthController],
   providers: [
     UserRepository,
     WalletProviderRepository,
     WalletRepository,
+    LightningWalletRepository,
     UserService,
     WalletService,
     WalletProviderService,
+    LightningWalletService,
     AuthService,
     LightningService,
   ],
