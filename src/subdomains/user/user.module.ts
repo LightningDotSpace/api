@@ -10,7 +10,6 @@ import { LightningWalletRepository } from './application/repositories/lightning-
 import { UserRepository } from './application/repositories/user.repository';
 import { WalletProviderRepository } from './application/repositories/wallet-provider.repository';
 import { WalletRepository } from './application/repositories/wallet.repository';
-import { LightningWalletService } from './application/services/lightning-wallet.service';
 import { UserService } from './application/services/user.service';
 import { WalletProviderService } from './application/services/wallet-provider.service';
 import { WalletService } from './application/services/wallet.service';
@@ -30,7 +29,6 @@ import { Wallet } from './domain/entities/wallet.entity';
     UserService,
     WalletService,
     WalletProviderService,
-    LightningWalletService,
     AuthService,
     LightningService,
   ],

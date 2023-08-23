@@ -13,7 +13,7 @@ export class Wallet extends IEntity {
   @Column()
   signature: string;
 
-  @Column({ nullable: true })
+  @Column()
   lnbitsUserId: string;
 
   @ManyToOne(() => WalletProvider, { nullable: false, eager: true })
@@ -25,6 +25,8 @@ export class Wallet extends IEntity {
   @ManyToOne(() => User, { nullable: false, eager: true })
   user: User;
 
-  @OneToMany(() => LightningWallet, (wallet) => wallet.wallet)
+  @OneToMany(() => LightningWallet, (wallet) => wallet.wallet, {
+    cascade: true,
+  })
   lightningWallets: LightningWallet[];
 }

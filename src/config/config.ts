@@ -84,9 +84,7 @@ export class Configuration {
   get url(): string {
     return this.environment === Environment.LOC
       ? `http://localhost:${this.port}/${this.version}`
-      : `https://${this.environment === Environment.PRD ? '' : this.environment + '.'}api.lightning.space/${
-          this.version
-        }`;
+      : `https://${this.environment === Environment.PRD ? '' : this.environment + '.'}lightning.space/${this.version}`;
   }
 }
 

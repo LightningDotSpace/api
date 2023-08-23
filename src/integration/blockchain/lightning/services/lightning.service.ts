@@ -1,7 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Config } from 'src/config/config';
 import { HttpService } from 'src/shared/services/http.service';
-import { LnUserInfoDto, LnWalletInfoDto } from '../dto/ln-userinfo.dto';
+import { LnUserInfoDto, LnWalletInfoDto } from '../../../../subdomains/user/application/dto/ln-userinfo.dto';
 import { LnBitsUserDto, LnBitsUsermanagerWalletDto, LnBitsWalletDto } from '../dto/lnbits.dto';
 import { LightningClient, UserFilterData } from '../lightning-client';
 
@@ -102,7 +102,6 @@ export class LightningService {
     for (const userWallet of userWallets) {
       const walletInfo: LnWalletInfoDto = {
         asset: userWallet.name,
-        balance: userWallet.balance,
 
         lndhubInvoiceUrl: `lndhub://invoice:${userWallet.inkey}@${Config.blockchain.lightning.lnbits.lndhubUrl}`,
         lndhubAdminUrl: `lndhub://invoice:${userWallet.adminkey}@${Config.blockchain.lightning.lnbits.lndhubUrl}`,

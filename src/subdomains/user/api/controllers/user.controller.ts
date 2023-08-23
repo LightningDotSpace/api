@@ -7,8 +7,8 @@ import { JwtPayload } from 'src/shared/auth/jwt-payload.interface';
 import { RoleGuard } from 'src/shared/auth/role.guard';
 import { WalletRole } from 'src/shared/auth/wallet-role.enum';
 import { WalletDto } from '../../application/dto/wallet.dto';
-import { WalletMapper } from '../../application/dto/wallet.mapper';
 import { WalletService } from '../../application/services/wallet.service';
+import { Wallet } from '../../domain/entities/wallet.entity';
 
 @ApiTags('User')
 @Controller('user')
@@ -20,14 +20,19 @@ export class UserController {
   @UseGuards(AuthGuard(), new RoleGuard(WalletRole.USER))
   @ApiOkResponse({ type: WalletDto })
   async getUser(@GetJwt() jwt: JwtPayload): Promise<WalletDto> {
-    return this.walletService
-      .get(jwt.walletId)
-      .then(WalletMapper.toDto)
-      .then((w) => this.fillLightningInfo(w));
+    return this.walletService.get(jwt.walletId).then((w) => this.createWalletDto(w));
   }
 
-  private async fillLightningInfo(wallet: WalletDto) {
-    wallet.lnbitsUserInfo = await this.lightningService.getUserInfo(wallet.lnbitsUserId);
-    return wallet;
+  private async createWalletDto(wallet: Wallet | null): Promise<WalletDto> {
+    const walletDto = new WalletDto();
+
+    if (wallet) {
+      const lightningUserInfo = await this.lightningService.getUserInfo(wallet.lnbitsUserId);
+
+      walletDto.address = wallet.address;
+      walletDto.lightningUserInfo = lightningUserInfo;
+    }
+
+    return walletDto;
   }
 }

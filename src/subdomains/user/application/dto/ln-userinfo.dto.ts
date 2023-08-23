@@ -19,11 +19,6 @@ export class LnWalletInfoDto {
   asset: string;
 
   @ApiProperty({
-    description: 'Lightning Wallet Balance',
-  })
-  balance: number;
-
-  @ApiProperty({
     description: 'Lightning Wallet LNDHUB Invoice URL',
   })
   lndhubInvoiceUrl: string;
