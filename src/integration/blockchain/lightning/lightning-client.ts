@@ -16,6 +16,13 @@ export interface UserFilterData {
   username?: string;
 }
 
+export interface LndhubParameterData {
+  urlpart: string;
+  authorization?: string;
+  body?: any;
+  params: any;
+}
+
 export class LightningClient {
   constructor(private readonly http: HttpService) {}
 
@@ -173,6 +180,22 @@ export class LightningClient {
     );
   }
 
+  // --- LNDHUB --- //
+  async lndhubGet(paramData: LndhubParameterData): Promise<any> {
+    return this.http.get<any>(
+      `${Config.blockchain.lightning.lnbits.lndhubUrl}/${paramData.urlpart}`,
+      this.httpLnBitsLndHubConfig(paramData),
+    );
+  }
+
+  async lndhubPost(paramData: LndhubParameterData): Promise<any> {
+    return this.http.post<any>(
+      `${Config.blockchain.lightning.lnbits.lndhubUrl}/${paramData.urlpart}`,
+      paramData.body,
+      this.httpLnBitsLndHubConfig(paramData),
+    );
+  }
+
   // --- HELPER METHODS --- //
   private httpLnBitsConfig(adminKey: string, params?: any): HttpRequestConfig {
     return {
@@ -180,6 +203,18 @@ export class LightningClient {
         ca: Config.blockchain.lightning.certificate,
       }),
       params: { 'api-key': adminKey, ...params },
+    };
+  }
+
+  private httpLnBitsLndHubConfig(paramData: LndhubParameterData): HttpRequestConfig {
+    return {
+      httpsAgent: new Agent({
+        ca: Config.blockchain.lightning.certificate,
+      }),
+      headers: {
+        Authorization: paramData.authorization,
+      },
+      params: { ...paramData.params },
     };
   }
 
