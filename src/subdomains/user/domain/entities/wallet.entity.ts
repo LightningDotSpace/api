@@ -25,8 +25,6 @@ export class Wallet extends IEntity {
   @ManyToOne(() => User, { nullable: false, eager: true })
   user: User;
 
-  @OneToMany(() => LightningWallet, (wallet) => wallet.wallet, {
-    cascade: true,
-  })
+  @OneToMany(() => LightningWallet, (wallet) => wallet.wallet, { cascade: true, eager: true })
   lightningWallets: LightningWallet[];
 }

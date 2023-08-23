@@ -5,7 +5,7 @@ import { Wallet } from './wallet.entity';
 @Entity()
 export class LightningWallet extends IEntity {
   @Column({ unique: true })
-  lightningWalletId: string;
+  lnbitsWalletId: string;
 
   @Column()
   asset: string;
@@ -19,6 +19,6 @@ export class LightningWallet extends IEntity {
   @Column()
   lnurlpId: string;
 
-  @ManyToOne(() => Wallet, { nullable: false, eager: true })
+  @ManyToOne(() => Wallet, { nullable: false })
   wallet: Wallet;
 }

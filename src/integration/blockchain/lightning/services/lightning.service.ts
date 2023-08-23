@@ -1,7 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Config } from 'src/config/config';
 import { HttpService } from 'src/shared/services/http.service';
-import { LnUserInfoDto, LnWalletInfoDto } from '../../../../subdomains/user/application/dto/ln-userinfo.dto';
 import { LnBitsUserDto, LnBitsUsermanagerWalletDto, LnBitsWalletDto } from '../dto/lnbits.dto';
 import { LightningClient, UserFilterData } from '../lightning-client';
 
@@ -85,32 +84,6 @@ export class LightningService {
         await this.client.removeLnurlpLink(adminKey, lnurlpLink.id);
       }
     }
-  }
-
-  async getUserInfo(userId: string): Promise<LnUserInfoDto> {
-    const usersWithWallets = await this.client.getUsersWithWallets({ userId: userId });
-    if (1 != usersWithWallets.length) throw new NotFoundException('User Wallet mismatch');
-
-    const userWithWallets = usersWithWallets[0];
-    const userWallets = userWithWallets.wallets;
-    if (!userWallets) throw new NotFoundException('User Wallet not found');
-
-    const userInfo = new LnUserInfoDto();
-    userInfo.address = `${userWithWallets.name}@${Config.url}`;
-    userInfo.wallets = [];
-
-    for (const userWallet of userWallets) {
-      const walletInfo: LnWalletInfoDto = {
-        asset: userWallet.name,
-
-        lndhubInvoiceUrl: `lndhub://invoice:${userWallet.inkey}@${Config.blockchain.lightning.lnbits.lndhubUrl}`,
-        lndhubAdminUrl: `lndhub://invoice:${userWallet.adminkey}@${Config.blockchain.lightning.lnbits.lndhubUrl}`,
-      };
-
-      userInfo.wallets.push(walletInfo);
-    }
-
-    return userInfo;
   }
 
   async getLnBitsWallets(): Promise<LnBitsWalletDto[]> {

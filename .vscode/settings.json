@@ -1,5 +1,5 @@
 {
-  "cSpell.words": ["typeorm"],
+  "cSpell.words": ["lnbits", "lndhub", "lnurlp", "typeorm"],
   "prettier.printWidth": 120,
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {

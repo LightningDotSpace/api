@@ -1,12 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
 import { IntegrationModule } from 'src/integration/integration.module';
 import { SharedModule } from 'src/shared/shared.module';
 import { AuthService } from 'src/subdomains/user/application/services/auth.service';
 import { AuthController } from './api/controllers/auth.controller';
 import { UserController } from './api/controllers/user.controller';
-import { LightningWalletRepository } from './application/repositories/lightning-wallet.repository';
 import { UserRepository } from './application/repositories/user.repository';
 import { WalletProviderRepository } from './application/repositories/wallet-provider.repository';
 import { WalletRepository } from './application/repositories/wallet.repository';
@@ -25,12 +23,10 @@ import { Wallet } from './domain/entities/wallet.entity';
     UserRepository,
     WalletProviderRepository,
     WalletRepository,
-    LightningWalletRepository,
     UserService,
     WalletService,
     WalletProviderService,
     AuthService,
-    LightningService,
   ],
   exports: [],
 })

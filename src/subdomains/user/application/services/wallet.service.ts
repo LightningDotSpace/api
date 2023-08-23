@@ -47,26 +47,17 @@ export class WalletService {
     return this.repo.save(wallet);
   }
 
-  private createLightningWallets(lnbitsUser: LnBitsUserDto): LightningWallet[] {
-    const lightningWallets: LightningWallet[] = [];
+  private createLightningWallets(lnbitsUser: LnBitsUserDto): Partial<LightningWallet>[] {
+    return lnbitsUser.wallets.map((w) => {
+      const wallet: Partial<LightningWallet> = {
+        lnbitsWalletId: w.wallet.id,
+        asset: w.wallet.name,
+        adminKey: w.wallet.adminkey,
+        invoiceKey: w.wallet.inkey,
+        lnurlpId: w.lnurlp.id,
+      };
 
-    const lnbitsUserWallets = lnbitsUser.wallets;
-
-    for (const lnbitsUserWallet of lnbitsUserWallets) {
-      const lnurlpId = lnbitsUserWallet.lnurlp.id;
-      if (!lnurlpId) throw new NotFoundException('LNURLp not found');
-
-      const lightningWallet = new LightningWallet();
-
-      lightningWallet.lightningWalletId = lnbitsUserWallet.wallet.id;
-      lightningWallet.asset = lnbitsUserWallet.wallet.name;
-      lightningWallet.adminKey = lnbitsUserWallet.wallet.adminkey;
-      lightningWallet.invoiceKey = lnbitsUserWallet.wallet.inkey;
-      lightningWallet.lnurlpId = lnurlpId;
-
-      lightningWallets.push(lightningWallet);
-    }
-
-    return lightningWallets;
+      return Object.assign(new LightningWallet(), wallet);
+    });
   }
 }

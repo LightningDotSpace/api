@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { LnUserInfoDto } from 'src/subdomains/user/application/dto/ln-userinfo.dto';
+import { LnInfoDto } from 'src/subdomains/user/application/dto/ln-info.dto';
 
 export class WalletDto {
   @ApiProperty({
@@ -8,7 +8,8 @@ export class WalletDto {
   address: string;
 
   @ApiProperty({
-    description: 'Lightning User Info',
+    description: 'Lightning info',
+    type: LnInfoDto,
   })
-  lightningUserInfo: LnUserInfoDto;
+  lightning: LnInfoDto;
 }
