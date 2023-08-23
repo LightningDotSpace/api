@@ -11,12 +11,13 @@ import { WalletRepository } from './application/repositories/wallet.repository';
 import { UserService } from './application/services/user.service';
 import { WalletProviderService } from './application/services/wallet-provider.service';
 import { WalletService } from './application/services/wallet.service';
+import { LightningWallet } from './domain/entities/lightning-wallet.entity';
 import { User } from './domain/entities/user.entity';
 import { WalletProvider } from './domain/entities/wallet-provider.entity';
 import { Wallet } from './domain/entities/wallet.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, WalletProvider, Wallet]), SharedModule, IntegrationModule],
+  imports: [TypeOrmModule.forFeature([User, WalletProvider, Wallet, LightningWallet]), SharedModule, IntegrationModule],
   controllers: [UserController, AuthController],
   providers: [
     UserRepository,

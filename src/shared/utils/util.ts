@@ -1,3 +1,4 @@
+import BigNumber from 'bignumber.js';
 import { TransformFnParams } from 'class-transformer';
 import * as crypto from 'crypto';
 import { BinaryLike, createHash, createSign, KeyLike } from 'crypto';
@@ -11,6 +12,14 @@ type CryptoAlgorithm = 'md5' | 'sha256' | 'sha512';
 
 export class Util {
   // --- MATH --- //
+  static round(amount: number, decimals: number): number {
+    return this.roundToValue(amount, Math.pow(10, -decimals));
+  }
+
+  static roundToValue(amount: number, value: number): number {
+    return new BigNumber(Math.round(amount / value)).multipliedBy(value).toNumber();
+  }
+
   static sum(list: number[]): number {
     return list.reduce((prev, curr) => prev + curr, 0);
   }

@@ -57,8 +57,35 @@ export class Configuration {
     signature: /^(.{87}=)$/,
   };
 
+  blockchain = {
+    lightning: {
+      lnbits: {
+        adminUserId: process.env.LIGHTNING_LNBITS_ADMIN_USER_ID || '',
+        adminKey: process.env.LIGHTNING_LNBITS_ADMIN_KEY || '',
+        apiUrl: process.env.LIGHTNING_LNBITS_API_URL || '',
+        lnurlpApiUrl: process.env.LIGHTNING_LNBITS_LNURLP_API_URL || '',
+        lnurlpUrl: process.env.LIGHTNING_LNBITS_LNURLP_URL || '',
+        lnurlwApiUrl: process.env.LIGHTNING_LNBITS_LNURLW_API_URL || '',
+        lndhubUrl: process.env.LIGHTNING_LNBITS_LNDHUB_URL || '',
+        usermanagerApiUrl: process.env.LIGHTNING_LNBITS_USERMANAGER_API_URL || '',
+      },
+      lnd: {
+        apiUrl: process.env.LIGHTNING_LND_API_URL || '',
+        adminMacaroon: process.env.LIGHTNING_LND_ADMIN_MACAROON || '',
+      },
+      certificate: process.env.LIGHTNING_API_CERTIFICATE?.split('<br>').join('\n'),
+    },
+  };
+
   processDisabled = (processName: Process) =>
     process.env.DISABLED_PROCESSES === '*' || (process.env.DISABLED_PROCESSES?.split(',') ?? []).includes(processName);
+
+  // --- GETTERS --- //
+  get url(): string {
+    return this.environment === Environment.LOC
+      ? `http://localhost:${this.port}/${this.version}`
+      : `https://${this.environment === Environment.PRD ? '' : this.environment + '.'}lightning.space/${this.version}`;
+  }
 }
 
 @Injectable()

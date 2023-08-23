@@ -19,6 +19,6 @@ export class UserController {
   @UseGuards(AuthGuard(), new RoleGuard(WalletRole.USER))
   @ApiOkResponse({ type: WalletDto })
   async getUser(@GetJwt() jwt: JwtPayload): Promise<WalletDto> {
-    return this.walletService.get(jwt.walletId).then(WalletMapper.toDto);
+    return this.walletService.getOrThrow(jwt.walletId).then((w) => WalletMapper.toDto(w));
   }
 }

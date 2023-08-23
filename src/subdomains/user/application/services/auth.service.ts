@@ -24,13 +24,14 @@ export class AuthService {
     private readonly cryptoService: CryptoService,
   ) {}
 
-  async signUp(dto: SignUpDto): Promise<AuthResponseDto> {
-    const existingWallet = await this.walletService.getByAddress(dto.address);
+  async signUp(signUp: SignUpDto): Promise<AuthResponseDto> {
+    const existingWallet = await this.walletService.getByAddress(signUp.address);
     if (existingWallet) throw new ConflictException('User already exists');
 
-    if (!this.verifySignature(dto.address, dto.signature)) throw new BadRequestException('Invalid signature');
+    if (!this.verifySignature(signUp.address, signUp.signature)) throw new BadRequestException('Invalid signature');
 
-    const wallet = await this.walletService.create(dto);
+    const wallet = await this.walletService.create(signUp);
+
     return { accessToken: this.generateToken(wallet) };
   }
 
