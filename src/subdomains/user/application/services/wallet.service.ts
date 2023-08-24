@@ -33,6 +33,10 @@ export class WalletService {
     return this.repo.findOneBy({ address });
   }
 
+  async getByLnbitsAddress(lnbitsAddress: string): Promise<Wallet | null> {
+    return this.repo.findOneBy({ lnbitsAddress });
+  }
+
   async create(signUp: SignUpDto): Promise<Wallet> {
     const lnbitsUser = await this.lightningService.createUser(signUp.address);
 

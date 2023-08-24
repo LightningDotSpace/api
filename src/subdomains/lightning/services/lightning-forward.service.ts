@@ -1,16 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Request } from 'express';
-import { WalletRepository } from 'src/subdomains/user/application/repositories/wallet.repository';
-import { LnBitsLnurlPayRequestDto, LnBitsLnurlpInvoiceDto } from '../dto/lnbits.dto';
-import { LightningClient } from '../lightning-client';
-import { LightningHelper } from '../lightning-helper';
-import { LightningService } from './lightning.service';
+import { WalletService } from 'src/subdomains/user/application/services/wallet.service';
+import {
+  LnBitsLnurlPayRequestDto,
+  LnBitsLnurlpInvoiceDto,
+} from '../../../integration/blockchain/lightning/dto/lnbits.dto';
+import { LightningClient } from '../../../integration/blockchain/lightning/lightning-client';
+import { LightningHelper } from '../../../integration/blockchain/lightning/lightning-helper';
+import { LightningService } from '../../../integration/blockchain/lightning/services/lightning.service';
 
 @Injectable()
 export class LightningForwardService {
   private readonly client: LightningClient;
 
-  constructor(private readonly walletRepository: WalletRepository, lightningService: LightningService) {
+  constructor(private readonly walletService: WalletService, lightningService: LightningService) {
     this.client = lightningService.getDefaultClient();
   }
 
@@ -32,7 +35,7 @@ export class LightningForwardService {
 
   // --- Wellknown --- //
   async wellknownForward(address: string, asset?: string): Promise<LnBitsLnurlPayRequestDto> {
-    const wallet = await this.walletRepository.findOneBy({ lnbitsAddress: address });
+    const wallet = await this.walletService.getByLnbitsAddress(address);
     if (!wallet) throw new NotFoundException('Wallet not found');
 
     if (!asset) asset = 'BTC';

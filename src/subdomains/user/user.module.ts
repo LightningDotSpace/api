@@ -28,6 +28,6 @@ import { Wallet } from './domain/entities/wallet.entity';
     WalletProviderService,
     AuthService,
   ],
-  exports: [],
+  exports: [UserService, WalletService, WalletRepository, WalletProviderService],
 })
 export class UserModule {}

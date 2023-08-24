@@ -1,6 +1,6 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
-import { LnBitsLnurlPayRequestDto } from '../dto/lnbits.dto';
+import { LnBitsLnurlPayRequestDto } from 'src/integration/blockchain/lightning/dto/lnbits.dto';
 import { LightningForwardService } from '../services/lightning-forward.service';
 
 @ApiTags('Wellknown')
