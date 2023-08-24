@@ -1,3 +1,4 @@
+import { IncomingHttpHeaders } from 'http';
 import { Agent } from 'https';
 import { Config } from 'src/config/config';
 import { HttpRequestConfig, HttpService } from 'src/shared/services/http.service';
@@ -20,8 +21,8 @@ export interface UserFilterData {
 
 export interface LndhubParameterData {
   method: string;
+  headers: IncomingHttpHeaders;
   lastUrlpart: string;
-  authorization?: string;
   body?: any;
   params?: any;
 }
@@ -196,10 +197,8 @@ export class LightningClient {
       httpsAgent: new Agent({
         ca: Config.blockchain.lightning.certificate,
       }),
-      headers: {
-        Authorization: paramData.authorization,
-      },
-      params: { ...paramData.params },
+      headers: paramData.headers,
+      params: paramData.params,
     };
   }
 

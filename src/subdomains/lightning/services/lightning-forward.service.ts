@@ -19,15 +19,13 @@ export class LightningForwardService {
 
   // --- LNDHUB --- //
   async lndhubRequest(req: Request, body: any, params: any): Promise<any> {
-    const authorization = this.getAuthorization(req);
-
     const lastUrlpart = this.getLastUrlPart(req);
     if (!lastUrlpart) return null;
 
     return this.client.lndhubRequest({
       method: req.method,
+      headers: req.headers,
       lastUrlpart: lastUrlpart,
-      authorization: authorization,
       body: body,
       params: params,
     });
@@ -38,9 +36,9 @@ export class LightningForwardService {
     const wallet = await this.walletService.getByLnbitsAddress(address);
     if (!wallet) throw new NotFoundException('Wallet not found');
 
-    if (!asset) asset = 'BTC';
+    asset ??= 'BTC';
 
-    const lighningWallet = await wallet.lightningWallets.find((w) => w.asset === asset);
+    const lighningWallet = wallet.lightningWallets.find((w) => w.asset === asset);
     if (!lighningWallet) throw new NotFoundException('Lightning Wallet not found');
 
     const payRequest = await this.lnurlpForward(lighningWallet.lnurlpId);
@@ -90,10 +88,6 @@ export class LightningForwardService {
   }
 
   // --- UTILITIES --- //
-  private getAuthorization(req: Request): string | undefined {
-    return req.header('Authorization');
-  }
-
   private getLastUrlPart(req: Request): string | undefined {
     return req.url.split('/').at(-1);
   }
