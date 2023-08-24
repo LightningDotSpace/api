@@ -2,6 +2,8 @@ import { Agent } from 'https';
 import { Config } from 'src/config/config';
 import { HttpRequestConfig, HttpService } from 'src/shared/services/http.service';
 import {
+  LnBitsLnurlPayRequestDto,
+  LnBitsLnurlpInvoiceDto,
   LnBitsLnurlpLinkDto,
   LnBitsLnurlpLinkRemoveDto,
   LnBitsUsermanagerWalletDto,
@@ -17,10 +19,11 @@ export interface UserFilterData {
 }
 
 export interface LndhubParameterData {
-  urlpart: string;
+  method: string;
+  lastUrlpart: string;
   authorization?: string;
   body?: any;
-  params: any;
+  params?: any;
 }
 
 export class LightningClient {
@@ -181,18 +184,36 @@ export class LightningClient {
   }
 
   // --- LNDHUB --- //
-  async lndhubGet(paramData: LndhubParameterData): Promise<any> {
-    return this.http.get<any>(
-      `${Config.blockchain.lightning.lnbits.lndhubUrl}/${paramData.urlpart}`,
-      this.httpLnBitsLndHubConfig(paramData),
-    );
+  async lndhubRequest(paramData: LndhubParameterData): Promise<any> {
+    return this.http.request<any>(this.httpLnBitsLndHubConfig(paramData));
   }
 
-  async lndhubPost(paramData: LndhubParameterData): Promise<any> {
-    return this.http.post<any>(
-      `${Config.blockchain.lightning.lnbits.lndhubUrl}/${paramData.urlpart}`,
-      paramData.body,
-      this.httpLnBitsLndHubConfig(paramData),
+  private httpLnBitsLndHubConfig(paramData: LndhubParameterData): HttpRequestConfig {
+    return {
+      url: `${Config.blockchain.lightning.lnbits.lndhubUrl}/${paramData.lastUrlpart}`,
+      method: paramData.method,
+      data: paramData.body,
+      httpsAgent: new Agent({
+        ca: Config.blockchain.lightning.certificate,
+      }),
+      headers: {
+        Authorization: paramData.authorization,
+      },
+      params: { ...paramData.params },
+    };
+  }
+
+  // --- LNURLp REWRITE --- //
+  async getLnurlpPaymentRequest(linkId: string): Promise<LnBitsLnurlPayRequestDto> {
+    const lnBitsUrl = `${Config.blockchain.lightning.lnbits.lnurlpUrl}/${linkId}`;
+    return this.http.get(lnBitsUrl, this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey));
+  }
+
+  async getLnurlpInvoice(linkId: string, params: any): Promise<LnBitsLnurlpInvoiceDto> {
+    const lnBitsCallbackUrl = `${Config.blockchain.lightning.lnbits.lnurlpApiUrl}/lnurl/cb/${linkId}`;
+    return this.http.get<LnBitsLnurlpInvoiceDto>(
+      lnBitsCallbackUrl,
+      this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey, params),
     );
   }
 
@@ -203,18 +224,6 @@ export class LightningClient {
         ca: Config.blockchain.lightning.certificate,
       }),
       params: { 'api-key': adminKey, ...params },
-    };
-  }
-
-  private httpLnBitsLndHubConfig(paramData: LndhubParameterData): HttpRequestConfig {
-    return {
-      httpsAgent: new Agent({
-        ca: Config.blockchain.lightning.certificate,
-      }),
-      headers: {
-        Authorization: paramData.authorization,
-      },
-      params: { ...paramData.params },
     };
   }
 

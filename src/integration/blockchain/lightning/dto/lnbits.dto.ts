@@ -61,3 +61,15 @@ export interface LnBitsUserDto {
     },
   ];
 }
+
+export interface LnBitsLnurlPayRequestDto {
+  tag: string;
+  callback: string;
+  minSendable: number;
+  maxSendable: number;
+  metadata: string;
+}
+
+export interface LnBitsLnurlpInvoiceDto {
+  pr: string;
+}

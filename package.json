@@ -36,6 +36,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
     "helmet": "^6.0.1",
+    "lnurl": "^0.24.2",
     "morgan": "^1.10.0",
     "mssql": "^9.1.1",
     "passport-jwt": "^4.0.1",

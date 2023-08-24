@@ -81,10 +81,16 @@ export class Configuration {
     process.env.DISABLED_PROCESSES === '*' || (process.env.DISABLED_PROCESSES?.split(',') ?? []).includes(processName);
 
   // --- GETTERS --- //
+  get baseUrl(): string {
+    return this.environment === Environment.LOC
+      ? `localhost:${this.port}`
+      : `${this.environment === Environment.PRD ? '' : this.environment + '.'}lightning.space`;
+  }
+
   get url(): string {
     return this.environment === Environment.LOC
-      ? `http://localhost:${this.port}/${this.version}`
-      : `https://${this.environment === Environment.PRD ? '' : this.environment + '.'}lightning.space/${this.version}`;
+      ? `http://${this.baseUrl}/${this.version}`
+      : `https://${this.baseUrl}/${this.version}`;
   }
 }
 
