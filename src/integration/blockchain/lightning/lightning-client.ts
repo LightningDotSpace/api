@@ -1,7 +1,11 @@
+import { HttpException } from '@nestjs/common';
+import { IncomingHttpHeaders } from 'http';
 import { Agent } from 'https';
 import { Config } from 'src/config/config';
 import { HttpRequestConfig, HttpService } from 'src/shared/services/http.service';
 import {
+  LnBitsLnurlPayRequestDto,
+  LnBitsLnurlpInvoiceDto,
   LnBitsLnurlpLinkDto,
   LnBitsLnurlpLinkRemoveDto,
   LnBitsUsermanagerWalletDto,
@@ -14,6 +18,14 @@ import { LightningHelper } from './lightning-helper';
 export interface UserFilterData {
   userId?: string;
   username?: string;
+}
+
+export interface LndhubParameterData {
+  method: string;
+  headers: IncomingHttpHeaders;
+  lastUrlpart: string;
+  body?: any;
+  params?: any;
 }
 
 export class LightningClient {
@@ -173,6 +185,42 @@ export class LightningClient {
     );
   }
 
+  // --- LNDHUB --- //
+  async lndhubRequest(paramData: LndhubParameterData): Promise<any> {
+    return this.http.request<any>(this.httpLnBitsLndHubConfig(paramData)).catch(this.throwHttpException);
+  }
+
+  private httpLnBitsLndHubConfig(paramData: LndhubParameterData): HttpRequestConfig {
+    return {
+      url: `${Config.blockchain.lightning.lnbits.lndhubUrl}/${paramData.lastUrlpart}`,
+      method: paramData.method,
+      data: paramData.body,
+      httpsAgent: new Agent({
+        ca: Config.blockchain.lightning.certificate,
+      }),
+      headers: paramData.headers,
+      params: paramData.params,
+    };
+  }
+
+  // --- LNURLp REWRITE --- //
+  async getLnurlpPaymentRequest(linkId: string): Promise<LnBitsLnurlPayRequestDto> {
+    const lnBitsUrl = `${Config.blockchain.lightning.lnbits.lnurlpUrl}/${linkId}`;
+    return this.http
+      .get<LnBitsLnurlPayRequestDto>(lnBitsUrl, this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey))
+      .catch(this.throwHttpException);
+  }
+
+  async getLnurlpInvoice(linkId: string, params: any): Promise<LnBitsLnurlpInvoiceDto> {
+    const lnBitsCallbackUrl = `${Config.blockchain.lightning.lnbits.lnurlpApiUrl}/lnurl/cb/${linkId}`;
+    return this.http
+      .get<LnBitsLnurlpInvoiceDto>(
+        lnBitsCallbackUrl,
+        this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey, params),
+      )
+      .catch(this.throwHttpException);
+  }
+
   // --- HELPER METHODS --- //
   private httpLnBitsConfig(adminKey: string, params?: any): HttpRequestConfig {
     return {
@@ -191,5 +239,9 @@ export class LightningClient {
 
       headers: { 'Grpc-Metadata-macaroon': Config.blockchain.lightning.lnd.adminMacaroon },
     };
+  }
+
+  throwHttpException(e: any): any {
+    throw new HttpException(e.response.data, e.response.status);
   }
 }

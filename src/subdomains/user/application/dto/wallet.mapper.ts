@@ -1,4 +1,4 @@
-import { Config } from 'src/config/config';
+import { LightningHelper } from 'src/integration/blockchain/lightning/lightning-helper';
 import { Wallet } from '../../domain/entities/wallet.entity';
 import { WalletDto } from './wallet.dto';
 
@@ -7,19 +7,15 @@ export class WalletMapper {
     const dto: WalletDto = {
       address: wallet.address,
       lightning: {
-        address: `${wallet.address}@${Config.url}`,
+        address: LightningHelper.getLightningAddress(wallet.lnbitsAddress),
         wallets: wallet.lightningWallets.map((lw) => ({
           asset: lw.asset,
-          lndhubAdminUrl: this.getLndhubUrl('admin', lw.adminKey),
-          lndhubInvoiceUrl: this.getLndhubUrl('invoice', lw.invoiceKey),
+          lndhubAdminUrl: LightningHelper.getLndhubUrl('admin', lw.adminKey),
+          lndhubInvoiceUrl: LightningHelper.getLndhubUrl('invoice', lw.invoiceKey),
         })),
       },
     };
 
     return Object.assign(new WalletDto(), dto);
-  }
-
-  private static getLndhubUrl(type: string, key: string): string {
-    return `lndhub://${type}:${key}@${Config.blockchain.lightning.lnbits.lndhubUrl}`;
   }
 }

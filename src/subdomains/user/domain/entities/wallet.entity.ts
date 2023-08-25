@@ -13,8 +13,11 @@ export class Wallet extends IEntity {
   @Column()
   signature: string;
 
-  @Column()
+  @Column({ unique: true })
   lnbitsUserId: string;
+
+  @Column({ unique: true })
+  lnbitsAddress: string;
 
   @ManyToOne(() => WalletProvider, { nullable: false, eager: true })
   walletProvider: WalletProvider;

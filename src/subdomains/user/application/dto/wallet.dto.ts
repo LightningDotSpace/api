@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { LnInfoDto } from 'src/subdomains/user/application/dto/ln-info.dto';
+import { LnInfoDto } from './ln-info.dto';
 
 export class WalletDto {
   @ApiProperty({

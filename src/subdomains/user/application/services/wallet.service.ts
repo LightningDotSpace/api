@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { LnBitsUserDto } from 'src/integration/blockchain/lightning/dto/lnbits.dto';
+import { LightningHelper } from 'src/integration/blockchain/lightning/lightning-helper';
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
 import { LightningWallet } from '../../domain/entities/lightning-wallet.entity';
 import { Wallet } from '../../domain/entities/wallet.entity';
@@ -32,6 +33,10 @@ export class WalletService {
     return this.repo.findOneBy({ address });
   }
 
+  async getByLnbitsAddress(lnbitsAddress: string): Promise<Wallet | null> {
+    return this.repo.findOneBy({ lnbitsAddress });
+  }
+
   async create(signUp: SignUpDto): Promise<Wallet> {
     const lnbitsUser = await this.lightningService.createUser(signUp.address);
 
@@ -39,6 +44,7 @@ export class WalletService {
       address: signUp.address,
       signature: signUp.signature,
       lnbitsUserId: lnbitsUser.id,
+      lnbitsAddress: LightningHelper.createLnbitsAddress(signUp.address),
       walletProvider: await this.walletProviderService.getByNameOrThrow(signUp.wallet),
       user: await this.userService.create(),
       lightningWallets: this.createLightningWallets(lnbitsUser),
