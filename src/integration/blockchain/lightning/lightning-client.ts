@@ -1,3 +1,4 @@
+import { HttpException } from '@nestjs/common';
 import { IncomingHttpHeaders } from 'http';
 import { Agent } from 'https';
 import { Config } from 'src/config/config';
@@ -186,7 +187,7 @@ export class LightningClient {
 
   // --- LNDHUB --- //
   async lndhubRequest(paramData: LndhubParameterData): Promise<any> {
-    return this.http.request<any>(this.httpLnBitsLndHubConfig(paramData));
+    return this.http.request<any>(this.httpLnBitsLndHubConfig(paramData)).catch(this.throwHttpException);
   }
 
   private httpLnBitsLndHubConfig(paramData: LndhubParameterData): HttpRequestConfig {
@@ -205,15 +206,19 @@ export class LightningClient {
   // --- LNURLp REWRITE --- //
   async getLnurlpPaymentRequest(linkId: string): Promise<LnBitsLnurlPayRequestDto> {
     const lnBitsUrl = `${Config.blockchain.lightning.lnbits.lnurlpUrl}/${linkId}`;
-    return this.http.get(lnBitsUrl, this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey));
+    return this.http
+      .get<LnBitsLnurlPayRequestDto>(lnBitsUrl, this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey))
+      .catch(this.throwHttpException);
   }
 
   async getLnurlpInvoice(linkId: string, params: any): Promise<LnBitsLnurlpInvoiceDto> {
     const lnBitsCallbackUrl = `${Config.blockchain.lightning.lnbits.lnurlpApiUrl}/lnurl/cb/${linkId}`;
-    return this.http.get<LnBitsLnurlpInvoiceDto>(
-      lnBitsCallbackUrl,
-      this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey, params),
-    );
+    return this.http
+      .get<LnBitsLnurlpInvoiceDto>(
+        lnBitsCallbackUrl,
+        this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey, params),
+      )
+      .catch(this.throwHttpException);
   }
 
   // --- HELPER METHODS --- //
@@ -234,5 +239,9 @@ export class LightningClient {
 
       headers: { 'Grpc-Metadata-macaroon': Config.blockchain.lightning.lnd.adminMacaroon },
     };
+  }
+
+  throwHttpException(e: any): any {
+    throw new HttpException(e.response.data, e.response.status);
   }
 }
