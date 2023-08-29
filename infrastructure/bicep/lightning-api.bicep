@@ -37,7 +37,7 @@ var apiServicePlanName = 'plan-${compName}-${apiName}-${env}'
 var apiAppName = 'app-${compName}-${apiName}-${env}'
 var appInsightsName = 'appi-${compName}-${apiName}-${env}'
 
-var thunderHubPort = '4000'
+var thunderHubPort = '443'
 var lnBitsPort = '5000'
 
 var btcNodeProps = [
