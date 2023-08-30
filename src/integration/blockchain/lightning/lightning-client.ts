@@ -194,6 +194,8 @@ export class LightningClient {
   }
 
   private httpLnBitsLndHubConfig(paramData: LndhubParameterData): HttpRequestConfig {
+    delete paramData.headers.host;
+
     return {
       url: `${Config.blockchain.lightning.lnbits.lndhubUrl}/${paramData.lastUrlpart}`,
       method: paramData.method,
