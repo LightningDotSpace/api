@@ -190,7 +190,7 @@ export class LightningClient {
 
   // --- LNDHUB --- //
   async lndhubRequest(paramData: LndhubParameterData): Promise<any> {
-    return this.http.request<any>(this.httpLnBitsLndHubConfig(paramData)).catch(this.throwHttpException);
+    return this.http.request<any>(this.httpLnBitsLndHubConfig(paramData)).catch((e) => this.throwHttpException(e));
   }
 
   private httpLnBitsLndHubConfig(paramData: LndhubParameterData): HttpRequestConfig {
@@ -211,7 +211,7 @@ export class LightningClient {
     const lnBitsUrl = `${Config.blockchain.lightning.lnbits.lnurlpUrl}/${linkId}`;
     return this.http
       .get<LnBitsLnurlPayRequestDto>(lnBitsUrl, this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey))
-      .catch(this.throwHttpException);
+      .catch((e) => this.throwHttpException(e));
   }
 
   async getLnurlpInvoice(linkId: string, params: any): Promise<LnBitsLnurlpInvoiceDto> {
@@ -221,7 +221,7 @@ export class LightningClient {
         lnBitsCallbackUrl,
         this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey, params),
       )
-      .catch(this.throwHttpException);
+      .catch((e) => this.throwHttpException(e));
   }
 
   // --- HELPER METHODS --- //
