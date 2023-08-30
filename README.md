@@ -1,3 +1,3 @@
-# Lightning.space API
+# lightning.space API
 
-API for Lightning.space custodial service
+API for lightning.space custodial service
