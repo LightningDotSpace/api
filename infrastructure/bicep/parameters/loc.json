@@ -31,6 +31,18 @@
     },
     "btcVmPassword": {
       "value": "xxx"
+    },
+    "lightningApiCertificate": {
+      "value": "xxx"
+    },
+    "lightningLnbitsAdminUser": {
+      "value": "xxx"
+    },
+    "lightningLnbitsAdminKey": {
+      "value": "xxx"
+    },
+    "lightningLndAdminMacaroon": {
+      "value": "xxx"
     }
   }
 }

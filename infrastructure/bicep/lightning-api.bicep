@@ -18,6 +18,13 @@ param btcVmUser string
 @secure()
 param btcVmPassword string
 
+param lightningApiCertificate string
+param lightningLnbitsAdminUser string
+@secure()
+param lightningLnbitsAdminKey string
+@secure()
+param lightningLndAdminMacaroon string
+
 // --- VARIABLES --- //
 var compName = 'lds'
 var apiName = 'api'
@@ -261,6 +268,50 @@ resource apiAppService 'Microsoft.Web/sites@2018-11-01' = if (env != 'loc') {
         {
           name: 'NODE_USER'
           value: 'lds-api'
+        }
+        {
+          name: 'LIGHTNING_API_CERTIFICATE'
+          value: lightningApiCertificate
+        }
+        {
+          name: 'LIGHTNING_LNBITS_ADMIN_USER_ID'
+          value: lightningLnbitsAdminUser
+        }
+        {
+          name: 'LIGHTNING_LNBITS_ADMIN_KEY'
+          value: lightningLnbitsAdminKey
+        }
+        {
+          name: 'LIGHTNING_LNBITS_API_URL'
+          value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/api/v1'
+        }
+        {
+          name: 'LIGHTNING_LNBITS_LNURLP_API_URL'
+          value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/lnurlp/api/v1'
+        }
+        {
+          name: 'LIGHTNING_LNBITS_LNURLP_URL'
+          value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/lnurlp'
+        }
+        {
+          name: 'LIGHTNING_LNBITS_LNURLW_API_URL'
+          value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/withdraw/api/v1'
+        }
+        {
+          name: 'LIGHTNING_LNBITS_LNDHUB_URL'
+          value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/lndhub/ext'
+        }
+        {
+          name: 'LIGHTNING_LNBITS_USERMANAGER_API_URL'
+          value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/usermanager/api/v1'
+        }
+        {
+          name: 'LIGHTNING_LND_API_URL'
+          value: 'https://${btcNodes[0].outputs.ip}:8080/v1'
+        }
+        {
+          name: 'LIGHTNING_LND_ADMIN_MACAROON'
+          value: lightningLndAdminMacaroon
         }
         {
           name: 'WEBSITE_RUN_FROM_PACKAGE'
