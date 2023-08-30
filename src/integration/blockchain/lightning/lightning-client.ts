@@ -194,8 +194,6 @@ export class LightningClient {
   }
 
   private httpLnBitsLndHubConfig(paramData: LndhubParameterData): HttpRequestConfig {
-    delete paramData.headers.host;
-
     return {
       url: `${Config.blockchain.lightning.lnbits.lndhubUrl}/${paramData.lastUrlpart}`,
       method: paramData.method,
@@ -203,7 +201,9 @@ export class LightningClient {
       httpsAgent: new Agent({
         ca: Config.blockchain.lightning.certificate,
       }),
-      headers: paramData.headers,
+      headers: {
+        Authorization: paramData.headers.authorization,
+      },
       params: paramData.params,
     };
   }

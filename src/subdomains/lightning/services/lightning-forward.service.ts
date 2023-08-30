@@ -89,6 +89,6 @@ export class LightningForwardService {
 
   // --- UTILITIES --- //
   private getLastUrlPart(req: Request): string | undefined {
-    return req.url.split('/').at(-1);
+    return req.path.split('/').at(-1);
   }
 }
