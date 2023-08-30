@@ -3,6 +3,7 @@ import { IncomingHttpHeaders } from 'http';
 import { Agent } from 'https';
 import { Config } from 'src/config/config';
 import { HttpRequestConfig, HttpService } from 'src/shared/services/http.service';
+import { LightningLogger } from 'src/shared/services/lightning-logger';
 import {
   LnBitsLnurlPayRequestDto,
   LnBitsLnurlpInvoiceDto,
@@ -29,6 +30,8 @@ export interface LndhubParameterData {
 }
 
 export class LightningClient {
+  private readonly logger = new LightningLogger(LightningClient);
+
   constructor(private readonly http: HttpService) {}
 
   // --- LND --- //
@@ -242,6 +245,7 @@ export class LightningClient {
   }
 
   throwHttpException(e: any): any {
+    this.logger.error(e);
     throw new HttpException(e.response.data, e.response.status);
   }
 }
