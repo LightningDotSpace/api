@@ -1,0 +1,47 @@
+name: API PRD CI/CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: app-lds-api-prd
+  AZURE_WEBAPP_PACKAGE_PATH: '.'
+  NODE_VERSION: '16.x'
+
+jobs:
+  build-and-deploy:
+    name: Build, test and deploy to PRD
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Use Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install packages
+        run: |
+          npm ci
+
+      - name: Build code
+        run: |
+          npm run build
+
+      - name: Run tests
+        run: |
+          npm run test
+
+      - name: Run linter
+        run: |
+          npm run lint
+
+      - name: Deploy to Azure App Service (PRD)
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.PRD_PUBLISH_PROFILE }}
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}

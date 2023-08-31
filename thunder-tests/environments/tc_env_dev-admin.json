@@ -1,0 +1,15 @@
+{
+    "_id": "12b8c0f8-37a1-4b13-a3c1-e0eba0e6ac8e",
+    "name": "dev (Admin)",
+    "default": false,
+    "sortNum": 40000,
+    "created": "2023-08-08T13:29:14.664Z",
+    "modified": "2023-08-08T13:29:14.664Z",
+    "data": [
+        {
+            "name": "url",
+            "value": "http://localhost:3003"
+        }
+    ],
+    "envFile": "env/dev.admin.env"
+}

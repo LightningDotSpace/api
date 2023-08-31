@@ -1,0 +1,109 @@
+{
+    "_id": "a4f2ed85-c972-4ee0-82d5-a5bc2b2533b3",
+    "colName": "Lightning API",
+    "created": "2023-08-08T13:22:09.110Z",
+    "sortNum": 10000,
+    "folders": [
+        {
+            "_id": "8c498bf3-eed7-4297-b485-a6e1849de991",
+            "name": "Auth",
+            "containerId": "",
+            "created": "2023-08-08T13:22:15.322Z",
+            "sortNum": 10000
+        },
+        {
+            "_id": "9b7f65ea-e450-48df-97f2-af1ade4ef1e5",
+            "name": "User",
+            "containerId": "",
+            "created": "2023-08-08T13:30:41.656Z",
+            "sortNum": 20000
+        }
+    ],
+    "requests": [
+        {
+            "_id": "7ac0cd1e-f9e4-419e-b261-09a1ce446f87",
+            "colId": "a4f2ed85-c972-4ee0-82d5-a5bc2b2533b3",
+            "containerId": "8c498bf3-eed7-4297-b485-a6e1849de991",
+            "name": "Sign Up",
+            "url": "{{url}}/v1/auth/sign-up",
+            "method": "POST",
+            "sortNum": 10000,
+            "created": "2023-08-08T13:22:21.520Z",
+            "modified": "2023-08-08T13:23:34.522Z",
+            "headers": [],
+            "params": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n  \"address\": \"address\",\n  \"signature\": \"signature\"\n}",
+                "form": []
+            },
+            "tests": []
+        },
+        {
+            "_id": "1bfafbd6-d838-4eae-8c6b-9dd22e0f89b3",
+            "colId": "a4f2ed85-c972-4ee0-82d5-a5bc2b2533b3",
+            "containerId": "8c498bf3-eed7-4297-b485-a6e1849de991",
+            "name": "Sign In",
+            "url": "{{url}}/v1/auth/sign-in",
+            "method": "POST",
+            "sortNum": 5000,
+            "created": "2023-08-08T13:23:11.993Z",
+            "modified": "2023-08-08T13:26:25.196Z",
+            "headers": [],
+            "params": [],
+            "body": {
+                "type": "json",
+                "raw": "{\n    \"address\": \"{{address}}\",\n    \"signature\": \"{{signature}}\"\n}",
+                "form": []
+            },
+            "tests": [
+                {
+                    "type": "set-env-var",
+                    "custom": "json.accessToken",
+                    "action": "setto",
+                    "value": "{{token}}"
+                }
+            ]
+        },
+        {
+            "_id": "af27d810-6090-4798-96fb-120ba0776754",
+            "colId": "a4f2ed85-c972-4ee0-82d5-a5bc2b2533b3",
+            "containerId": "9b7f65ea-e450-48df-97f2-af1ade4ef1e5",
+            "name": "Get User",
+            "url": "{{url}}/v1/user",
+            "method": "GET",
+            "sortNum": 20000,
+            "created": "2023-08-08T13:30:46.945Z",
+            "modified": "2023-08-08T13:30:55.650Z",
+            "headers": [],
+            "params": [],
+            "tests": []
+        },
+        {
+            "_id": "426b7207-6de8-4bca-ba1a-6d4c64969cb2",
+            "colId": "a4f2ed85-c972-4ee0-82d5-a5bc2b2533b3",
+            "containerId": "8c498bf3-eed7-4297-b485-a6e1849de991",
+            "name": "Get Sign Message",
+            "url": "{{url}}/v1/auth/sign-message?address=address",
+            "method": "GET",
+            "sortNum": 20000,
+            "created": "2023-08-08T13:53:27.765Z",
+            "modified": "2023-08-08T13:56:16.510Z",
+            "headers": [],
+            "params": [
+                {
+                    "name": "address",
+                    "value": "address",
+                    "isPath": false
+                }
+            ],
+            "tests": []
+        }
+    ],
+    "settings": {
+        "auth": {
+            "type": "bearer",
+            "bearer": "{{token}}"
+        }
+    }
+}

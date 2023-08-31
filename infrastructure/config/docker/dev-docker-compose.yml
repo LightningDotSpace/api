@@ -1,0 +1,99 @@
+version: '3.7'
+name: 'bitcoin-lightning'
+
+services:
+  bitcoind:
+    image: lightninglabs/bitcoin-core
+    restart: always
+    volumes:
+      - ./volumes/bitcoin:/home/bitcoin/.bitcoin
+      - ./volumes/bitcoin/bitcoin.conf:/home/bitcoin/.bitcoin/bitcoin.conf
+      - ./volumes/bitcoin/wallets:/home/bitcoin/.bitcoin/testnet3/wallets
+    ports:
+      - '18332:18332'
+    healthcheck:
+      test: curl --fail http://localhost:18332/rest/chaininfo.json || exit 1
+      start_period: 120s
+      interval: 30s
+      timeout: 60s
+      retries: 10
+    command: >
+      bitcoind -conf=/home/bitcoin/.bitcoin/bitcoin.conf
+
+  lnd:
+    image: lightninglabs/lnd:v0.16.4-beta
+    restart: always
+    volumes:
+      - ./volumes/lightning:/root/.lnd
+      - ./volumes/lightning/lnd.conf:/root/.lnd/lnd.conf
+    ports:
+      - '8080:8080'
+    healthcheck:
+      test: 'curl --fail --insecure --header "Grpc-Metadata-macaroon: $MACAROON" https://localhost:8080/v1/getinfo || exit 1'
+      start_period: 120s
+      interval: 30s
+      timeout: 60s
+      retries: 10
+    depends_on:
+      bitcoind:
+        condition: service_healthy
+    command: >
+      lnd --configfile=/root/.lnd/lnd.conf --bitcoin.testnet
+
+  tapd:
+    image: polarlightning/tapd:0.2.3-alpha
+    restart: always
+    volumes:
+      - ./volumes/lightning:/home/tap/.lnd
+      - ./volumes/taproot:/home/tap/.tapd
+      - ./volumes/taproot/tapd.conf:/home/tap/tapd.conf
+    depends_on:
+      lnd:
+        condition: service_healthy
+    command: >
+      tapd --configfile=/home/tap/tapd.conf
+
+  lnbits:
+    image: lnbitsdocker/lnbits-legend
+    restart: always
+    volumes:
+      - ./volumes/lightning:/app/.lnd
+      - ./volumes/lnbits/data:/app/data
+      - ./volumes/lnbits/.env:/app/.env
+    ports:
+      - '5000:5000'
+    healthcheck:
+      test: curl --fail http://localhost:5000/api/v1/health || exit 1
+      start_period: 60s
+      interval: 60s
+      timeout: 30s
+      retries: 10
+    depends_on:
+      lnd:
+        condition: service_healthy
+
+  thunderhub:
+    image: apotdevin/thunderhub:v0.13.20
+    restart: always
+    volumes:
+      - ./volumes/lightning:/app/.lnd
+      - ./volumes/thunderhub/.env:/app/.env
+      - ./volumes/thunderhub/accounts.yml:/app/accounts.yml
+    ports:
+      - '4000:4000'
+    depends_on:
+      lnd:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.25.1-perl
+    restart: always
+    volumes:
+      - ./volumes/lightning:/app/.lnd
+      - ./volumes/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - '443:443'
+      - '444:444'
+    depends_on:
+      - lnbits
+      - thunderhub

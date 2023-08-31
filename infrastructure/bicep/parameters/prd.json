@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "westeurope"
+    },
+    "env": {
+      "value": "prd"
+    },
+    "dbAllowAllIps": {
+      "value": false
+    },
+    "dbAdminLogin": {
+      "value": "xxx"
+    },
+    "dbAdminPassword": {
+      "value": "xxx"
+    },
+    "dbTier": {
+      "value": "Standard"
+    },
+    "dbCapacity": {
+      "value": 10
+    },
+    "allowedIpRange": {
+      "value": "xxx"
+    },
+    "btcVmUser": {
+      "value": "xxx"
+    },
+    "btcVmPassword": {
+      "value": "xxx"
+    },
+    "lightningApiCertificate": {
+      "value": "xxx"
+    },
+    "lightningLnbitsAdminUser": {
+      "value": "xxx"
+    },
+    "lightningLnbitsAdminKey": {
+      "value": "xxx"
+    },
+    "lightningLndAdminMacaroon": {
+      "value": "xxx"
+    }
+  }
+}
