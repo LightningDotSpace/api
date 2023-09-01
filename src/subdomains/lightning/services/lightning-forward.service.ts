@@ -41,37 +41,7 @@ export class LightningForwardService {
     const lighningWallet = wallet.lightningWallets.find((w) => w.asset === asset);
     if (!lighningWallet) throw new NotFoundException('Lightning Wallet not found');
 
-    const payRequest = await this.lnurlpForward(lighningWallet.lnurlpId);
-
-    payRequest.metadata = this.adaptMetadata(payRequest.metadata, address);
-
-    return payRequest;
-  }
-
-  private adaptMetadata(metadata: string, address: string): string {
-    try {
-      const metadataArray: string[][] = JSON.parse(metadata);
-
-      // text/plain
-      const metadataTextPlain = metadataArray.find((m) => m[0] === 'text/plain');
-
-      if (metadataTextPlain) {
-        metadataTextPlain[1] = `${metadataTextPlain[1]} to lightning.space user: ${address}`;
-      }
-
-      // text/identifier
-      const metadataTextIdentifier = metadataArray.find((m) => m[0] === 'text/identifier');
-
-      if (!metadataTextIdentifier) {
-        metadataArray.push(['text/identifier', LightningHelper.getLightningAddress(address)]);
-      }
-
-      metadata = JSON.stringify(metadataArray);
-    } catch {
-      // in case of any error, do nothing ...
-    }
-
-    return metadata;
+    return this.lnurlpForward(lighningWallet.lnurlpId);
   }
 
   // --- LNURLp --- //
