@@ -8,11 +8,11 @@ services:
     volumes:
       - ./volumes/bitcoin:/home/bitcoin/.bitcoin
       - ./volumes/bitcoin/bitcoin.conf:/home/bitcoin/.bitcoin/bitcoin.conf
-      - ./volumes/bitcoin/wallets:/home/bitcoin/.bitcoin/testnet3/wallets
+      - ./volumes/bitcoin/wallets:/home/bitcoin/.bitcoin/wallets
     ports:
-      - '18332:18332'
+      - '8332:8332'
     healthcheck:
-      test: curl --fail http://localhost:18332/rest/chaininfo.json || exit 1
+      test: curl --fail http://localhost:8332/rest/chaininfo.json || exit 1
       start_period: 120s
       interval: 30s
       timeout: 60s
@@ -38,20 +38,7 @@ services:
       bitcoind:
         condition: service_healthy
     command: >
-      lnd --configfile=/root/.lnd/lnd.conf --bitcoin.testnet
-
-  tapd:
-    image: polarlightning/tapd:0.2.3-alpha
-    restart: always
-    volumes:
-      - ./volumes/lightning:/home/tap/.lnd
-      - ./volumes/taproot:/home/tap/.tapd
-      - ./volumes/taproot/tapd.conf:/home/tap/tapd.conf
-    depends_on:
-      lnd:
-        condition: service_healthy
-    command: >
-      tapd --configfile=/home/tap/tapd.conf
+      lnd --configfile=/root/.lnd/lnd.conf --bitcoin.mainnet
 
   lnbits:
     image: lnbitsdocker/lnbits-legend
