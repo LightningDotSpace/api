@@ -19,6 +19,9 @@ export class Wallet extends IEntity {
   @Column({ unique: true })
   lnbitsAddress: string;
 
+  @Column({ unique: true })
+  addressOwnershipProof: string;
+
   @ManyToOne(() => WalletProvider, { nullable: false, eager: true })
   walletProvider: WalletProvider;
 

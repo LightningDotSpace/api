@@ -5,3 +5,7 @@ export interface LndInfoDto {
   block_height: number;
   synced_to_chain: boolean;
 }
+
+export interface LndSignatureDto {
+  signature: string;
+}

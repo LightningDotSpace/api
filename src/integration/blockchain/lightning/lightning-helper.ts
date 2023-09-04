@@ -1,5 +1,5 @@
 import { decode as lnurlDecode, encode as lnurlEncode } from 'lnurl';
-import { Config } from 'src/config/config';
+import { Config, Environment } from 'src/config/config';
 import { Util } from 'src/shared/utils/util';
 
 export class LightningHelper {
@@ -9,6 +9,12 @@ export class LightningHelper {
   // --- LNDHUB --- //
   static getLightningAddress(lnbitsAddress: string): string {
     return `${lnbitsAddress}@${Config.baseUrl}`;
+  }
+
+  static getLightningAddressAsLnurl(lnbitsAddress: string): string {
+    const protocol = Config.environment === Environment.LOC ? 'http' : 'https';
+    const wellKnownUrl = `${protocol}://${Config.baseUrl}/.well-known/lnurlp/${lnbitsAddress}`;
+    return this.encodeLnurl(wellKnownUrl);
   }
 
   static getLndhubUrl(type: string, key: string): string {
