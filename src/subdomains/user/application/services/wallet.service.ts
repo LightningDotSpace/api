@@ -1,9 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { LnBitsUserDto } from 'src/integration/blockchain/lightning/dto/lnbits.dto';
+import {
+  LnBitsLnurlpLinkDto,
+  LnBitsUserDto,
+  LnBitsUsermanagerWalletDto,
+} from 'src/integration/blockchain/lightning/dto/lnbits.dto';
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
+import { Asset } from '../../domain/entities/asset.entity';
 import { LightningWallet } from '../../domain/entities/lightning-wallet.entity';
 import { Wallet } from '../../domain/entities/wallet.entity';
 import { SignUpDto } from '../dto/sign-up.dto';
+import { AssetRepository } from '../repositories/asset.repository';
 import { WalletRepository } from '../repositories/wallet.repository';
 import { UserService } from './user.service';
 import { WalletProviderService } from './wallet-provider.service';
@@ -11,14 +17,15 @@ import { WalletProviderService } from './wallet-provider.service';
 @Injectable()
 export class WalletService {
   constructor(
-    private readonly repo: WalletRepository,
+    private readonly walletRepo: WalletRepository,
+    private readonly assetRepo: AssetRepository,
     private readonly userService: UserService,
     private readonly lightningService: LightningService,
     private readonly walletProviderService: WalletProviderService,
   ) {}
 
   async get(id: number): Promise<Wallet | null> {
-    return this.repo.findOneBy({ id });
+    return this.walletRepo.findOneBy({ id });
   }
 
   async getOrThrow(id: number): Promise<Wallet> {
@@ -29,17 +36,24 @@ export class WalletService {
   }
 
   async getByAddress(address: string): Promise<Wallet | null> {
-    return this.repo.findOneBy({ address });
+    return this.walletRepo.findOneBy({ address });
   }
 
   async getByLnbitsAddress(lnbitsAddress: string): Promise<Wallet | null> {
-    return this.repo.findOneBy({ lnbitsAddress });
+    return this.walletRepo.findOneBy({ lnbitsAddress });
+  }
+
+  async getAssetByName(name: string): Promise<Asset> {
+    const asset = await this.assetRepo.findOneBy({ name });
+    if (!asset) throw new NotFoundException('Asset not found');
+
+    return asset;
   }
 
   async create(signUp: SignUpDto): Promise<Wallet> {
     const lnbitsUser = await this.lightningService.createUser(signUp.address);
 
-    const wallet = this.repo.create({
+    const wallet = this.walletRepo.create({
       address: signUp.address,
       signature: signUp.signature,
       lnbitsUserId: lnbitsUser.id,
@@ -47,23 +61,28 @@ export class WalletService {
       addressOwnershipProof: lnbitsUser.addressSignature,
       walletProvider: await this.walletProviderService.getByNameOrThrow(signUp.wallet),
       user: await this.userService.create(),
-      lightningWallets: this.createLightningWallets(lnbitsUser),
+      lightningWallets: await this.createLightningWallets(lnbitsUser),
     });
 
-    return this.repo.save(wallet);
+    return this.walletRepo.save(wallet);
   }
 
-  private createLightningWallets(lnbitsUser: LnBitsUserDto): Partial<LightningWallet>[] {
-    return lnbitsUser.wallets.map((w) => {
-      const wallet: Partial<LightningWallet> = {
-        lnbitsWalletId: w.wallet.id,
-        asset: w.wallet.name,
-        adminKey: w.wallet.adminkey,
-        invoiceKey: w.wallet.inkey,
-        lnurlpId: w.lnurlp.id,
-      };
+  private async createLightningWallets(lnbitsUser: LnBitsUserDto): Promise<Partial<LightningWallet>[]> {
+    return Promise.all(lnbitsUser.wallets.map((w) => this.createLightningWallet(w)));
+  }
 
-      return Object.assign(new LightningWallet(), wallet);
-    });
+  private async createLightningWallet(w: {
+    wallet: LnBitsUsermanagerWalletDto;
+    lnurlp: LnBitsLnurlpLinkDto;
+  }): Promise<Partial<LightningWallet>> {
+    const wallet: Partial<LightningWallet> = {
+      lnbitsWalletId: w.wallet.id,
+      asset: await this.getAssetByName(w.wallet.name),
+      adminKey: w.wallet.adminkey,
+      invoiceKey: w.wallet.inkey,
+      lnurlpId: w.lnurlp.id,
+    };
+
+    return Object.assign(new LightningWallet(), wallet);
   }
 }
