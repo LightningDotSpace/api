@@ -3,6 +3,7 @@ import { Config } from 'src/config/config';
 import { HttpService } from 'src/shared/services/http.service';
 import { LnBitsUserDto, LnBitsUsermanagerWalletDto, LnBitsWalletDto } from '../dto/lnbits.dto';
 import { LightningClient, UserFilterData } from '../lightning-client';
+import { LightningHelper } from '../lightning-helper';
 
 @Injectable()
 export class LightningService {
@@ -26,12 +27,19 @@ export class LightningService {
     const user = await this.client.createUser(address, walletname);
     if (!user.wallets) throw new NotFoundException('Wallet not found');
 
+    const lnbitsAddress = LightningHelper.createLnbitsAddress(address);
+
+    const signMessage = await this.getSignMessage(LightningHelper.getLightningAddressAsLnurl(lnbitsAddress));
+    const lnbitsAddressSignature = await this.client.signMessage(signMessage);
+
     const wallet = user.wallets[0];
     const lnurlp = await this.client.createLnurlpLink(wallet.adminkey, lnurlpDescription, 1, 100000000);
 
     const lnbitsUser: LnBitsUserDto = {
       id: user.id,
       name: user.name,
+      address: lnbitsAddress,
+      addressSignature: lnbitsAddressSignature,
       wallets: [
         {
           wallet: wallet,
@@ -53,6 +61,14 @@ export class LightningService {
     }
 
     return lnbitsUser;
+  }
+
+  async getSignMessage(address: string): Promise<string> {
+    return this.http
+      .get<{ message: string }>(`${Config.dfxApiUrl}/auth/signMessage`, {
+        params: { address: address },
+      })
+      .then((m) => m.message);
   }
 
   async removeUser(userFilter: UserFilterData): Promise<boolean> {

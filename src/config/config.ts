@@ -20,6 +20,8 @@ export class Configuration {
   environment: Environment = process.env.ENVIRONMENT as Environment;
   version = 'v1';
 
+  dfxApiUrl = 'https://api.dfx.swiss/v1';
+
   database: TypeOrmModuleOptions = {
     type: 'mssql',
     host: process.env.SQL_HOST,

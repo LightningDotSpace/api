@@ -39,6 +39,16 @@ export class LightningClient {
     return this.http.get<LndInfoDto>(`${Config.blockchain.lightning.lnd.apiUrl}/getinfo`, this.httpLndConfig());
   }
 
+  async signMessage(message: string): Promise<string> {
+    return this.http
+      .post<{ signature: string }>(
+        `${Config.blockchain.lightning.lnd.apiUrl}/signmessage`,
+        { msg: Buffer.from(message, 'ascii').toString('base64') },
+        this.httpLndConfig(),
+      )
+      .then((s) => s.signature);
+  }
+
   // --- LNbits --- //
   async getLnBitsWallet(adminKey: string): Promise<LnBitsWalletDto> {
     return this.http
