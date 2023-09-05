@@ -26,7 +26,7 @@ export class LnInfoDto {
   @ApiProperty({
     description: 'Lightning address as LNURL',
   })
-  address_lnurl: string;
+  addressLnurl: string;
 
   @ApiProperty({
     description: 'Lightning address ownership proof',

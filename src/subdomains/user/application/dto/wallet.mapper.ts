@@ -8,7 +8,7 @@ export class WalletMapper {
       address: wallet.address,
       lightning: {
         address: LightningHelper.getLightningAddress(wallet.lnbitsAddress),
-        address_lnurl: LightningHelper.getLightningAddressAsLnurl(wallet.lnbitsAddress),
+        addressLnurl: LightningHelper.getLightningAddressAsLnurl(wallet.lnbitsAddress),
         addressOwnershipProof: wallet.addressOwnershipProof,
         wallets: wallet.lightningWallets.map((lw) => ({
           asset: lw.asset,

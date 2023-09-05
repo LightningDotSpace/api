@@ -29,7 +29,7 @@ export class LightningService {
 
     const lnbitsAddress = LightningHelper.createLnbitsAddress(address);
 
-    const signMessage = await this.client.getSignMessage(LightningHelper.getLightningAddressAsLnurl(lnbitsAddress));
+    const signMessage = await this.getSignMessage(LightningHelper.getLightningAddressAsLnurl(lnbitsAddress));
     const lnbitsAddressSignature = await this.client.signMessage(signMessage);
 
     const wallet = user.wallets[0];
@@ -39,7 +39,7 @@ export class LightningService {
       id: user.id,
       name: user.name,
       address: lnbitsAddress,
-      addressSignature: lnbitsAddressSignature.signature,
+      addressSignature: lnbitsAddressSignature,
       wallets: [
         {
           wallet: wallet,
@@ -61,6 +61,14 @@ export class LightningService {
     }
 
     return lnbitsUser;
+  }
+
+  async getSignMessage(address: string): Promise<string> {
+    return this.http
+      .get<{ message: string }>(`${Config.dfxApiUrl}/auth/signMessage`, {
+        params: { address: address },
+      })
+      .then((m) => m.message);
   }
 
   async removeUser(userFilter: UserFilterData): Promise<boolean> {

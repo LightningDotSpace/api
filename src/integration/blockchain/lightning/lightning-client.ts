@@ -13,7 +13,7 @@ import {
   LnBitsWalletDto,
   LnbitsUsermanagerUserDto,
 } from './dto/lnbits.dto';
-import { LndInfoDto, LndSignatureDto } from './dto/lnd.dto';
+import { LndInfoDto } from './dto/lnd.dto';
 import { LightningHelper } from './lightning-helper';
 
 export interface UserFilterData {
@@ -34,29 +34,19 @@ export class LightningClient {
 
   constructor(private readonly http: HttpService) {}
 
-  // --- DFX API --- //
-  async getSignMessage(address: string): Promise<string> {
-    return this.http
-      .get<{ message: string }>(`${Config.dfxApiUrl}/auth/signMessage`, {
-        params: { address: address },
-      })
-      .then((m) => m.message)
-      .catch((e) => this.throwHttpException(e));
-  }
-
   // --- LND --- //
   async getLndInfo(): Promise<LndInfoDto> {
     return this.http.get<LndInfoDto>(`${Config.blockchain.lightning.lnd.apiUrl}/getinfo`, this.httpLndConfig());
   }
 
-  async signMessage(message: string): Promise<LndSignatureDto> {
+  async signMessage(message: string): Promise<string> {
     return this.http
-      .post<LndSignatureDto>(
+      .post<{ signature: string }>(
         `${Config.blockchain.lightning.lnd.apiUrl}/signmessage`,
         { msg: Buffer.from(message, 'ascii').toString('base64') },
         this.httpLndConfig(),
       )
-      .catch((e) => this.throwHttpException(e));
+      .then((s) => s.signature);
   }
 
   // --- LNbits --- //
