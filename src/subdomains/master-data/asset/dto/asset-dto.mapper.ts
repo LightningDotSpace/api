@@ -1,13 +1,13 @@
-import { LightningWallet } from 'src/subdomains/user/domain/entities/lightning-wallet.entity';
+import { Asset } from '../entities/asset.entity';
 import { AssetDto } from './asset.dto';
 
 export class AssetDtoMapper {
-  static entityToDto(lightningWallet: LightningWallet): AssetDto {
+  static entityToDto(asset: Asset): AssetDto {
     const dto: AssetDto = {
-      name: lightningWallet.asset.name,
-      displayName: lightningWallet.asset.displayName,
-      description: lightningWallet.asset.description,
-      status: lightningWallet.asset.status,
+      name: asset.name,
+      displayName: asset.displayName,
+      description: asset.description,
+      status: asset.status,
     };
 
     return Object.assign(new AssetDto(), dto);

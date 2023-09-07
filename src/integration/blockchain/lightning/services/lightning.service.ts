@@ -22,18 +22,20 @@ export class LightningService {
     if (users.length) throw new ConflictException(`User ${address} already exists`);
 
     const walletname = 'BTC';
-    const lnurlpDescription = 'BTC Payment';
 
     const user = await this.client.createUser(address, walletname);
     if (!user.wallets) throw new NotFoundException('Wallet not found');
 
     const lnbitsAddress = LightningHelper.createLnbitsAddress(address);
 
+    const lightningAddress = LightningHelper.getLightningAddress(lnbitsAddress);
+    const btcLnurlpDescription = `BTC payment to ${lightningAddress}`;
+
     const signMessage = await this.getSignMessage(LightningHelper.getLightningAddressAsLnurl(lnbitsAddress));
     const lnbitsAddressSignature = await this.client.signMessage(signMessage);
 
     const wallet = user.wallets[0];
-    const lnurlp = await this.client.createLnurlpLink(wallet.adminkey, lnurlpDescription, 1, 100000000);
+    const lnurlp = await this.client.createLnurlpLink(wallet.adminkey, btcLnurlpDescription, 1, 100000000);
 
     const lnbitsUser: LnBitsUserDto = {
       id: user.id,
@@ -52,7 +54,13 @@ export class LightningService {
 
     for (const asset of assets) {
       const assetWallet = await this.client.createUserWallet(user.id, asset);
-      const assetPaylink = await this.client.createLnurlpLink(assetWallet.adminkey, asset + ' Payment', 1, 100000000);
+      const assetLnurlpDescription = `${asset} payment to ${lightningAddress}`;
+      const assetPaylink = await this.client.createLnurlpLink(
+        assetWallet.adminkey,
+        assetLnurlpDescription,
+        1,
+        100000000,
+      );
 
       lnbitsUser.wallets.push({
         wallet: assetWallet,

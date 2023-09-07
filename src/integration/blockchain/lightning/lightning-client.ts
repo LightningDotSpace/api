@@ -176,7 +176,7 @@ export class LightningClient {
       description: description,
       min: min,
       max: max,
-      comment_chars: 0,
+      comment_chars: 799,
       fiat_base_multiplier: 100,
     };
 

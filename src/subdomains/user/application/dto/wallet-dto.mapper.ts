@@ -13,7 +13,7 @@ export class WalletDtoMapper {
         addressLnurl: LightningHelper.getLightningAddressAsLnurl(wallet.lnbitsAddress),
         addressOwnershipProof: wallet.addressOwnershipProof,
         wallets: wallet.lightningWallets.map((lw) => ({
-          asset: AssetDtoMapper.entityToDto(lw),
+          asset: AssetDtoMapper.entityToDto(lw.asset),
           ...(lw.asset.status === AssetStatus.ACTIVE
             ? {
                 lndhubAdminUrl: LightningHelper.getLndhubUrl('admin', lw.adminKey),
