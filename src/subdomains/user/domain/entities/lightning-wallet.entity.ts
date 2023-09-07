@@ -1,14 +1,12 @@
 import { IEntity } from 'src/shared/db/entity';
 import { Column, Entity, ManyToOne } from 'typeorm';
+import { Asset } from '../../../master-data/asset/entities/asset.entity';
 import { Wallet } from './wallet.entity';
 
 @Entity()
 export class LightningWallet extends IEntity {
   @Column({ unique: true })
   lnbitsWalletId: string;
-
-  @Column()
-  asset: string;
 
   @Column()
   adminKey: string;
@@ -18,6 +16,9 @@ export class LightningWallet extends IEntity {
 
   @Column()
   lnurlpId: string;
+
+  @ManyToOne(() => Asset, { nullable: false, eager: true })
+  asset: Asset;
 
   @ManyToOne(() => Wallet, { nullable: false })
   wallet: Wallet;

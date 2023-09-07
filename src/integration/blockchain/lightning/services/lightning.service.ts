@@ -3,6 +3,7 @@ import { Config } from 'src/config/config';
 import { HttpService } from 'src/shared/services/http.service';
 import { LnBitsUserDto, LnBitsUsermanagerWalletDto, LnBitsWalletDto } from '../dto/lnbits.dto';
 import { LightningClient, UserFilterData } from '../lightning-client';
+import { LightningHelper } from '../lightning-helper';
 
 @Injectable()
 export class LightningService {
@@ -21,17 +22,26 @@ export class LightningService {
     if (users.length) throw new ConflictException(`User ${address} already exists`);
 
     const walletname = 'BTC';
-    const lnurlpDescription = 'BTC Payment';
 
     const user = await this.client.createUser(address, walletname);
     if (!user.wallets) throw new NotFoundException('Wallet not found');
 
+    const lnbitsAddress = LightningHelper.createLnbitsAddress(address);
+
+    const lightningAddress = LightningHelper.getLightningAddress(lnbitsAddress);
+    const btcLnurlpDescription = `BTC payment to ${lightningAddress}`;
+
+    const signMessage = await this.getSignMessage(LightningHelper.getLightningAddressAsLnurl(lnbitsAddress));
+    const lnbitsAddressSignature = await this.client.signMessage(signMessage);
+
     const wallet = user.wallets[0];
-    const lnurlp = await this.client.createLnurlpLink(wallet.adminkey, lnurlpDescription, 1, 100000000);
+    const lnurlp = await this.client.createLnurlpLink(wallet.adminkey, btcLnurlpDescription, 1, 100000000);
 
     const lnbitsUser: LnBitsUserDto = {
       id: user.id,
       name: user.name,
+      address: lnbitsAddress,
+      addressSignature: lnbitsAddressSignature,
       wallets: [
         {
           wallet: wallet,
@@ -44,7 +54,13 @@ export class LightningService {
 
     for (const asset of assets) {
       const assetWallet = await this.client.createUserWallet(user.id, asset);
-      const assetPaylink = await this.client.createLnurlpLink(assetWallet.adminkey, asset + ' Payment', 1, 100000000);
+      const assetLnurlpDescription = `${asset} payment to ${lightningAddress}`;
+      const assetPaylink = await this.client.createLnurlpLink(
+        assetWallet.adminkey,
+        assetLnurlpDescription,
+        1,
+        100000000,
+      );
 
       lnbitsUser.wallets.push({
         wallet: assetWallet,
@@ -53,6 +69,14 @@ export class LightningService {
     }
 
     return lnbitsUser;
+  }
+
+  async getSignMessage(address: string): Promise<string> {
+    return this.http
+      .get<{ message: string }>(`${Config.dfxApiUrl}/auth/signMessage`, {
+        params: { address: address },
+      })
+      .then((m) => m.message);
   }
 
   async removeUser(userFilter: UserFilterData): Promise<boolean> {
