@@ -5,11 +5,10 @@ import {
   LnBitsUsermanagerWalletDto,
 } from 'src/integration/blockchain/lightning/dto/lnbits.dto';
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
-import { Asset } from '../../domain/entities/asset.entity';
+import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
 import { LightningWallet } from '../../domain/entities/lightning-wallet.entity';
 import { Wallet } from '../../domain/entities/wallet.entity';
 import { SignUpDto } from '../dto/sign-up.dto';
-import { AssetRepository } from '../repositories/asset.repository';
 import { WalletRepository } from '../repositories/wallet.repository';
 import { UserService } from './user.service';
 import { WalletProviderService } from './wallet-provider.service';
@@ -18,8 +17,8 @@ import { WalletProviderService } from './wallet-provider.service';
 export class WalletService {
   constructor(
     private readonly walletRepo: WalletRepository,
-    private readonly assetRepo: AssetRepository,
     private readonly userService: UserService,
+    private readonly assetService: AssetService,
     private readonly lightningService: LightningService,
     private readonly walletProviderService: WalletProviderService,
   ) {}
@@ -41,13 +40,6 @@ export class WalletService {
 
   async getByLnbitsAddress(lnbitsAddress: string): Promise<Wallet | null> {
     return this.walletRepo.findOneBy({ lnbitsAddress });
-  }
-
-  async getAssetByName(name: string): Promise<Asset> {
-    const asset = await this.assetRepo.findOneBy({ name });
-    if (!asset) throw new NotFoundException('Asset not found');
-
-    return asset;
   }
 
   async create(signUp: SignUpDto): Promise<Wallet> {
@@ -77,7 +69,7 @@ export class WalletService {
   }): Promise<Partial<LightningWallet>> {
     const wallet: Partial<LightningWallet> = {
       lnbitsWalletId: w.wallet.id,
-      asset: await this.getAssetByName(w.wallet.name),
+      asset: await this.assetService.getAssetByName(w.wallet.name),
       adminKey: w.wallet.adminkey,
       invoiceKey: w.wallet.inkey,
       lnurlpId: w.lnurlp.id,

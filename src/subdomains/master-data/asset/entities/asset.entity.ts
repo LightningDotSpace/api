@@ -8,15 +8,15 @@ export enum AssetStatus {
 
 @Entity()
 export class Asset extends IEntity {
-  @Column({ length: 256 })
+  @Column({ unique: true })
   name: string;
 
-  @Column({ length: 256 })
+  @Column()
   displayName: string;
 
-  @Column({ length: 256, nullable: true })
-  description: string;
+  @Column({ nullable: true })
+  description?: string;
 
-  @Column({ length: 256 })
+  @Column()
   status: AssetStatus;
 }

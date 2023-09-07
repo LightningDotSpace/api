@@ -1,6 +1,6 @@
 import { IEntity } from 'src/shared/db/entity';
 import { Column, Entity, ManyToOne } from 'typeorm';
-import { Asset } from './asset.entity';
+import { Asset } from '../../../master-data/asset/entities/asset.entity';
 import { Wallet } from './wallet.entity';
 
 @Entity()

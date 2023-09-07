@@ -1,5 +1,6 @@
 import { LightningHelper } from 'src/integration/blockchain/lightning/lightning-helper';
-import { AssetStatus } from '../../domain/entities/asset.entity';
+import { AssetDtoMapper } from 'src/subdomains/master-data/asset/dto/asset-dto.mapper';
+import { AssetStatus } from '../../../master-data/asset/entities/asset.entity';
 import { Wallet } from '../../domain/entities/wallet.entity';
 import { WalletDto } from './wallet.dto';
 
@@ -12,16 +13,13 @@ export class WalletDtoMapper {
         addressLnurl: LightningHelper.getLightningAddressAsLnurl(wallet.lnbitsAddress),
         addressOwnershipProof: wallet.addressOwnershipProof,
         wallets: wallet.lightningWallets.map((lw) => ({
-          asset: {
-            name: lw.asset.name,
-            displayName: lw.asset.displayName,
-            description: lw.asset.description,
-            status: lw.asset.status,
-          },
-          lndhubAdminUrl:
-            lw.asset.status === AssetStatus.ACTIVE ? LightningHelper.getLndhubUrl('admin', lw.adminKey) : '',
-          lndhubInvoiceUrl:
-            lw.asset.status === AssetStatus.ACTIVE ? LightningHelper.getLndhubUrl('invoice', lw.invoiceKey) : '',
+          asset: AssetDtoMapper.entityToDto(lw),
+          ...(lw.asset.status === AssetStatus.ACTIVE
+            ? {
+                lndhubAdminUrl: LightningHelper.getLndhubUrl('admin', lw.adminKey),
+                lndhubInvoiceUrl: LightningHelper.getLndhubUrl('invoice', lw.invoiceKey),
+              }
+            : undefined),
         })),
       },
     };
