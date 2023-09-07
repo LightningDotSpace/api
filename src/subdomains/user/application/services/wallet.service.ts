@@ -1,6 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { LnBitsUserDto } from 'src/integration/blockchain/lightning/dto/lnbits.dto';
+import {
+  LnBitsLnurlpLinkDto,
+  LnBitsUserDto,
+  LnBitsUsermanagerWalletDto,
+} from 'src/integration/blockchain/lightning/dto/lnbits.dto';
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
+import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
 import { LightningWallet } from '../../domain/entities/lightning-wallet.entity';
 import { Wallet } from '../../domain/entities/wallet.entity';
 import { SignUpDto } from '../dto/sign-up.dto';
@@ -11,14 +16,15 @@ import { WalletProviderService } from './wallet-provider.service';
 @Injectable()
 export class WalletService {
   constructor(
-    private readonly repo: WalletRepository,
+    private readonly walletRepo: WalletRepository,
     private readonly userService: UserService,
+    private readonly assetService: AssetService,
     private readonly lightningService: LightningService,
     private readonly walletProviderService: WalletProviderService,
   ) {}
 
   async get(id: number): Promise<Wallet | null> {
-    return this.repo.findOneBy({ id });
+    return this.walletRepo.findOneBy({ id });
   }
 
   async getOrThrow(id: number): Promise<Wallet> {
@@ -29,17 +35,17 @@ export class WalletService {
   }
 
   async getByAddress(address: string): Promise<Wallet | null> {
-    return this.repo.findOneBy({ address });
+    return this.walletRepo.findOneBy({ address });
   }
 
   async getByLnbitsAddress(lnbitsAddress: string): Promise<Wallet | null> {
-    return this.repo.findOneBy({ lnbitsAddress });
+    return this.walletRepo.findOneBy({ lnbitsAddress });
   }
 
   async create(signUp: SignUpDto): Promise<Wallet> {
     const lnbitsUser = await this.lightningService.createUser(signUp.address);
 
-    const wallet = this.repo.create({
+    const wallet = this.walletRepo.create({
       address: signUp.address,
       signature: signUp.signature,
       lnbitsUserId: lnbitsUser.id,
@@ -47,23 +53,28 @@ export class WalletService {
       addressOwnershipProof: lnbitsUser.addressSignature,
       walletProvider: await this.walletProviderService.getByNameOrThrow(signUp.wallet),
       user: await this.userService.create(),
-      lightningWallets: this.createLightningWallets(lnbitsUser),
+      lightningWallets: await this.createLightningWallets(lnbitsUser),
     });
 
-    return this.repo.save(wallet);
+    return this.walletRepo.save(wallet);
   }
 
-  private createLightningWallets(lnbitsUser: LnBitsUserDto): Partial<LightningWallet>[] {
-    return lnbitsUser.wallets.map((w) => {
-      const wallet: Partial<LightningWallet> = {
-        lnbitsWalletId: w.wallet.id,
-        asset: w.wallet.name,
-        adminKey: w.wallet.adminkey,
-        invoiceKey: w.wallet.inkey,
-        lnurlpId: w.lnurlp.id,
-      };
+  private async createLightningWallets(lnbitsUser: LnBitsUserDto): Promise<Partial<LightningWallet>[]> {
+    return Promise.all(lnbitsUser.wallets.map((w) => this.createLightningWallet(w)));
+  }
 
-      return Object.assign(new LightningWallet(), wallet);
-    });
+  private async createLightningWallet(w: {
+    wallet: LnBitsUsermanagerWalletDto;
+    lnurlp: LnBitsLnurlpLinkDto;
+  }): Promise<Partial<LightningWallet>> {
+    const wallet: Partial<LightningWallet> = {
+      lnbitsWalletId: w.wallet.id,
+      asset: await this.assetService.getAssetByName(w.wallet.name),
+      adminKey: w.wallet.adminkey,
+      invoiceKey: w.wallet.inkey,
+      lnurlpId: w.lnurlp.id,
+    };
+
+    return Object.assign(new LightningWallet(), wallet);
   }
 }

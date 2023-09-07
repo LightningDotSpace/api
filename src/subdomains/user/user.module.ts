@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { IntegrationModule } from 'src/integration/integration.module';
 import { SharedModule } from 'src/shared/shared.module';
 import { AuthService } from 'src/subdomains/user/application/services/auth.service';
+import { AssetModule } from '../master-data/asset/asset.module';
 import { AuthController } from './api/controllers/auth.controller';
 import { UserController } from './api/controllers/user.controller';
 import { UserRepository } from './application/repositories/user.repository';
@@ -17,7 +18,12 @@ import { WalletProvider } from './domain/entities/wallet-provider.entity';
 import { Wallet } from './domain/entities/wallet.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, WalletProvider, Wallet, LightningWallet]), SharedModule, IntegrationModule],
+  imports: [
+    TypeOrmModule.forFeature([User, WalletProvider, Wallet, LightningWallet]),
+    SharedModule,
+    IntegrationModule,
+    AssetModule,
+  ],
   controllers: [UserController, AuthController],
   providers: [
     UserRepository,

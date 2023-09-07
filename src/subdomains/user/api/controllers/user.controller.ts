@@ -5,8 +5,8 @@ import { GetJwt } from 'src/shared/auth/get-jwt.decorator';
 import { JwtPayload } from 'src/shared/auth/jwt-payload.interface';
 import { RoleGuard } from 'src/shared/auth/role.guard';
 import { WalletRole } from 'src/shared/auth/wallet-role.enum';
+import { WalletDtoMapper } from '../../application/dto/wallet-dto.mapper';
 import { WalletDto } from '../../application/dto/wallet.dto';
-import { WalletMapper } from '../../application/dto/wallet.mapper';
 import { WalletService } from '../../application/services/wallet.service';
 
 @ApiTags('User')
@@ -19,6 +19,6 @@ export class UserController {
   @UseGuards(AuthGuard(), new RoleGuard(WalletRole.USER))
   @ApiOkResponse({ type: WalletDto })
   async getUser(@GetJwt() jwt: JwtPayload): Promise<WalletDto> {
-    return this.walletService.getOrThrow(jwt.walletId).then((w) => WalletMapper.toDto(w));
+    return this.walletService.getOrThrow(jwt.walletId).then((w) => WalletDtoMapper.entityToDto(w));
   }
 }
