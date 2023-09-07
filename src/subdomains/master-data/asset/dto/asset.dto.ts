@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AssetStatus } from '../entities/asset.entity';
 
 export class AssetDto {
@@ -12,7 +12,7 @@ export class AssetDto {
   })
   displayName: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Asset description',
   })
   description?: string;
