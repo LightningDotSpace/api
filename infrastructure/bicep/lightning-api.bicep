@@ -266,10 +266,6 @@ resource apiAppService 'Microsoft.Web/sites@2018-11-01' = if (env != 'loc') {
           value: 'true'
         }
         {
-          name: 'NODE_USER'
-          value: 'lds-api'
-        }
-        {
           name: 'LIGHTNING_API_CERTIFICATE'
           value: lightningApiCertificate
         }

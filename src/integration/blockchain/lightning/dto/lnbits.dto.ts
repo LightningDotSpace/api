@@ -54,6 +54,8 @@ export interface LnBitsLnurlpLinkRemoveDto {
 export interface LnBitsUserDto {
   id: string;
   name: string;
+  address: string;
+  addressSignature: string;
   wallets: [
     {
       wallet: LnBitsUsermanagerWalletDto;

@@ -1,0 +1,11 @@
+accounts:
+  - name: [NAME]
+    serverUrl: lnd:10009
+    macaroonPath: /app/.lnd/data/chain/bitcoin/mainnet/admin.macaroon
+    certificatePath: /app/.lnd/tls.cert
+    password: [PASSWORD]
+backupsEnabled: true
+healthCheckPingEnabled: true
+onchainPushEnabled: true
+channelPushEnabled: true
+privateChannelPushEnabled: true

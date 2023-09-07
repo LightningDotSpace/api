@@ -1,12 +1,13 @@
-import { Controller, Get, Redirect } from '@nestjs/common';
+import { Controller, Get, Res } from '@nestjs/common';
 import { ApiExcludeEndpoint } from '@nestjs/swagger';
+import { Response } from 'express';
+import { readFileSync } from 'fs';
 
 @Controller('')
 export class AppController {
   @Get()
-  @Redirect('swagger')
   @ApiExcludeEndpoint()
-  async home(): Promise<any> {
-    // nothing to do (redirect to Swagger UI)
+  async home(@Res() res: Response): Promise<any> {
+    res.send(readFileSync('src/assets/home.html').toString());
   }
 }

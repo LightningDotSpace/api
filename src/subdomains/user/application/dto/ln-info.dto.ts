@@ -24,6 +24,16 @@ export class LnInfoDto {
   address: string;
 
   @ApiProperty({
+    description: 'Lightning address as LNURL',
+  })
+  addressLnurl: string;
+
+  @ApiProperty({
+    description: 'Lightning address ownership proof',
+  })
+  addressOwnershipProof: string;
+
+  @ApiProperty({
     description: 'Lightning wallets',
     type: LnWalletDto,
     isArray: true,

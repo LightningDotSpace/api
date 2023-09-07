@@ -8,6 +8,8 @@ export class WalletMapper {
       address: wallet.address,
       lightning: {
         address: LightningHelper.getLightningAddress(wallet.lnbitsAddress),
+        addressLnurl: LightningHelper.getLightningAddressAsLnurl(wallet.lnbitsAddress),
+        addressOwnershipProof: wallet.addressOwnershipProof,
         wallets: wallet.lightningWallets.map((lw) => ({
           asset: lw.asset,
           lndhubAdminUrl: LightningHelper.getLndhubUrl('admin', lw.adminKey),
