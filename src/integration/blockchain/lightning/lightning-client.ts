@@ -6,9 +6,12 @@ import { HttpRequestConfig, HttpService } from 'src/shared/services/http.service
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import {
   LnBitsLnurlPayRequestDto,
+  LnBitsLnurlWithdrawRequestDto,
   LnBitsLnurlpInvoiceDto,
   LnBitsLnurlpLinkDto,
   LnBitsLnurlpLinkRemoveDto,
+  LnBitsLnurlwInvoiceDto,
+  LnBitsLnurlwLinkDto,
   LnBitsUsermanagerWalletDto,
   LnBitsWalletDto,
   LnbitsUsermanagerUserDto,
@@ -234,6 +237,29 @@ export class LightningClient {
         this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey, params),
       )
       .catch((e) => this.throwHttpException(e));
+  }
+
+  // --- LNURLw REWRITE --- //
+  async getLnurlwWithdrawRequest(linkId: string): Promise<LnBitsLnurlWithdrawRequestDto> {
+    const { unique_hash } = await this.getLnurlwLink(linkId);
+
+    const lnBitsUrl = `${Config.blockchain.lightning.lnbits.lnurlwApiUrl}/lnurl/${unique_hash}`;
+    return this.http.get(lnBitsUrl, this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey));
+  }
+
+  async sendLnurlwInvoice(linkId: string, params: any): Promise<LnBitsLnurlwInvoiceDto> {
+    const { unique_hash } = await this.getLnurlwLink(linkId);
+
+    const lnBitsCallbackUrl = `${Config.blockchain.lightning.lnbits.lnurlwApiUrl}/lnurl/cb/${unique_hash}`;
+    return this.http.get<LnBitsLnurlwInvoiceDto>(lnBitsCallbackUrl, this.httpLnBitsConfig(params));
+  }
+
+  // --- LNURLw LINKS --- //
+  async getLnurlwLink(linkId: string): Promise<LnBitsLnurlwLinkDto> {
+    return this.http.get<LnBitsLnurlwLinkDto>(
+      `${Config.blockchain.lightning.lnbits.lnurlwApiUrl}/links/${linkId}`,
+      this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey),
+    );
   }
 
   // --- HELPER METHODS --- //
