@@ -52,7 +52,7 @@ export class Configuration {
   bitcoinAddressFormat =
     this.environment === Environment.PRD
       ? '([13]|bc1)[a-zA-HJ-NP-Z0-9]{25,62}'
-      : '(tb(0([ac-hj-np-z02-9]{39}|[ac-hj-np-z02-9]{59})|1[ac-hj-np-z02-9]{8,87})|[mn2][a-km-zA-HJ-NP-Z1-9]{25,39})';
+      : '(([13]|bc1)[a-zA-HJ-NP-Z0-9]{25,62})|(tb(0([ac-hj-np-z02-9]{39}|[ac-hj-np-z02-9]{59})|1[ac-hj-np-z02-9]{8,87})|[mn2][a-km-zA-HJ-NP-Z1-9]{25,39})';
 
   formats = {
     address: new RegExp(`^(${this.bitcoinAddressFormat})$`),

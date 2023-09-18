@@ -45,18 +45,23 @@ export class WalletService {
   async create(signUp: SignUpDto): Promise<Wallet> {
     const lnbitsUser = await this.lightningService.createUser(signUp.address);
 
-    const wallet = this.walletRepo.create({
-      address: signUp.address,
-      signature: signUp.signature,
-      lnbitsUserId: lnbitsUser.id,
-      lnbitsAddress: lnbitsUser.address,
-      addressOwnershipProof: lnbitsUser.addressSignature,
-      walletProvider: await this.walletProviderService.getByNameOrThrow(signUp.wallet),
-      user: await this.userService.create(),
-      lightningWallets: await this.createLightningWallets(lnbitsUser),
-    });
+    try {
+      const wallet = this.walletRepo.create({
+        address: signUp.address,
+        signature: signUp.signature,
+        lnbitsUserId: lnbitsUser.id,
+        lnbitsAddress: lnbitsUser.address,
+        addressOwnershipProof: lnbitsUser.addressSignature,
+        walletProvider: await this.walletProviderService.getByNameOrThrow(signUp.wallet),
+        user: await this.userService.create(),
+        lightningWallets: await this.createLightningWallets(lnbitsUser),
+      });
 
-    return this.walletRepo.save(wallet);
+      return await this.walletRepo.save(wallet);
+    } catch (e) {
+      await this.lightningService.removeUser({ userId: lnbitsUser.id });
+      throw e;
+    }
   }
 
   private async createLightningWallets(lnbitsUser: LnBitsUserDto): Promise<Partial<LightningWallet>[]> {
