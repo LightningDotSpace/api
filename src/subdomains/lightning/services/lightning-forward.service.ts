@@ -3,7 +3,9 @@ import { Request } from 'express';
 import { WalletService } from 'src/subdomains/user/application/services/wallet.service';
 import {
   LnBitsLnurlPayRequestDto,
+  LnBitsLnurlWithdrawRequestDto,
   LnBitsLnurlpInvoiceDto,
+  LnBitsLnurlwInvoiceDto,
 } from '../../../integration/blockchain/lightning/dto/lnbits.dto';
 import { LightningClient } from '../../../integration/blockchain/lightning/lightning-client';
 import { LightningHelper } from '../../../integration/blockchain/lightning/lightning-helper';
@@ -55,6 +57,19 @@ export class LightningForwardService {
 
   async lnurlpCallbackForward(id: string, params: any): Promise<LnBitsLnurlpInvoiceDto> {
     return this.client.getLnurlpInvoice(id, params);
+  }
+
+  // --- LNURLw --- //
+  async lnurlwForward(id: string): Promise<LnBitsLnurlWithdrawRequestDto> {
+    const withdrawRequest = await this.client.getLnurlwWithdrawRequest(id);
+
+    withdrawRequest.callback = LightningHelper.createLnurlwCallbackUrl(id);
+
+    return withdrawRequest;
+  }
+
+  async lnurlwCallbackForward(id: string, params: any): Promise<LnBitsLnurlwInvoiceDto> {
+    return this.client.sendLnurlwInvoice(id, params);
   }
 
   // --- UTILITIES --- //
