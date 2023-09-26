@@ -4,6 +4,8 @@ import { Agent } from 'https';
 import { Config } from 'src/config/config';
 import { HttpRequestConfig, HttpService } from 'src/shared/services/http.service';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
+import { Util } from 'src/shared/utils/util';
+import { TransactionLightningState } from 'src/subdomains/lightning/entities/transaction-lightning.entity';
 import {
   LnBitsLnurlPayRequestDto,
   LnBitsLnurlWithdrawRequestDto,
@@ -12,11 +14,24 @@ import {
   LnBitsLnurlpLinkRemoveDto,
   LnBitsLnurlwInvoiceDto,
   LnBitsLnurlwLinkDto,
+  LnBitsTransactionDto,
   LnBitsUsermanagerWalletDto,
   LnBitsWalletDto,
   LnbitsUsermanagerUserDto,
 } from './dto/lnbits.dto';
-import { LndInfoDto } from './dto/lnd.dto';
+import {
+  LndChannelBalanceDto,
+  LndChannelDto,
+  LndInfoDto,
+  LndInvoiceResponseDto,
+  LndOnchainTransaction,
+  LndPaymentResponseDto,
+  LndRoutingDto,
+  LndRoutingResponseDto,
+  LndTransactionDto,
+  LndTransactionResponseDto,
+  LndWalletBalanceDto,
+} from './dto/lnd.dto';
 import { LightningHelper } from './lightning-helper';
 
 export interface UserFilterData {
@@ -50,6 +65,168 @@ export class LightningClient {
         this.httpLndConfig(),
       )
       .then((s) => s.signature);
+  }
+
+  async getLndConfirmedWalletBalance(): Promise<number> {
+    return this.getLndWalletBalance().then((b) => b.confirmed_balance);
+  }
+
+  private async getLndWalletBalance(): Promise<LndWalletBalanceDto> {
+    return this.http.get<LndWalletBalanceDto>(
+      `${Config.blockchain.lightning.lnd.apiUrl}/balance/blockchain`,
+      this.httpLndConfig(),
+    );
+  }
+
+  async getLndLocalChannelBalance(): Promise<number> {
+    return this.getLndChannelBalance().then((b) => b.local_balance.sat);
+  }
+
+  async getLndRemoteChannelBalance(): Promise<number> {
+    return this.getLndChannelBalance().then((b) => b.remote_balance.sat);
+  }
+
+  private async getLndChannelBalance(): Promise<LndChannelBalanceDto> {
+    return this.http.get<LndChannelBalanceDto>(
+      `${Config.blockchain.lightning.lnd.apiUrl}/balance/channels`,
+      this.httpLndConfig(),
+    );
+  }
+
+  async getLndLightningBalance(): Promise<number> {
+    const balances = (await this.getChannels())
+      .filter((c) => c.active)
+      .map((c) => Number(c.local_balance) - Number(c.commit_fee) - Number(c.local_chan_reserve_sat));
+
+    return Util.sum(balances);
+  }
+
+  private async getChannels(): Promise<LndChannelDto[]> {
+    return this.http
+      .get<{ channels: LndChannelDto[] }>(`${Config.blockchain.lightning.lnd.apiUrl}/channels`, this.httpLndConfig())
+      .then((r) => r.channels);
+  }
+
+  async getOnchainTransactions(startBlockHeight: number): Promise<LndOnchainTransaction[]> {
+    const params = {
+      start_height: startBlockHeight,
+    };
+
+    return this.http
+      .get<{ transactions: LndOnchainTransaction[] }>(
+        `${Config.blockchain.lightning.lnd.apiUrl}/transactions`,
+        this.httpLndConfig(params),
+      )
+      .then((t) => t.transactions);
+  }
+
+  async getInvoices(startCreationDate: Date, maxInvoices: number, offset: number): Promise<LndTransactionResponseDto> {
+    const params = {
+      creation_date_start: Math.floor(startCreationDate.getTime() / 1000).toString(),
+      num_max_invoices: maxInvoices.toString(),
+      index_offset: offset.toString(),
+      pending_only: false,
+      reversed: false,
+    };
+
+    return this.http
+      .get<LndInvoiceResponseDto>(`${Config.blockchain.lightning.lnd.apiUrl}/invoices`, this.httpLndConfig(params))
+      .then((r) => this.mapInvoiceResponse(r));
+  }
+
+  private mapInvoiceResponse(invoiceResponse: LndInvoiceResponseDto): LndTransactionResponseDto {
+    return {
+      transactions: invoiceResponse.invoices.map((i) => ({
+        state: i.state,
+        transaction: Buffer.from(i.r_hash, 'base64').toString('hex'),
+        secret: Buffer.from(i.r_preimage, 'base64').toString('hex'),
+        amount: Number(i.value),
+        fee: 0,
+        creationTimestamp: new Date(Number(i.creation_date) * 1000),
+        expiresTimestamp: new Date((Number(i.creation_date) + Number(i.expiry)) * 1000),
+        confirmedTimestamp: '0' === i.settle_date ? undefined : new Date(Number(i.settle_date) * 1000),
+        description: i.memo,
+        paymentRequest: i.payment_request,
+      })),
+      last_index_offset: Number(invoiceResponse.last_index_offset),
+    };
+  }
+
+  async getPayments(startCreationDate: Date, maxPayments: number, offset: number): Promise<LndTransactionResponseDto> {
+    const params = {
+      creation_date_start: Math.floor(startCreationDate.getTime() / 1000).toString(),
+      max_payments: maxPayments.toString(),
+      index_offset: offset.toString(),
+      include_incomplete: true,
+    };
+
+    return this.http
+      .get<LndPaymentResponseDto>(`${Config.blockchain.lightning.lnd.apiUrl}/payments`, this.httpLndConfig(params))
+      .then((r) => this.mapPaymentResponse(r));
+  }
+
+  private mapPaymentResponse(paymentResponse: LndPaymentResponseDto): LndTransactionResponseDto {
+    return {
+      transactions: paymentResponse.payments.map((p) => ({
+        state: p.status,
+        transaction: p.payment_hash,
+        secret: p.payment_preimage,
+        amount: -Number(p.value_sat),
+        fee: -Number(p.fee_sat),
+        creationTimestamp: new Date(Number(p.creation_time_ns) / 1000000),
+        reason: p.failure_reason,
+        paymentRequest: p.payment_request,
+      })),
+      last_index_offset: Number(paymentResponse.last_index_offset),
+    };
+  }
+
+  async getRoutings(startTime: Date, maxRoutings: number, offset: number): Promise<LndTransactionResponseDto> {
+    return this.http
+      .post<LndRoutingResponseDto>(
+        `${Config.blockchain.lightning.lnd.apiUrl}/switch`,
+        {
+          start_time: Math.floor(startTime.getTime() / 1000).toString(),
+          num_max_events: maxRoutings.toString(),
+          index_offset: offset.toString(),
+        },
+        this.httpLndConfig(),
+      )
+      .then((r) => this.mapRoutingResponse(r));
+  }
+
+  private mapRoutingResponse(routingResponse: LndRoutingResponseDto): LndTransactionResponseDto {
+    return {
+      transactions: routingResponse.forwarding_events.map((r) => this.createRoutingTransaction(r)).flat(),
+      last_index_offset: routingResponse.last_offset_index,
+    };
+  }
+
+  private createRoutingTransaction(routing: LndRoutingDto): LndTransactionDto[] {
+    const state = TransactionLightningState.SUCCEEDED;
+    const transaction = Util.createRandomHash(32);
+    const secret = '0000000000000000000000000000000000000000000000000000000000000000';
+    const creationTimestamp = new Date(Number(routing.timestamp_ns) / 1000000);
+
+    const transactionIn: LndTransactionDto = {
+      state: state,
+      transaction: transaction,
+      secret: secret,
+      amount: Number(routing.amt_in_msat) / 1000,
+      fee: 0,
+      creationTimestamp: creationTimestamp,
+    };
+
+    const transactionOut: LndTransactionDto = {
+      state: state,
+      transaction: transaction,
+      secret: secret,
+      amount: -Number(routing.amt_out_msat) / 1000,
+      fee: -Number(routing.fee_msat) / 1000,
+      creationTimestamp: creationTimestamp,
+    };
+
+    return [transactionIn, transactionOut];
   }
 
   // --- LNbits --- //
@@ -142,6 +319,13 @@ export class LightningClient {
         this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey),
       )
       .then((w) => this.fillWalletBalance(w));
+  }
+
+  async getUserWalletTransactions(walletId: string): Promise<LnBitsTransactionDto[]> {
+    return this.http.get<LnBitsTransactionDto[]>(
+      `${Config.blockchain.lightning.lnbits.usermanagerApiUrl}/transactions/${walletId}`,
+      this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey),
+    );
   }
 
   private async fillWalletBalance(userWallets: LnBitsUsermanagerWalletDto[]): Promise<LnBitsUsermanagerWalletDto[]> {
@@ -272,13 +456,14 @@ export class LightningClient {
     };
   }
 
-  private httpLndConfig(): HttpRequestConfig {
+  private httpLndConfig(params?: any): HttpRequestConfig {
     return {
       httpsAgent: new Agent({
         ca: Config.blockchain.lightning.certificate,
       }),
 
       headers: { 'Grpc-Metadata-macaroon': Config.blockchain.lightning.lnd.adminMacaroon },
+      params: params,
     };
   }
 

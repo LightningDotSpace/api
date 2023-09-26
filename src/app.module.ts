@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { GetConfig } from './config/config';
 import { SharedModule } from './shared/shared.module';
 import { LightningForwardModule } from './subdomains/lightning/lightning-forward.module';
+import { LightningTransactionModule } from './subdomains/lightning/lightning-transaction.module';
 import { SupportModule } from './subdomains/support/support.module';
 import { UserModule } from './subdomains/user/user.module';
 
@@ -13,6 +14,7 @@ import { UserModule } from './subdomains/user/user.module';
     SharedModule,
     UserModule,
     LightningForwardModule,
+    LightningTransactionModule,
     SupportModule,
   ],
   controllers: [AppController],
