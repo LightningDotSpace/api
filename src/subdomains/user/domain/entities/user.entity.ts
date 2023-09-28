@@ -1,9 +1,9 @@
 import { IEntity } from 'src/shared/db/entity';
 import { Entity, OneToMany } from 'typeorm';
-import { Wallet } from './wallet.entity';
+import { WalletEntity } from './wallet.entity';
 
-@Entity()
-export class User extends IEntity {
-  @OneToMany(() => Wallet, (wallet) => wallet.user)
-  wallets: Wallet[];
+@Entity('user')
+export class UserEntity extends IEntity {
+  @OneToMany(() => WalletEntity, (wallet) => wallet.user)
+  wallets: WalletEntity[];
 }

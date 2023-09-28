@@ -16,18 +16,18 @@ import { WalletRepository } from './application/repositories/wallet.repository';
 import { UserService } from './application/services/user.service';
 import { WalletProviderService } from './application/services/wallet-provider.service';
 import { WalletService } from './application/services/wallet.service';
-import { LightningWallet } from './domain/entities/lightning-wallet.entity';
-import { User } from './domain/entities/user.entity';
-import { WalletProvider } from './domain/entities/wallet-provider.entity';
-import { Wallet } from './domain/entities/wallet.entity';
+import { LightningWalletEntity } from './domain/entities/lightning-wallet.entity';
+import { UserEntity } from './domain/entities/user.entity';
+import { WalletProviderEntity } from './domain/entities/wallet-provider.entity';
+import { WalletEntity } from './domain/entities/wallet.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      User,
-      WalletProvider,
-      Wallet,
-      LightningWallet,
+      UserEntity,
+      WalletProviderEntity,
+      WalletEntity,
+      LightningWalletEntity,
       TransactionOnchainEntity,
       TransactionLightningEntity,
       UserTransactionEntity,

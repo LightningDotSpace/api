@@ -1,5 +1,5 @@
 import { IEntity } from 'src/shared/db/entity';
-import { LightningWallet } from 'src/subdomains/user/domain/entities/lightning-wallet.entity';
+import { LightningWalletEntity } from 'src/subdomains/user/domain/entities/lightning-wallet.entity';
 import { Column, Entity, ManyToOne } from 'typeorm';
 import { TransactionLightningEntity } from './transaction-lightning.entity';
 
@@ -31,8 +31,8 @@ export class UserTransactionEntity extends IEntity {
   @Column({ nullable: true })
   tag?: string;
 
-  @ManyToOne(() => LightningWallet, { nullable: false })
-  lightningWallet: LightningWallet;
+  @ManyToOne(() => LightningWalletEntity, { nullable: false })
+  lightningWallet: LightningWalletEntity;
 
   @ManyToOne(() => TransactionLightningEntity, { nullable: false })
   lightningTransaction: TransactionLightningEntity;
