@@ -24,7 +24,7 @@ import {
   LndChannelDto,
   LndInfoDto,
   LndInvoiceResponseDto,
-  LndOnchainTransaction,
+  LndOnchainTransactionDto,
   LndPaymentResponseDto,
   LndRoutingDto,
   LndRoutingResponseDto,
@@ -107,13 +107,13 @@ export class LightningClient {
       .then((r) => r.channels);
   }
 
-  async getOnchainTransactions(startBlockHeight: number): Promise<LndOnchainTransaction[]> {
+  async getOnchainTransactions(startBlockHeight: number): Promise<LndOnchainTransactionDto[]> {
     const params = {
       start_height: startBlockHeight,
     };
 
     return this.http
-      .get<{ transactions: LndOnchainTransaction[] }>(
+      .get<{ transactions: LndOnchainTransactionDto[] }>(
         `${Config.blockchain.lightning.lnd.apiUrl}/transactions`,
         this.httpLndConfig(params),
       )

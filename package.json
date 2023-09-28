@@ -26,6 +26,7 @@
     "@nestjs/jwt": "^10.0.3",
     "@nestjs/passport": "^9.0.3",
     "@nestjs/platform-express": "^9.3.12",
+    "@nestjs/platform-ws": "^9.3.12",
     "@nestjs/schedule": "^2.2.0",
     "@nestjs/swagger": "^6.2.1",
     "@nestjs/typeorm": "^9.0.1",
@@ -45,7 +46,8 @@
     "rimraf": "^4.4.1",
     "rxjs": "^7.8.0",
     "swagger-ui-express": "^4.6.2",
-    "typeorm": "^0.3.12"
+    "typeorm": "^0.3.12",
+    "ws": "^8.14.2"
   },
   "devDependencies": {
     "@golevelup/ts-jest": "^0.3.8",

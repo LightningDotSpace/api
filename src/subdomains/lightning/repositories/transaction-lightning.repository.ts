@@ -9,11 +9,9 @@ export class TransactionLightningRepository extends BaseRepository<TransactionLi
     super(TransactionLightningEntity, manager);
   }
 
-  async getMaxId() {
-    return this.createQueryBuilder()
-      .select('MAX(id)', 'id')
-      .getRawOne<{ id: number }>()
-      .then((r) => r?.id);
+  async getEntriesWithMaxCreationTimestamp(): Promise<TransactionLightningEntity[]> {
+    const subQuery = this.createQueryBuilder('tl2').select('MAX(tl2.creationTimestamp)').getQuery();
+    return this.createQueryBuilder('tl1').select().where(`tl1.creationTimestamp=(${subQuery})`).getMany();
   }
 
   async getByTransaction(transaction: string): Promise<TransactionLightningEntity> {

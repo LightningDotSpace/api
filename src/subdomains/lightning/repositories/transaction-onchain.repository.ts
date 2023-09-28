@@ -9,10 +9,10 @@ export class TransactionOnchainRepository extends BaseRepository<TransactionOnch
     super(TransactionOnchainEntity, manager);
   }
 
-  async getMaxId() {
+  async getMaxBlock(): Promise<number | undefined> {
     return this.createQueryBuilder()
-      .select('MAX(id)', 'id')
-      .getRawOne<{ id: number }>()
-      .then((r) => r?.id);
+      .select('MAX(block)', 'block')
+      .getRawOne<{ block: number }>()
+      .then((r) => r?.block);
   }
 }

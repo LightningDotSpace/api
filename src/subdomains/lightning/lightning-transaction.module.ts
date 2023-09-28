@@ -20,6 +20,6 @@ import { LightningTransactionService } from './services/lightning-transaction.se
     UserTransactionRepository,
     LightingWalletRepository,
   ],
-  exports: [],
+  exports: [LightningTransactionService],
 })
 export class LightningTransactionModule {}

@@ -9,10 +9,8 @@ export class UserTransactionRepository extends BaseRepository<UserTransactionEnt
     super(UserTransactionEntity, manager);
   }
 
-  async getMaxId() {
-    return this.createQueryBuilder()
-      .select('MAX(id)', 'id')
-      .getRawOne<{ id: number }>()
-      .then((r) => r?.id);
+  async getEntriesWithMaxCreationTimestamp(): Promise<UserTransactionEntity[]> {
+    const subQuery = this.createQueryBuilder('tl2').select('MAX(tl2.creationTimestamp)').getQuery();
+    return this.createQueryBuilder('tl1').select().where(`tl1.creationTimestamp=(${subQuery})`).getMany();
   }
 }

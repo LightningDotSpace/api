@@ -33,7 +33,7 @@ export interface LndChannelDto {
 }
 
 // https://lightning.engineering/api-docs/api/lnd/lightning/get-transactions
-export interface LndOnchainTransaction {
+export interface LndOnchainTransactionDto {
   tx_hash: string;
   amount: string;
   block_height: number;

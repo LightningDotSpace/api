@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { WsAdapter } from '@nestjs/platform-ws';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as AppInsights from 'applicationinsights';
 import cors from 'cors';
@@ -29,6 +30,8 @@ async function bootstrap() {
   app.setGlobalPrefix(Config.version, { exclude: ['', '.well-known/lnurlp/(.*)'] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.useGlobalFilters(new ApiExceptionFilter());
+
+  app.useWebSocketAdapter(new WsAdapter(app));
 
   const swaggerOptions = new DocumentBuilder()
     .setTitle('lightning.space API')
