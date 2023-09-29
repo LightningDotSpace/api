@@ -65,10 +65,6 @@ export class LightningWebSocketService {
 
   // --- Message Handling --- //
   private async onchainMessage(message: any): Promise<void> {
-    console.log('onchainMessage:');
-    console.log(JSON.parse(message));
-    console.log('--------------------------------------------------------------------------------');
-
     const messageResult = JSON.parse(message).result;
 
     const onchainTransaction: LndOnchainTransactionDto = {

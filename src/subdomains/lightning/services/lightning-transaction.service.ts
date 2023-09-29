@@ -12,7 +12,8 @@ import { LightningService } from 'src/integration/blockchain/lightning/services/
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Lock } from 'src/shared/utils/lock';
 import { LightingWalletRepository } from 'src/subdomains/user/application/repositories/lightning-wallet.repository';
-import { IsNull, LessThan, Not } from 'typeorm';
+import { LightningWalletEntity } from 'src/subdomains/user/domain/entities/lightning-wallet.entity';
+import { LessThan } from 'typeorm';
 import { LightningClient } from '../../../integration/blockchain/lightning/lightning-client';
 import {
   TransactionLightningEntity,
@@ -69,13 +70,31 @@ export class LightningTransactionService {
     if (Config.processDisabled(Process.UPDATE_WALLET_BALANCE)) return;
 
     try {
-      const userTransactionEntities = await this.userTransactionRepository.findBy({
-        balance: Not(IsNull()),
-      });
+      let lightningWalletEntities = await this.lightingWalletRepository.first(1000);
 
-      await this.updateLightningWalletBalances(userTransactionEntities);
+      while (lightningWalletEntities.length) {
+        await this.doProcessUpdateLightningWalletBalances(lightningWalletEntities);
+        lightningWalletEntities = await this.lightingWalletRepository.next();
+      }
     } catch (e) {
       this.logger.error('Error while updating wallet balances', e);
+    }
+  }
+
+  private async doProcessUpdateLightningWalletBalances(
+    lightningWalletEntities: LightningWalletEntity[],
+  ): Promise<void> {
+    for (const lightningWalletEntity of lightningWalletEntities) {
+      const lnbitsWallet = await this.client.getLnBitsWallet(lightningWalletEntity.adminKey);
+
+      const lightningWalletEntityBalance = lightningWalletEntity.balance;
+      const lnbitsWalletBalance = LightningHelper.btcToSat(lnbitsWallet.balance);
+
+      if (lightningWalletEntityBalance !== lnbitsWalletBalance) {
+        await this.lightingWalletRepository.update(lightningWalletEntity.id, {
+          balance: lnbitsWalletBalance,
+        });
+      }
     }
   }
 
@@ -311,7 +330,7 @@ export class LightningTransactionService {
     const lightningWalletEntity = await this.lightingWalletRepository.getByWalletId(wallet.id);
 
     const allUserWalletTransactions = await this.client.getUserWalletTransactions(wallet.id);
-    const newUserWalletTransactions = allUserWalletTransactions.filter((t) => t.time > startDate.getTime());
+    const newUserWalletTransactions = allUserWalletTransactions.filter((t) => t.time * 1000 > startDate.getTime());
 
     for (const userWalletTransaction of newUserWalletTransactions) {
       const lightningTransactionEntity = await this.transactionLightningRepo.getByTransaction(

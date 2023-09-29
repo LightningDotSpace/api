@@ -37,7 +37,7 @@ export class Configuration {
     migrations: ['migration/*.js'],
     connectionTimeout: 30000,
     requestTimeout: 30000,
-    //    logging: true,
+    logging: false,
   };
 
   auth = {
