@@ -12,7 +12,7 @@ import { LightningService } from 'src/integration/blockchain/lightning/services/
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Lock } from 'src/shared/utils/lock';
 import { LightingWalletRepository } from 'src/subdomains/user/application/repositories/lightning-wallet.repository';
-import { LessThan } from 'typeorm';
+import { IsNull, LessThan, Not } from 'typeorm';
 import { LightningClient } from '../../../integration/blockchain/lightning/lightning-client';
 import {
   TransactionLightningEntity,
@@ -43,7 +43,7 @@ export class LightningTransactionService {
 
   @Cron(CronExpression.EVERY_HOUR)
   @Lock()
-  async updateOpenInvoices(): Promise<void> {
+  async processUpdateOpenInvoices(): Promise<void> {
     if (Config.processDisabled(Process.UPDATE_INVOICE)) return;
 
     try {
@@ -59,7 +59,23 @@ export class LightningTransactionService {
         });
       }
     } catch (e) {
-      this.logger.error('Error while updating invoices', e);
+      this.logger.error('Error while updating open invoices', e);
+    }
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  @Lock()
+  async processUpdateLightningWalletBalances(): Promise<void> {
+    if (Config.processDisabled(Process.UPDATE_WALLET_BALANCE)) return;
+
+    try {
+      const userTransactionEntities = await this.userTransactionRepository.findBy({
+        balance: Not(IsNull()),
+      });
+
+      await this.updateLightningWalletBalances(userTransactionEntities);
+    } catch (e) {
+      this.logger.error('Error while updating wallet balances', e);
     }
   }
 
@@ -264,7 +280,26 @@ export class LightningTransactionService {
       (t1, t2) => t1.lightningTransaction.id - t2.lightningTransaction.id || (t1.amount > t2.amount ? -1 : 1),
     );
 
-    return this.userTransactionRepository.saveMany(newUserTransactionEntities);
+    const savedUserTransactionEntities = await this.userTransactionRepository.saveMany(newUserTransactionEntities);
+    await this.updateLightningWalletBalances(savedUserTransactionEntities);
+
+    return savedUserTransactionEntities;
+  }
+
+  private async updateLightningWalletBalances(userTransactionEntities: UserTransactionEntity[]): Promise<void> {
+    for (const userTransactionEntity of userTransactionEntities) {
+      const userTransactionBalance = userTransactionEntity.balance;
+
+      if (userTransactionBalance) {
+        const lightningWalletEntity = userTransactionEntity.lightningWallet;
+
+        if (lightningWalletEntity.balance !== userTransactionBalance) {
+          await this.lightingWalletRepository.update(lightningWalletEntity.id, {
+            balance: userTransactionBalance,
+          });
+        }
+      }
+    }
   }
 
   private async getUserWalletTransactions(
@@ -279,7 +314,7 @@ export class LightningTransactionService {
     const newUserWalletTransactions = allUserWalletTransactions.filter((t) => t.time > startDate.getTime());
 
     for (const userWalletTransaction of newUserWalletTransactions) {
-      const lightningTransaction = await this.transactionLightningRepo.getByTransaction(
+      const lightningTransactionEntity = await this.transactionLightningRepo.getByTransaction(
         userWalletTransaction.payment_hash,
       );
 
@@ -293,7 +328,7 @@ export class LightningTransactionService {
         expiresTimestamp: new Date(userWalletTransaction.expiry * 1000),
         tag: userWalletTransaction.extra.tag,
         lightningWallet: lightningWalletEntity,
-        lightningTransaction: lightningTransaction,
+        lightningTransaction: lightningTransactionEntity,
       });
 
       userTransactionEntities.push(userTransactionEntity);

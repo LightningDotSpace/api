@@ -31,7 +31,7 @@ export class UserTransactionEntity extends IEntity {
   @Column({ nullable: true })
   tag?: string;
 
-  @ManyToOne(() => LightningWalletEntity, { nullable: false })
+  @ManyToOne(() => LightningWalletEntity, { eager: true })
   lightningWallet: LightningWalletEntity;
 
   @ManyToOne(() => TransactionLightningEntity, { nullable: false })

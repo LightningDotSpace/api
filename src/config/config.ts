@@ -3,6 +3,7 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 export enum Process {
   UPDATE_INVOICE = 'UpdateInvoice',
+  UPDATE_WALLET_BALANCE = 'UpdateWalletBalance',
 }
 
 export enum Environment {
