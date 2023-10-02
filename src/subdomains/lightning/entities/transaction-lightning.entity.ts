@@ -1,6 +1,6 @@
 import { IEntity } from 'src/shared/db/entity';
 import { Column, Entity, OneToMany } from 'typeorm';
-import { UserTransactionEntity } from './user-transaction.entity';
+import { UserTransactionEntity } from '../../user/domain/entities/user-transaction.entity';
 
 export enum TransactionLightningType {
   INVOICE = 'invoice',

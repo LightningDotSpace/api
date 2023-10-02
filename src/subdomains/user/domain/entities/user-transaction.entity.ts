@@ -1,7 +1,7 @@
 import { IEntity } from 'src/shared/db/entity';
 import { LightningWalletEntity } from 'src/subdomains/user/domain/entities/lightning-wallet.entity';
 import { Column, Entity, ManyToOne } from 'typeorm';
-import { TransactionLightningEntity } from './transaction-lightning.entity';
+import { TransactionLightningEntity } from '../../../lightning/entities/transaction-lightning.entity';
 
 export enum UserTransactionType {
   INTERN = 'intern',
