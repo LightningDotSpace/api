@@ -269,14 +269,19 @@ export class LightningTransactionService {
     });
   }
 
-  async syncLightningUserTransactions(): Promise<UserTransactionEntity[]> {
+  @Cron(CronExpression.EVERY_MINUTE)
+  @Lock()
+  async syncLightningUserTransactions(): Promise<void> {
+    if (Config.processDisabled(Process.UPDATE_LIGHTNING_USER_TRANSACTION)) return;
+
     const databaseUserTransactionEntities = await this.userTransactionRepository.getEntriesWithMaxCreationTimestamp();
 
     if (0 === databaseUserTransactionEntities.length) {
-      return this.saveLightningUserTransactions();
+      await this.saveLightningUserTransactions();
+      return;
     }
 
-    return this.saveLightningUserTransactions(databaseUserTransactionEntities);
+    await this.saveLightningUserTransactions(databaseUserTransactionEntities);
   }
 
   private async saveLightningUserTransactions(
