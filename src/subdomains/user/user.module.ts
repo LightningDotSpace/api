@@ -4,12 +4,11 @@ import { LightningWebSocketService } from 'src/integration/blockchain/lightning/
 import { IntegrationModule } from 'src/integration/integration.module';
 import { SharedModule } from 'src/shared/shared.module';
 import { AuthService } from 'src/subdomains/user/application/services/auth.service';
-import { TransactionLightningEntity } from '../lightning/entities/transaction-lightning.entity';
-import { TransactionOnchainEntity } from '../lightning/entities/transaction-onchain.entity';
 import { LightningTransactionModule } from '../lightning/lightning-transaction.module';
 import { AssetModule } from '../master-data/asset/asset.module';
 import { AuthController } from './api/controllers/auth.controller';
 import { UserController } from './api/controllers/user.controller';
+import { LightningWalletController } from './application/controller/lightning-wallet.controller';
 import { LightingWalletRepository } from './application/repositories/lightning-wallet.repository';
 import { UserTransactionRepository } from './application/repositories/user-transaction.repository';
 import { UserRepository } from './application/repositories/user.repository';
@@ -32,8 +31,6 @@ import { WalletEntity } from './domain/entities/wallet.entity';
       WalletProviderEntity,
       WalletEntity,
       LightningWalletEntity,
-      TransactionOnchainEntity,
-      TransactionLightningEntity,
       UserTransactionEntity,
     ]),
     SharedModule,
@@ -41,7 +38,7 @@ import { WalletEntity } from './domain/entities/wallet.entity';
     AssetModule,
     LightningTransactionModule,
   ],
-  controllers: [UserController, AuthController],
+  controllers: [UserController, AuthController, LightningWalletController],
   providers: [
     UserRepository,
     WalletProviderRepository,

@@ -15,7 +15,6 @@ export interface LnBitsUsermanagerWalletDto {
   user: string;
   adminkey: string;
   inkey: string;
-  balance: number;
 }
 
 export interface LnBitsWalletDto {

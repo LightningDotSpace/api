@@ -9,8 +9,12 @@ export class UserTransactionRepository extends BaseRepository<UserTransactionEnt
     super(UserTransactionEntity, manager);
   }
 
-  async getEntriesWithMaxCreationTimestamp(): Promise<UserTransactionEntity[]> {
-    const subQuery = this.createQueryBuilder('tl2').select('MAX(tl2.creationTimestamp)').getQuery();
-    return this.createQueryBuilder('tl1').select().where(`tl1.creationTimestamp=(${subQuery})`).getMany();
+  async getMaxCreationTimestamp(lnbitsWalletId: string): Promise<{ maxCreationTimestamp: Date } | undefined> {
+    return this.createQueryBuilder('ut')
+      .select('max(ut.creationTimestamp) as maxCreationTimestamp')
+      .leftJoin('ut.lightningWallet', 'lw')
+      .where('lw.lnbitsWalletId = :lnbitsWalletId', { lnbitsWalletId })
+      .groupBy('lw.lnbitsWalletId')
+      .getRawOne<{ maxCreationTimestamp: Date }>();
   }
 }

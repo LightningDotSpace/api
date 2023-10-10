@@ -1,7 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Config, Process } from 'src/config/config';
-import { LnBitsUsermanagerWalletDto } from 'src/integration/blockchain/lightning/dto/lnbits.dto';
 import { LightningClient } from 'src/integration/blockchain/lightning/lightning-client';
 import { LightningHelper } from 'src/integration/blockchain/lightning/lightning-helper';
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
@@ -15,6 +14,12 @@ import {
 } from 'src/subdomains/user/domain/entities/user-transaction.entity';
 import { LightningWalletEntity } from '../../domain/entities/lightning-wallet.entity';
 import { LightingWalletRepository } from '../repositories/lightning-wallet.repository';
+import { WalletRepository } from '../repositories/wallet.repository';
+
+interface LightningWalletInfoDto {
+  lnbitsWalletId: string;
+  adminKey: string;
+}
 
 @Injectable()
 export class LightningWalletService {
@@ -27,6 +32,7 @@ export class LightningWalletService {
     private readonly lightningTransactionService: LightningTransactionService,
     private readonly userTransactionRepository: UserTransactionRepository,
     private readonly lightingWalletRepository: LightingWalletRepository,
+    private readonly walletRepository: WalletRepository,
   ) {
     this.client = lightningService.getDefaultClient();
   }
@@ -67,86 +73,121 @@ export class LightningWalletService {
 
   @Cron(CronExpression.EVERY_MINUTE)
   @Lock()
-  async syncLightningUserTransactions(): Promise<void> {
+  async processSyncLightningUserTransactions(): Promise<void> {
     if (Config.processDisabled(Process.UPDATE_LIGHTNING_USER_TRANSACTION)) return;
 
-    const databaseUserTransactionEntities = await this.userTransactionRepository.getEntriesWithMaxCreationTimestamp();
-
-    if (0 === databaseUserTransactionEntities.length) {
-      await this.saveLightningUserTransactions();
-      return;
-    }
-
-    await this.saveLightningUserTransactions(databaseUserTransactionEntities);
+    await this.syncLightningUserTransactions();
   }
 
-  private async saveLightningUserTransactions(
-    databaseUserTransactionEntities?: UserTransactionEntity[],
+  async syncLightningUserTransactions(
+    startDate?: Date,
+    endDate?: Date,
+    address?: string,
+    withBalance?: boolean,
   ): Promise<UserTransactionEntity[]> {
-    const newUserTransactionEntities: UserTransactionEntity[] = [];
+    const userTransactionEntities: UserTransactionEntity[] = [];
 
-    const allUserWallets = await this.client.getUserWallets();
+    if (address) {
+      const walletEntity = await this.walletRepository.findOneBy({ address: address });
+      if (!walletEntity) throw new NotFoundException(`${address}: Wallet not found`);
 
-    const startDate = databaseUserTransactionEntities
-      ? new Date(databaseUserTransactionEntities[0].creationTimestamp.getTime())
-      : new Date(0);
+      const lightningWalletInfo = walletEntity.lightningWallets.map<LightningWalletInfoDto>((lw) => ({
+        lnbitsWalletId: lw.lnbitsWalletId,
+        adminKey: lw.adminKey,
+      }));
 
-    for (const wallet of allUserWallets) {
-      const userTransactionEntities = await this.getUserWalletTransactions(startDate, wallet);
-      newUserTransactionEntities.push(...userTransactionEntities);
+      userTransactionEntities.push(
+        ...(await this.getUserTransactionEntities(lightningWalletInfo, startDate, endDate, withBalance)),
+      );
+    } else {
+      let lightningWalletInfo = await this.lightingWalletRepository.flatFirst<LightningWalletInfoDto>(
+        100,
+        'lnbitsWalletId, adminKey',
+      );
+
+      while (lightningWalletInfo.length) {
+        userTransactionEntities.push(
+          ...(await this.getUserTransactionEntities(lightningWalletInfo, startDate, endDate, withBalance)),
+        );
+
+        lightningWalletInfo = await this.lightingWalletRepository.flatNext<LightningWalletInfoDto>();
+      }
     }
 
-    newUserTransactionEntities.sort(
-      (t1, t2) => t1.lightningTransaction.id - t2.lightningTransaction.id || (t1.amount > t2.amount ? -1 : 1),
+    userTransactionEntities.sort(
+      (t1, t2) => t1.creationTimestamp.getTime() - t2.creationTimestamp.getTime() || (t1.amount > t2.amount ? -1 : 1),
     );
 
-    const savedUserTransactionEntities = await this.userTransactionRepository.saveMany(newUserTransactionEntities);
-    await this.updateLightningWalletBalances(savedUserTransactionEntities);
+    const savedUserTransactionEntities = await Promise.all(
+      userTransactionEntities.map(async (t) => {
+        return this.doUpdateUserTransaction(t);
+      }),
+    );
+
+    if (withBalance) {
+      const uniqueLightningWalletEntityMap = new Map<string, LightningWalletEntity>(
+        savedUserTransactionEntities.map((ut) => [ut.lightningWallet.lnbitsWalletId, ut.lightningWallet]),
+      );
+
+      await this.doProcessUpdateLightningWalletBalances([...uniqueLightningWalletEntityMap.values()]);
+    }
 
     return savedUserTransactionEntities;
   }
 
-  private async updateLightningWalletBalances(userTransactionEntities: UserTransactionEntity[]): Promise<void> {
-    for (const userTransactionEntity of userTransactionEntities) {
-      const userTransactionBalance = userTransactionEntity.balance;
-
-      if (userTransactionBalance) {
-        const lightningWalletEntity = userTransactionEntity.lightningWallet;
-
-        if (lightningWalletEntity.balance !== userTransactionBalance) {
-          await this.lightingWalletRepository.update(lightningWalletEntity.id, {
-            balance: userTransactionBalance,
-          });
-        }
-      }
-    }
-  }
-
-  private async getUserWalletTransactions(
-    startDate: Date,
-    wallet: LnBitsUsermanagerWalletDto,
+  private async getUserTransactionEntities(
+    lightningWalletInfo: LightningWalletInfoDto[],
+    timeStart?: Date,
+    timeEnd?: Date,
+    withBalance?: boolean,
   ): Promise<UserTransactionEntity[]> {
     const userTransactionEntities: UserTransactionEntity[] = [];
 
-    const lightningWalletEntity = await this.lightingWalletRepository.getByWalletId(wallet.id);
+    for (const lightningWallet of lightningWalletInfo) {
+      const startDate =
+        timeStart ??
+        (await this.userTransactionRepository.getMaxCreationTimestamp(lightningWallet.lnbitsWalletId))
+          ?.maxCreationTimestamp ??
+        new Date(0);
 
-    const allUserWalletTransactions = await this.client.getUserWalletTransactions(wallet.id);
-    const newUserWalletTransactions = allUserWalletTransactions.filter((t) => t.time * 1000 > startDate.getTime());
+      const endDate = timeEnd ?? new Date('2099-12-31T23:59:59.999');
+      userTransactionEntities.push(
+        ...(await this.createUserTransactionEntities(lightningWallet, startDate, endDate, withBalance)),
+      );
+    }
 
-    for (const userWalletTransaction of newUserWalletTransactions) {
+    return userTransactionEntities;
+  }
+
+  private async createUserTransactionEntities(
+    lightningWalletInfo: LightningWalletInfoDto,
+    startDate: Date,
+    endDate: Date,
+    withBalance = false,
+  ): Promise<UserTransactionEntity[]> {
+    const userTransactionEntities: UserTransactionEntity[] = [];
+
+    const lightningWalletEntity = await this.lightingWalletRepository.getByWalletId(lightningWalletInfo.lnbitsWalletId);
+
+    const allUserWalletTransactions = await this.client.getUserWalletTransactions(lightningWalletInfo.lnbitsWalletId);
+    const updateUserWalletTransactions = allUserWalletTransactions.filter(
+      (t) => t.time * 1000 >= startDate.getTime() && t.time * 1000 <= endDate.getTime(),
+    );
+
+    for (const updateUserWalletTransaction of updateUserWalletTransactions) {
       const lightningTransactionEntity = await this.lightningTransactionService.getLightningTransactionByTransaction(
-        userWalletTransaction.payment_hash,
+        updateUserWalletTransaction.payment_hash,
       );
 
       const userTransactionEntity = this.userTransactionRepository.create({
-        type: userWalletTransaction.checking_id.startsWith('internal')
+        type: updateUserWalletTransaction.checking_id.startsWith('internal')
           ? UserTransactionType.INTERN
           : UserTransactionType.EXTERN,
-        amount: LightningHelper.msatToSat(userWalletTransaction.amount),
-        fee: LightningHelper.msatToSat(userWalletTransaction.fee),
-        creationTimestamp: new Date(userWalletTransaction.time * 1000),
-        expiresTimestamp: new Date(userWalletTransaction.expiry * 1000),
-        tag: userWalletTransaction.extra.tag,
+        amount: LightningHelper.msatToSat(updateUserWalletTransaction.amount),
+        fee: LightningHelper.msatToSat(updateUserWalletTransaction.fee),
+        creationTimestamp: new Date(updateUserWalletTransaction.time * 1000),
+        expiresTimestamp: new Date(updateUserWalletTransaction.expiry * 1000),
+        tag: updateUserWalletTransaction.extra.tag,
         lightningWallet: lightningWalletEntity,
         lightningTransaction: lightningTransactionEntity,
       });
@@ -154,13 +195,34 @@ export class LightningWalletService {
       userTransactionEntities.push(userTransactionEntity);
     }
 
-    if (userTransactionEntities.length > 0) {
-      const lnbitsWallet = await this.client.getLnBitsWallet(wallet.adminkey);
+    if (withBalance && userTransactionEntities.length > 0) {
+      const lnbitsWallet = await this.client.getLnBitsWallet(lightningWalletInfo.adminKey);
       userTransactionEntities[userTransactionEntities.length - 1].balance = LightningHelper.btcToSat(
         lnbitsWallet.balance,
       );
     }
 
     return userTransactionEntities;
+  }
+
+  private async doUpdateUserTransaction(
+    updateUserTransactionEntity: UserTransactionEntity,
+  ): Promise<UserTransactionEntity> {
+    const dbUserTransactionEntity = await this.userTransactionRepository.findOneBy({
+      lightningWallet: { id: updateUserTransactionEntity.lightningWallet.id },
+      lightningTransaction: { id: updateUserTransactionEntity.lightningTransaction.id },
+    });
+
+    if (!dbUserTransactionEntity) {
+      return this.userTransactionRepository.save(updateUserTransactionEntity);
+    } else {
+      return this.userTransactionRepository.save(
+        Object.assign(dbUserTransactionEntity, {
+          amount: updateUserTransactionEntity.amount,
+          fee: updateUserTransactionEntity.fee,
+          tag: updateUserTransactionEntity.tag,
+        }),
+      );
+    }
   }
 }

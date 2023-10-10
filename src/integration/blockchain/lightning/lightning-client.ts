@@ -38,7 +38,6 @@ export interface UserFilterData {
   userId?: string;
   username?: string;
 }
-
 export interface LndhubParameterData {
   method: string;
   headers: IncomingHttpHeaders;
@@ -107,9 +106,10 @@ export class LightningClient {
       .then((r) => r.channels);
   }
 
-  async getOnchainTransactions(startBlockHeight: number): Promise<LndOnchainTransactionDto[]> {
+  async getOnchainTransactions(blockHeightStart: number, blockHeightEnd?: number): Promise<LndOnchainTransactionDto[]> {
     const params = {
-      start_height: startBlockHeight,
+      start_height: blockHeightStart,
+      end_height: blockHeightEnd,
     };
 
     return this.http
@@ -120,13 +120,19 @@ export class LightningClient {
       .then((t) => t.transactions);
   }
 
-  async getInvoices(startCreationDate: Date, maxInvoices: number, offset: number): Promise<LndTransactionResponseDto> {
+  async getInvoices(
+    maxInvoices: number,
+    offset: number,
+    creationDateStart: Date,
+    creationDateEnd?: Date,
+  ): Promise<LndTransactionResponseDto> {
     const params = {
-      creation_date_start: Math.floor(startCreationDate.getTime() / 1000).toString(),
       num_max_invoices: maxInvoices.toString(),
       index_offset: offset.toString(),
       pending_only: false,
       reversed: false,
+      creation_date_start: Math.floor(creationDateStart.getTime() / 1000).toString(),
+      creation_date_end: creationDateEnd ? Math.floor(creationDateEnd.getTime() / 1000).toString() : undefined,
     };
 
     return this.http
@@ -152,12 +158,18 @@ export class LightningClient {
     };
   }
 
-  async getPayments(startCreationDate: Date, maxPayments: number, offset: number): Promise<LndTransactionResponseDto> {
+  async getPayments(
+    maxPayments: number,
+    offset: number,
+    creationDateStart: Date,
+    creationDateEnd?: Date,
+  ): Promise<LndTransactionResponseDto> {
     const params = {
-      creation_date_start: Math.floor(startCreationDate.getTime() / 1000).toString(),
+      include_incomplete: true,
       max_payments: maxPayments.toString(),
       index_offset: offset.toString(),
-      include_incomplete: true,
+      creation_date_start: Math.floor(creationDateStart.getTime() / 1000).toString(),
+      creation_date_end: creationDateEnd ? Math.floor(creationDateEnd.getTime() / 1000).toString() : undefined,
     };
 
     return this.http
@@ -181,12 +193,18 @@ export class LightningClient {
     };
   }
 
-  async getRoutings(startTime: Date, maxRoutings: number, offset: number): Promise<LndTransactionResponseDto> {
+  async getRoutings(
+    maxRoutings: number,
+    offset: number,
+    startTime: Date,
+    endTime?: Date,
+  ): Promise<LndTransactionResponseDto> {
     return this.http
       .post<LndRoutingResponseDto>(
         `${Config.blockchain.lightning.lnd.apiUrl}/switch`,
         {
           start_time: Math.floor(startTime.getTime() / 1000).toString(),
+          end_time: endTime ? Math.floor(endTime.getTime() / 1000).toString() : undefined,
           num_max_events: maxRoutings.toString(),
           index_offset: offset.toString(),
         },
@@ -258,8 +276,8 @@ export class LightningClient {
   async getUsers(userFilter?: UserFilterData): Promise<LnbitsUsermanagerUserDto[]> {
     const params = {};
 
-    if (userFilter?.userId) params['id[eq]'] = userFilter?.userId;
-    if (userFilter?.username) params['name[eq]'] = userFilter?.username;
+    if (userFilter?.userId) params['id[eq]'] = userFilter.userId;
+    if (userFilter?.username) params['name[eq]'] = userFilter.username;
 
     return this.http.get<LnbitsUsermanagerUserDto[]>(
       `${Config.blockchain.lightning.lnbits.usermanagerApiUrl}/users`,
@@ -293,12 +311,10 @@ export class LightningClient {
 
   async getUserWallets(userFilter?: UserFilterData): Promise<LnBitsUsermanagerWalletDto[]> {
     if (!userFilter) {
-      return this.http
-        .get<LnBitsUsermanagerWalletDto[]>(
-          `${Config.blockchain.lightning.lnbits.usermanagerApiUrl}/wallets`,
-          this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey),
-        )
-        .then((w) => this.fillWalletBalance(w));
+      return this.http.get<LnBitsUsermanagerWalletDto[]>(
+        `${Config.blockchain.lightning.lnbits.usermanagerApiUrl}/wallets`,
+        this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey),
+      );
     }
 
     const userWallets: LnBitsUsermanagerWalletDto[] = [];
@@ -306,19 +322,17 @@ export class LightningClient {
     const users = await this.getUsers(userFilter);
 
     for (const user of users) {
-      userWallets.push(...(await this.getUserWalletsByUserId(user.id).then((w) => this.fillWalletBalance(w))));
+      userWallets.push(...(await this.getUserWalletsByUserId(user.id)));
     }
 
     return userWallets;
   }
 
   private async getUserWalletsByUserId(userId: string): Promise<LnBitsUsermanagerWalletDto[]> {
-    return this.http
-      .get<LnBitsUsermanagerWalletDto[]>(
-        `${Config.blockchain.lightning.lnbits.usermanagerApiUrl}/wallets/${userId}`,
-        this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey),
-      )
-      .then((w) => this.fillWalletBalance(w));
+    return this.http.get<LnBitsUsermanagerWalletDto[]>(
+      `${Config.blockchain.lightning.lnbits.usermanagerApiUrl}/wallets/${userId}`,
+      this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey),
+    );
   }
 
   async getUserWalletTransactions(walletId: string): Promise<LnBitsTransactionDto[]> {
@@ -326,15 +340,6 @@ export class LightningClient {
       `${Config.blockchain.lightning.lnbits.usermanagerApiUrl}/transactions/${walletId}`,
       this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey),
     );
-  }
-
-  private async fillWalletBalance(userWallets: LnBitsUsermanagerWalletDto[]): Promise<LnBitsUsermanagerWalletDto[]> {
-    for (const userWallet of userWallets) {
-      const lnbitsWallet = await this.getLnBitsWallet(userWallet.adminkey);
-      userWallet.balance = lnbitsWallet.balance;
-    }
-
-    return userWallets;
   }
 
   async removeUser(userId: string): Promise<void> {

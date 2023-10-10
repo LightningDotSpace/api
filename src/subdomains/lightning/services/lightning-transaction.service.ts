@@ -10,6 +10,7 @@ import { LightningHelper } from 'src/integration/blockchain/lightning/lightning-
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Lock } from 'src/shared/utils/lock';
+import { Util } from 'src/shared/utils/util';
 import { LessThan } from 'typeorm';
 import { LightningClient } from '../../../integration/blockchain/lightning/lightning-client';
 import {
@@ -61,111 +62,138 @@ export class LightningTransactionService {
     }
   }
 
-  async syncOnchainTransactions(): Promise<TransactionOnchainEntity[]> {
-    const maxBlock = (await this.transactionOnchainRepo.getMaxBlock()) ?? -1;
-    return this.saveOnchainTransactions(maxBlock + 1);
+  async syncOnchainTransactions(
+    blockHeightStart?: number,
+    blockHeightEnd?: number,
+    withBalance?: boolean,
+  ): Promise<TransactionOnchainEntity[]> {
+    const startBlock = blockHeightStart ?? (await this.getNextBlock());
+    return this.saveOnchainTransactions(startBlock, blockHeightEnd, withBalance);
   }
 
-  private async saveOnchainTransactions(startBlockHeight: number): Promise<TransactionOnchainEntity[]> {
-    const newTransactionEntities: TransactionOnchainEntity[] = [];
-
-    const onchainTransactions = (await this.client.getOnchainTransactions(startBlockHeight)).reverse();
-
-    for (const onchainTransaction of onchainTransactions) {
-      const transactionEntity = this.mapOnchainTransaction(onchainTransaction);
-      newTransactionEntities.push(transactionEntity);
-    }
-
-    if (newTransactionEntities.length > 0) {
-      newTransactionEntities[newTransactionEntities.length - 1].balance =
-        await this.client.getLndConfirmedWalletBalance();
-    }
-
-    return this.transactionOnchainRepo.saveMany(newTransactionEntities);
+  private async getNextBlock(): Promise<number> {
+    const maxBlock = await this.transactionOnchainRepo.getMaxBlock();
+    return maxBlock ? maxBlock + 1 : 0;
   }
 
-  private mapOnchainTransaction(onchainTransaction: LndOnchainTransactionDto): TransactionOnchainEntity {
-    return this.transactionOnchainRepo.create({
-      transaction: onchainTransaction.tx_hash,
-      amount: Number(onchainTransaction.amount),
-      fee: Number(onchainTransaction.total_fees),
-      block: onchainTransaction.block_height,
-      timestamp: new Date(Number(onchainTransaction.time_stamp) * 1000),
-    });
-  }
+  private async saveOnchainTransactions(
+    blockHeightStart: number,
+    blockHeightEnd?: number,
+    withBalance = false,
+  ): Promise<TransactionOnchainEntity[]> {
+    if (blockHeightEnd !== undefined && blockHeightEnd < blockHeightStart)
+      throw new Error('end block before start block');
 
-  async syncLightningTransactions(): Promise<TransactionLightningEntity[]> {
-    const databaseTransactionEntities = await this.transactionLightningRepo.getEntriesWithMaxCreationTimestamp();
+    const transactionEntities = (
+      await this.client
+        .getOnchainTransactions(blockHeightStart, blockHeightEnd)
+        .then((ot) => ot.map((ot) => this.createTransactionOnchainEntity(ot)))
+    ).reverse();
 
-    if (0 === databaseTransactionEntities.length) {
-      return this.saveLightningTransactions();
+    if (withBalance && transactionEntities.length > 0) {
+      transactionEntities[transactionEntities.length - 1].balance = await this.client.getLndConfirmedWalletBalance();
     }
 
-    return this.saveLightningTransactions(databaseTransactionEntities);
+    return Promise.all<TransactionOnchainEntity>(
+      transactionEntities.map(async (t) => {
+        return this.doUpdateOnchainTransaction(t);
+      }),
+    );
+  }
+
+  async syncLightningTransactions(
+    startDate?: Date,
+    endDate?: Date,
+    withBalance?: boolean,
+  ): Promise<TransactionLightningEntity[]> {
+    if (!startDate) {
+      const transactionLightningEntities = await this.transactionLightningRepo.getEntriesWithMaxCreationTimestamp();
+
+      if (transactionLightningEntities.length) {
+        startDate = transactionLightningEntities[0].creationTimestamp;
+      }
+    }
+
+    return this.saveLightningTransactions(startDate ?? new Date(0), endDate, withBalance);
   }
 
   private async saveLightningTransactions(
-    databaseTransactionEntities?: TransactionLightningEntity[],
+    creationDateStart: Date,
+    creationDateEnd?: Date,
+    withBalance?: boolean,
   ): Promise<TransactionLightningEntity[]> {
-    const startDate = databaseTransactionEntities
-      ? new Date(databaseTransactionEntities[0].creationTimestamp.getTime())
-      : new Date(0);
+    if (creationDateEnd) {
+      const timeDiff = Util.secondsDiff(creationDateStart, creationDateEnd);
+
+      if (timeDiff < 0) throw new Error('end date before start date');
+      if (!timeDiff) creationDateEnd = Util.secondsAfter(1, creationDateEnd);
+    }
 
     const invoices = await this.getLightningTransactions(
-      (start, max, offset) => this.client.getInvoices(start, max, offset),
-      startDate,
+      (max, offset, timeStart, timeEnd) => this.client.getInvoices(max, offset, timeStart, timeEnd),
+      creationDateStart,
+      creationDateEnd,
     );
 
     const payments = await this.getLightningTransactions(
-      (start, max, offset) => this.client.getPayments(start, max, offset),
-      startDate,
+      (max, offset, timeStart, timeEnd) => this.client.getPayments(max, offset, timeStart, timeEnd),
+      creationDateStart,
+      creationDateEnd,
     );
 
     const routings = await this.getLightningTransactions(
-      (start, max, offset) => this.client.getRoutings(start, max, offset),
-      startDate,
+      (max, offset, timeStart, timeEnd) => this.client.getRoutings(max, offset, timeStart, timeEnd),
+      creationDateStart,
+      creationDateEnd,
     );
 
-    const newTransactionEntities: TransactionLightningEntity[] = [];
+    const transactionEntities: TransactionLightningEntity[] = [];
 
-    newTransactionEntities.push(
-      ...this.mapLightningTransactions(TransactionLightningType.INVOICE, invoices, databaseTransactionEntities),
-    );
-    newTransactionEntities.push(
-      ...this.mapLightningTransactions(TransactionLightningType.PAYMENT, payments, databaseTransactionEntities),
-    );
-    newTransactionEntities.push(
-      ...this.mapLightningTransactions(TransactionLightningType.ROUTING, routings, databaseTransactionEntities),
-    );
+    transactionEntities.push(...this.createTransactionLightningEntities(TransactionLightningType.INVOICE, invoices));
+    transactionEntities.push(...this.createTransactionLightningEntities(TransactionLightningType.PAYMENT, payments));
+    transactionEntities.push(...this.createTransactionLightningEntities(TransactionLightningType.ROUTING, routings));
 
-    newTransactionEntities.sort(
+    transactionEntities.sort(
       (t1, t2) => t1.creationTimestamp.getTime() - t2.creationTimestamp.getTime() || (t1.amount > t2.amount ? -1 : 1),
     );
 
-    const balanceTransactionEntities = newTransactionEntities.filter((t) =>
-      [TransactionLightningState.SETTLED, TransactionLightningState.SUCCEEDED].includes(t.state),
-    );
+    if (withBalance) {
+      const balanceTransactionEntities = transactionEntities.filter((t) =>
+        [TransactionLightningState.SETTLED, TransactionLightningState.SUCCEEDED].includes(t.state),
+      );
 
-    if (balanceTransactionEntities.length > 0) {
-      balanceTransactionEntities[balanceTransactionEntities.length - 1].balance =
-        await this.client.getLndLightningBalance();
+      if (balanceTransactionEntities.length > 0) {
+        balanceTransactionEntities[balanceTransactionEntities.length - 1].balance =
+          await this.client.getLndLightningBalance();
+      }
     }
 
-    return this.transactionLightningRepo.saveMany(newTransactionEntities);
+    return Promise.all(
+      transactionEntities.map(async (t) => {
+        return this.doUpdateLightningTransaction(t);
+      }),
+    );
   }
 
   private async getLightningTransactions(
-    action: (startDate: Date, maxTransactions: number, offset: number) => Promise<LndTransactionResponseDto>,
+    action: (
+      maxTransactions: number,
+      offset: number,
+      startDate: Date,
+      endDate?: Date,
+    ) => Promise<LndTransactionResponseDto>,
     startDate: Date,
-    maxTransactions = 100,
-    maxLoop = 100,
+    endDate?: Date,
   ): Promise<LndTransactionDto[]> {
+    const maxTransactions = 100;
+    const maxLoop = 100;
+
     let offset = 0;
 
     const allTransactions: LndTransactionDto[] = [];
 
     for (let i = 0; i < maxLoop; i++) {
-      const transactionsResponse = await action(startDate, maxTransactions, offset);
+      const transactionsResponse = await action(maxTransactions, offset, startDate, endDate);
       const transactions = transactionsResponse.transactions;
       allTransactions.push(...transactions);
 
@@ -183,26 +211,81 @@ export class LightningTransactionService {
     return allTransactions;
   }
 
-  private mapLightningTransactions(
-    type: TransactionLightningType,
-    transactions: LndTransactionDto[],
-    databaseTransactionEntities?: TransactionLightningEntity[],
-  ): TransactionLightningEntity[] {
-    const transactionEntities: TransactionLightningEntity[] = [];
+  async updateOnchainTransaction(onchainTransaction: LndOnchainTransactionDto): Promise<void> {
+    const updateOnchainTransactionEntity = this.createTransactionOnchainEntity(onchainTransaction);
 
-    const databaseTransactions = databaseTransactionEntities?.map((t) => t.transaction);
-
-    for (const transaction of transactions) {
-      if (!databaseTransactions?.includes(transaction.transaction)) {
-        const transactionEntity = this.mapLightningTransaction(type, transaction);
-        transactionEntities.push(transactionEntity);
-      }
+    if (0 !== updateOnchainTransactionEntity.block) {
+      updateOnchainTransactionEntity.balance = await this.client.getLndConfirmedWalletBalance();
     }
 
-    return transactionEntities;
+    await this.doUpdateOnchainTransaction(updateOnchainTransactionEntity);
   }
 
-  private mapLightningTransaction(
+  private createTransactionOnchainEntity(onchainTransaction: LndOnchainTransactionDto): TransactionOnchainEntity {
+    return this.transactionOnchainRepo.create({
+      transaction: onchainTransaction.tx_hash,
+      amount: Number(onchainTransaction.amount),
+      fee: Number(onchainTransaction.total_fees),
+      block: onchainTransaction.block_height,
+      timestamp: new Date(Number(onchainTransaction.time_stamp) * 1000),
+    });
+  }
+
+  private async doUpdateOnchainTransaction(
+    updateOnchainTransactionEntity: TransactionOnchainEntity,
+  ): Promise<TransactionOnchainEntity> {
+    const dbOnchainTransactionEntity = await this.transactionOnchainRepo.findOneBy({
+      transaction: updateOnchainTransactionEntity.transaction,
+    });
+
+    if (!dbOnchainTransactionEntity) {
+      return this.transactionOnchainRepo.save(updateOnchainTransactionEntity);
+    } else {
+      return this.transactionOnchainRepo.save(
+        Object.assign(dbOnchainTransactionEntity, {
+          amount: updateOnchainTransactionEntity.amount,
+          fee: updateOnchainTransactionEntity.fee,
+          balance: updateOnchainTransactionEntity.balance,
+          block: updateOnchainTransactionEntity.block,
+          timestamp: updateOnchainTransactionEntity.timestamp,
+        }),
+      );
+    }
+  }
+
+  async updatePayment(lndTransaction: LndTransactionDto): Promise<void> {
+    return this.updateLightningTransaction(TransactionLightningType.PAYMENT, lndTransaction);
+  }
+
+  async updateInvoice(lndTransaction: LndTransactionDto): Promise<void> {
+    return this.updateLightningTransaction(TransactionLightningType.INVOICE, lndTransaction);
+  }
+
+  private async updateLightningTransaction(
+    transactionType: TransactionLightningType,
+    lndTransaction: LndTransactionDto,
+  ): Promise<void> {
+    const updateTransactionEntity = this.createTransactionLightningEntity(transactionType, lndTransaction);
+
+    if (
+      [TransactionLightningState.SETTLED, TransactionLightningState.SUCCEEDED].includes(updateTransactionEntity.state)
+    ) {
+      updateTransactionEntity.balance = await this.client.getLndLightningBalance();
+    }
+
+    await this.doUpdateLightningTransaction(updateTransactionEntity);
+  }
+
+  private createTransactionLightningEntities(
+    type: TransactionLightningType,
+    transactions: LndTransactionDto[],
+  ): TransactionLightningEntity[] {
+    return transactions.map((t) => {
+      return this.createTransactionLightningEntity(type, t);
+    });
+  }
+
+  private createTransactionLightningEntity(
     type: TransactionLightningType,
     transaction: LndTransactionDto,
   ): TransactionLightningEntity {
@@ -232,63 +315,24 @@ export class LightningTransactionService {
     });
   }
 
-  async updateOnchainTransaction(onchainTransaction: LndOnchainTransactionDto): Promise<void> {
-    const updateOnchainTransactionEntity = this.mapOnchainTransaction(onchainTransaction);
-
-    if (0 !== updateOnchainTransactionEntity.block) {
-      updateOnchainTransactionEntity.balance = await this.client.getLndConfirmedWalletBalance();
-    }
-
-    const dbOnchainTransactionEntity = await this.transactionOnchainRepo.findOneBy({
-      transaction: onchainTransaction.tx_hash,
+  private async doUpdateLightningTransaction(
+    updateTransactionLightningEntity: TransactionLightningEntity,
+  ): Promise<TransactionLightningEntity> {
+    const dbTransactionLightningEntity = await this.transactionLightningRepo.findOneBy({
+      type: updateTransactionLightningEntity.type,
+      transaction: updateTransactionLightningEntity.transaction,
     });
 
-    if (!dbOnchainTransactionEntity) {
-      await this.transactionOnchainRepo.save(updateOnchainTransactionEntity);
+    if (!dbTransactionLightningEntity) {
+      return this.transactionLightningRepo.save(updateTransactionLightningEntity);
     } else {
-      await this.transactionOnchainRepo.update(dbOnchainTransactionEntity.id, {
-        amount: updateOnchainTransactionEntity.amount,
-        fee: updateOnchainTransactionEntity.fee,
-        balance: updateOnchainTransactionEntity.balance,
-        block: updateOnchainTransactionEntity.block,
-        timestamp: updateOnchainTransactionEntity.timestamp,
-      });
-    }
-  }
-
-  async updatePayment(lndTransaction: LndTransactionDto): Promise<void> {
-    return this.updateTransaction(TransactionLightningType.PAYMENT, lndTransaction);
-  }
-
-  async updateInvoice(lndTransaction: LndTransactionDto): Promise<void> {
-    return this.updateTransaction(TransactionLightningType.INVOICE, lndTransaction);
-  }
-
-  private async updateTransaction(
-    transactionType: TransactionLightningType,
-    lndTransaction: LndTransactionDto,
-  ): Promise<void> {
-    const updateTransactionEntity = this.mapLightningTransaction(transactionType, lndTransaction);
-
-    if (
-      [TransactionLightningState.SETTLED, TransactionLightningState.SUCCEEDED].includes(updateTransactionEntity.state)
-    ) {
-      updateTransactionEntity.balance = await this.client.getLndLightningBalance();
-    }
-
-    const dbTransactionEntity = await this.transactionLightningRepo.findOneBy({
-      type: transactionType,
-      transaction: lndTransaction.transaction,
-    });
-
-    if (!dbTransactionEntity) {
-      await this.transactionLightningRepo.save(updateTransactionEntity);
-    } else {
-      await this.transactionLightningRepo.update(dbTransactionEntity.id, {
-        balance: updateTransactionEntity.balance,
-        state: updateTransactionEntity.state,
-        reason: updateTransactionEntity.reason,
-      });
+      return this.transactionLightningRepo.save(
+        Object.assign(dbTransactionLightningEntity, {
+          balance: updateTransactionLightningEntity.balance,
+          state: updateTransactionLightningEntity.state,
+          reason: updateTransactionLightningEntity.reason,
+        }),
+      );
     }
   }
 }
