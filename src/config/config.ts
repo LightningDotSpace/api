@@ -2,7 +2,9 @@ import { Injectable, Optional } from '@nestjs/common';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 export enum Process {
-  DUMMY = 'ToDo',
+  UPDATE_INVOICE = 'UpdateInvoice',
+  UPDATE_WALLET_BALANCE = 'UpdateWalletBalance',
+  UPDATE_LIGHTNING_USER_TRANSACTION = 'UpdateLightingUserTransaction',
 }
 
 export enum Environment {
@@ -36,6 +38,7 @@ export class Configuration {
     migrations: ['migration/*.js'],
     connectionTimeout: 30000,
     requestTimeout: 30000,
+    logging: false,
   };
 
   auth = {
@@ -74,6 +77,9 @@ export class Configuration {
       lnd: {
         apiUrl: process.env.LIGHTNING_LND_API_URL || '',
         adminMacaroon: process.env.LIGHTNING_LND_ADMIN_MACAROON || '',
+        wsOnchainTransactionsUrl: process.env.LIGHTNING_LND_WS_ONCHAIN_TRANSACTIONS_URL || '',
+        wsInvoicesUrl: process.env.LIGHTNING_LND_WS_INVOICES_URL || '',
+        wsPaymentsUrl: process.env.LIGHTNING_LND_WS_PAYMENTS_URL || '',
       },
       certificate: process.env.LIGHTNING_API_CERTIFICATE?.split('<br>').join('\n'),
     },

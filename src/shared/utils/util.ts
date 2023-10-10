@@ -271,6 +271,10 @@ export class Util {
     return hash.digest(encoding);
   }
 
+  static createRandomHash(size: number): string {
+    return Util.createHash(crypto.randomBytes(size), 'sha256', 'base64');
+  }
+
   static createSign(data: BinaryLike, key: KeyLike, algo: CryptoAlgorithm): string {
     const sign = createSign(algo);
     sign.update(data);

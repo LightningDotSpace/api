@@ -1,8 +1,8 @@
-import { Asset } from '../entities/asset.entity';
+import { AssetEntity } from '../entities/asset.entity';
 import { AssetDto } from './asset.dto';
 
 export class AssetDtoMapper {
-  static entityToDto(asset: Asset): AssetDto {
+  static entityToDto(asset: AssetEntity): AssetDto {
     const dto: AssetDto = {
       name: asset.name,
       displayName: asset.displayName,

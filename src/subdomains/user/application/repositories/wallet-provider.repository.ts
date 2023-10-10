@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { BaseRepository } from 'src/shared/db/base.repository';
 import { EntityManager } from 'typeorm';
-import { WalletProvider } from '../../domain/entities/wallet-provider.entity';
+import { WalletProviderEntity } from '../../domain/entities/wallet-provider.entity';
 
 @Injectable()
-export class WalletProviderRepository extends BaseRepository<WalletProvider> {
+export class WalletProviderRepository extends BaseRepository<WalletProviderEntity> {
   constructor(manager: EntityManager) {
-    super(WalletProvider, manager);
+    super(WalletProviderEntity, manager);
   }
 }

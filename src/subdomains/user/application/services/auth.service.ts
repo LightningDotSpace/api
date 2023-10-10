@@ -12,7 +12,7 @@ import { JwtPayload } from 'src/shared/auth/jwt-payload.interface';
 import { SignMessageDto } from 'src/subdomains/user/application/dto/sign-message.dto';
 import { SignUpDto } from 'src/subdomains/user/application/dto/sign-up.dto';
 import { WalletService } from 'src/subdomains/user/application/services/wallet.service';
-import { Wallet } from 'src/subdomains/user/domain/entities/wallet.entity';
+import { WalletEntity } from 'src/subdomains/user/domain/entities/wallet.entity';
 import { AuthResponseDto } from '../dto/auth-response.dto';
 import { SignInDto } from '../dto/sign-in.dto';
 
@@ -59,7 +59,7 @@ export class AuthService {
     return this.cryptoService.verifySignature(message, address, signature);
   }
 
-  private generateToken(wallet: Wallet): string {
+  private generateToken(wallet: WalletEntity): string {
     const payload: JwtPayload = {
       walletId: wallet.id,
       userId: wallet.user.id,
