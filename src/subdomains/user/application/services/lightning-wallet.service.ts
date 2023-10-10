@@ -6,6 +6,7 @@ import { LightningHelper } from 'src/integration/blockchain/lightning/lightning-
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Lock } from 'src/shared/utils/lock';
+import { Util } from 'src/shared/utils/util';
 import { LightningTransactionService } from 'src/subdomains/lightning/services/lightning-transaction.service';
 import { UserTransactionRepository } from 'src/subdomains/user/application/repositories/user-transaction.repository';
 import {
@@ -71,7 +72,7 @@ export class LightningWalletService {
     }
   }
 
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_5_MINUTES)
   @Lock()
   async processSyncLightningUserTransactions(): Promise<void> {
     if (Config.processDisabled(Process.UPDATE_LIGHTNING_USER_TRANSACTION)) return;
@@ -118,11 +119,13 @@ export class LightningWalletService {
       (t1, t2) => t1.creationTimestamp.getTime() - t2.creationTimestamp.getTime() || (t1.amount > t2.amount ? -1 : 1),
     );
 
-    const savedUserTransactionEntities = await Promise.all(
-      userTransactionEntities.map(async (t) => {
-        return this.doUpdateUserTransaction(t);
-      }),
-    );
+    const savedUserTransactionEntities = (
+      await Util.doInBatches(
+        userTransactionEntities,
+        async (batch: UserTransactionEntity[]) => Promise.all(batch.map((ref) => this.doUpdateUserTransaction(ref))),
+        100,
+      )
+    ).flat();
 
     if (withBalance) {
       const uniqueLightningWalletEntityMap = new Map<string, LightningWalletEntity>(

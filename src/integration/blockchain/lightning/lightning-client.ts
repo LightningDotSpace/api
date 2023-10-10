@@ -5,7 +5,6 @@ import { Config } from 'src/config/config';
 import { HttpRequestConfig, HttpService } from 'src/shared/services/http.service';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Util } from 'src/shared/utils/util';
-import { TransactionLightningState } from 'src/subdomains/lightning/entities/transaction-lightning.entity';
 import {
   LnBitsLnurlPayRequestDto,
   LnBitsLnurlWithdrawRequestDto,
@@ -221,8 +220,8 @@ export class LightningClient {
   }
 
   private createRoutingTransaction(routing: LndRoutingDto): LndTransactionDto[] {
-    const state = TransactionLightningState.SUCCEEDED;
-    const transaction = Util.createRandomHash(32);
+    const state = 'SUCCEEDED';
+    const transaction = Buffer.from(Util.createRandomHash(32), 'base64').toString('hex');
     const secret = '0000000000000000000000000000000000000000000000000000000000000000';
     const creationTimestamp = new Date(Number(routing.timestamp_ns) / 1000000);
 

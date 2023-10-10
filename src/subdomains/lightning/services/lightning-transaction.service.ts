@@ -94,11 +94,14 @@ export class LightningTransactionService {
       transactionEntities[transactionEntities.length - 1].balance = await this.client.getLndConfirmedWalletBalance();
     }
 
-    return Promise.all<TransactionOnchainEntity>(
-      transactionEntities.map(async (t) => {
-        return this.doUpdateOnchainTransaction(t);
-      }),
-    );
+    return (
+      await Util.doInBatches(
+        transactionEntities,
+        async (batch: TransactionOnchainEntity[]) =>
+          Promise.all(batch.map((ref) => this.doUpdateOnchainTransaction(ref))),
+        100,
+      )
+    ).flat();
   }
 
   async syncLightningTransactions(
@@ -168,11 +171,14 @@ export class LightningTransactionService {
       }
     }
 
-    return Promise.all(
-      transactionEntities.map(async (t) => {
-        return this.doUpdateLightningTransaction(t);
-      }),
-    );
+    return (
+      await Util.doInBatches(
+        transactionEntities,
+        async (batch: TransactionLightningEntity[]) =>
+          Promise.all(batch.map((ref) => this.doUpdateLightningTransaction(ref))),
+        100,
+      )
+    ).flat();
   }
 
   private async getLightningTransactions(
