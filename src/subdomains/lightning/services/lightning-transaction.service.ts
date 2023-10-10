@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Config, Process } from 'src/config/config';
 import {
@@ -13,6 +13,8 @@ import { Lock } from 'src/shared/utils/lock';
 import { Util } from 'src/shared/utils/util';
 import { LessThan } from 'typeorm';
 import { LightningClient } from '../../../integration/blockchain/lightning/lightning-client';
+import { LightningTransactionDtoMapper } from '../dto/lightning-transaction-dto.mapper';
+import { LightningTransactionDto } from '../dto/lightning-transaction.dts';
 import {
   TransactionLightningEntity,
   TransactionLightningState,
@@ -36,8 +38,22 @@ export class LightningTransactionService {
     this.client = lightningService.getDefaultClient();
   }
 
-  async getLightningTransactionByTransaction(transaction: string) {
+  async getLightningTransactionByTransaction(transaction: string): Promise<TransactionLightningEntity> {
     return this.transactionLightningRepo.getByTransaction(transaction);
+  }
+
+  async getTransactionInfo(id: string): Promise<LightningTransactionDto[]> {
+    if (64 !== id.length || '0'.repeat(64) === id) throw new BadRequestException(`invalid id: ${id}`);
+
+    let transactionEntities = await this.transactionLightningRepo.findBy({ transaction: id });
+
+    if (!transactionEntities.length) {
+      transactionEntities = await this.transactionLightningRepo.findBy({ secret: id });
+    }
+
+    if (!transactionEntities.length) throw new NotFoundException(`no transaction found: ${id}`);
+
+    return LightningTransactionDtoMapper.entitiesToDto(transactionEntities);
   }
 
   @Cron(CronExpression.EVERY_HOUR)

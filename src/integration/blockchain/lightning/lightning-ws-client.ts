@@ -1,3 +1,5 @@
+import { Agent } from 'https';
+import { Config } from 'src/config/config';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { QueueHandler } from 'src/shared/utils/queue-handler';
 import WebSocket from 'ws';
@@ -23,7 +25,10 @@ export class LightningWebSocketClient {
 
   private createWebSocket() {
     this.webSocket = new WebSocket(this.wsUrl, {
-      rejectUnauthorized: false,
+      agent: new Agent({
+        ca: Config.blockchain.lightning.certificate,
+      }),
+
       headers: {
         'Grpc-Metadata-Macaroon': this.macaroon,
       },

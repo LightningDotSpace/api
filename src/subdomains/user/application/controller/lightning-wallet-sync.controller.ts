@@ -9,7 +9,7 @@ import { LightningWalletService } from '../services/lightning-wallet.service';
 
 @ApiTags('Transaction')
 @Controller('synchronize')
-export class LightningWalletController {
+export class LightningWalletSynchronizeController {
   constructor(private lightningWalletService: LightningWalletService) {}
 
   @Post('userTransactions')

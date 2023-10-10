@@ -8,7 +8,7 @@ import { LightningTransactionModule } from '../lightning/lightning-transaction.m
 import { AssetModule } from '../master-data/asset/asset.module';
 import { AuthController } from './api/controllers/auth.controller';
 import { UserController } from './api/controllers/user.controller';
-import { LightningWalletController } from './application/controller/lightning-wallet.controller';
+import { LightningWalletSynchronizeController } from './application/controller/lightning-wallet-sync.controller';
 import { LightingWalletRepository } from './application/repositories/lightning-wallet.repository';
 import { UserTransactionRepository } from './application/repositories/user-transaction.repository';
 import { UserRepository } from './application/repositories/user.repository';
@@ -38,7 +38,7 @@ import { WalletEntity } from './domain/entities/wallet.entity';
     AssetModule,
     LightningTransactionModule,
   ],
-  controllers: [UserController, AuthController, LightningWalletController],
+  controllers: [UserController, AuthController, LightningWalletSynchronizeController],
   providers: [
     UserRepository,
     WalletProviderRepository,
