@@ -15,7 +15,6 @@ export interface LnBitsUsermanagerWalletDto {
   user: string;
   adminkey: string;
   inkey: string;
-  balance: number;
 }
 
 export interface LnBitsWalletDto {
@@ -23,6 +22,25 @@ export interface LnBitsWalletDto {
   adminkey: string;
   name: string;
   balance: number;
+}
+
+export interface LnBitsTransactionDto {
+  checking_id: string;
+  pending: boolean;
+  amount: number;
+  fee: number;
+  memo: string;
+  time: number;
+  bolt11: string;
+  preimage: string;
+  payment_hash: string;
+  expiry: number;
+  extra: {
+    tag: string;
+    link: string;
+    extra: string;
+  };
+  wallet_id: string;
 }
 
 export interface LnBitsLnurlpLinkDto {
@@ -74,4 +92,40 @@ export interface LnBitsLnurlPayRequestDto {
 
 export interface LnBitsLnurlpInvoiceDto {
   pr: string;
+}
+
+export interface LnBitsLnurlWithdrawRequestDto {
+  tag: string;
+  callback: string;
+  k1: string;
+  minWithdrawable: number;
+  maxWithdrawable: number;
+  defaultDescription: string;
+}
+
+export interface LnBitsLnurlwInvoiceDto {
+  status: string;
+  reason: string;
+}
+
+export interface LnBitsLnurlwLinkDto {
+  id?: string;
+  wallet?: string;
+  title: string;
+  min_withdrawable: number;
+  max_withdrawable: number;
+  uses: number;
+  wait_time: number;
+  is_unique: boolean;
+  unique_hash?: string;
+  k1?: string;
+  open_time?: number;
+  used?: number;
+  usescsv?: string;
+  number?: number;
+  webhook_url?: string;
+  webhook_headers?: string;
+  webhook_body?: string;
+  custom_url?: string;
+  lnurl?: string;
 }

@@ -1,7 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Config } from 'src/config/config';
 import { HttpService } from 'src/shared/services/http.service';
-import { LnBitsUserDto, LnBitsUsermanagerWalletDto, LnBitsWalletDto } from '../dto/lnbits.dto';
+import { LnBitsUserDto } from '../dto/lnbits.dto';
 import { LightningClient, UserFilterData } from '../lightning-client';
 import { LightningHelper } from '../lightning-helper';
 
@@ -108,29 +108,5 @@ export class LightningService {
         await this.client.removeLnurlpLink(adminKey, lnurlpLink.id);
       }
     }
-  }
-
-  async getLnBitsWallets(): Promise<LnBitsWalletDto[]> {
-    const lnbitsWallets: LnBitsWalletDto[] = [];
-
-    lnbitsWallets.push(await this.client.getLnBitsWallet(Config.blockchain.lightning.lnbits.adminKey));
-    lnbitsWallets.push(...(await this.client.getUserWallets().then((w) => this.convertToLnbitsWallets(w))));
-
-    return lnbitsWallets;
-  }
-
-  private convertToLnbitsWallets(userWallets: LnBitsUsermanagerWalletDto[]): LnBitsWalletDto[] {
-    const lnbitsWallets: LnBitsWalletDto[] = [];
-
-    for (const userWallet of userWallets) {
-      lnbitsWallets.push({
-        id: userWallet.id,
-        name: userWallet.name,
-        balance: userWallet.balance,
-        adminkey: userWallet.adminkey,
-      });
-    }
-
-    return lnbitsWallets;
   }
 }

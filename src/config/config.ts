@@ -2,7 +2,9 @@ import { Injectable, Optional } from '@nestjs/common';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 export enum Process {
-  DUMMY = 'ToDo',
+  UPDATE_INVOICE = 'UpdateInvoice',
+  UPDATE_WALLET_BALANCE = 'UpdateWalletBalance',
+  UPDATE_LIGHTNING_USER_TRANSACTION = 'UpdateLightingUserTransaction',
 }
 
 export enum Environment {
@@ -36,6 +38,7 @@ export class Configuration {
     migrations: ['migration/*.js'],
     connectionTimeout: 30000,
     requestTimeout: 30000,
+    logging: false,
   };
 
   auth = {
@@ -52,7 +55,7 @@ export class Configuration {
   bitcoinAddressFormat =
     this.environment === Environment.PRD
       ? '([13]|bc1)[a-zA-HJ-NP-Z0-9]{25,62}'
-      : '(tb(0([ac-hj-np-z02-9]{39}|[ac-hj-np-z02-9]{59})|1[ac-hj-np-z02-9]{8,87})|[mn2][a-km-zA-HJ-NP-Z1-9]{25,39})';
+      : '(([13]|bc1)[a-zA-HJ-NP-Z0-9]{25,62})|(tb(0([ac-hj-np-z02-9]{39}|[ac-hj-np-z02-9]{59})|1[ac-hj-np-z02-9]{8,87})|[mn2][a-km-zA-HJ-NP-Z1-9]{25,39})';
 
   formats = {
     address: new RegExp(`^(${this.bitcoinAddressFormat})$`),
@@ -74,6 +77,9 @@ export class Configuration {
       lnd: {
         apiUrl: process.env.LIGHTNING_LND_API_URL || '',
         adminMacaroon: process.env.LIGHTNING_LND_ADMIN_MACAROON || '',
+        wsOnchainTransactionsUrl: process.env.LIGHTNING_LND_WS_ONCHAIN_TRANSACTIONS_URL || '',
+        wsInvoicesUrl: process.env.LIGHTNING_LND_WS_INVOICES_URL || '',
+        wsPaymentsUrl: process.env.LIGHTNING_LND_WS_PAYMENTS_URL || '',
       },
       certificate: process.env.LIGHTNING_API_CERTIFICATE?.split('<br>').join('\n'),
     },

@@ -6,8 +6,8 @@ export enum AssetStatus {
   ACTIVE = 'Active',
 }
 
-@Entity()
-export class Asset extends IEntity {
+@Entity('asset')
+export class AssetEntity extends IEntity {
   @Column({ unique: true })
   name: string;
 

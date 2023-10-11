@@ -1,6 +1,8 @@
+import { decode as bolt11Decode } from 'bolt11';
 import { decode as lnurlDecode, encode as lnurlEncode } from 'lnurl';
 import { Config, Environment } from 'src/config/config';
 import { Util } from 'src/shared/utils/util';
+import { LndInvoiceInfoDto } from './dto/lnd.dto';
 
 export class LightningHelper {
   private static SAT_BTC_FACTOR: number = 10 ** 8;
@@ -35,6 +37,11 @@ export class LightningHelper {
     return `${Config.url}/lnurlp/cb/${id}`;
   }
 
+  // --- LNURLw --- //
+  static createLnurlwCallbackUrl(id: string): string {
+    return `${Config.url}/lnurlw/cb/${id}`;
+  }
+
   // --- LNURL --- //
   static encodeLnurl(str: string): string {
     return lnurlEncode(str).toUpperCase();
@@ -42,6 +49,18 @@ export class LightningHelper {
 
   static decodeLnurl(lnurl: string): string {
     return lnurlDecode(lnurl);
+  }
+
+  // --- INVOICE --- //
+  static getInvoiceInfo(invoice: string): LndInvoiceInfoDto {
+    const decodedInvoice = bolt11Decode(invoice);
+
+    const descriptionTag = decodedInvoice.tags.find((t) => t.tagName === 'description');
+    const description = descriptionTag?.data.toString();
+
+    const publicKey = decodedInvoice.payeeNodeKey;
+
+    return { description: description, publicKey: publicKey };
   }
 
   // --- CONVERT --- /

@@ -1,11 +1,11 @@
 import { LightningHelper } from 'src/integration/blockchain/lightning/lightning-helper';
 import { AssetDtoMapper } from 'src/subdomains/master-data/asset/dto/asset-dto.mapper';
 import { AssetStatus } from '../../../master-data/asset/entities/asset.entity';
-import { Wallet } from '../../domain/entities/wallet.entity';
+import { WalletEntity } from '../../domain/entities/wallet.entity';
 import { WalletDto } from './wallet.dto';
 
 export class WalletDtoMapper {
-  static entityToDto(wallet: Wallet): WalletDto {
+  static entityToDto(wallet: WalletEntity): WalletDto {
     const dto: WalletDto = {
       address: wallet.address,
       lightning: {

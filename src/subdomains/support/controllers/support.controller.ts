@@ -4,7 +4,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { RoleGuard } from 'src/shared/auth/role.guard';
 import { WalletRole } from 'src/shared/auth/wallet-role.enum';
-import { DbQueryDto } from '../dto/dp-query.dto';
+import { DbQueryDto } from '../dto/db-query.dto';
 import { SupportService } from '../services/support.service';
 
 @Controller('support')

@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { DbQueryDto } from '../dto/dp-query.dto';
+import { DbQueryDto } from '../dto/db-query.dto';
 
 @Injectable()
 export class SupportService {

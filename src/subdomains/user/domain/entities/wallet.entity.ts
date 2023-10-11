@@ -1,12 +1,12 @@
 import { WalletRole } from 'src/shared/auth/wallet-role.enum';
 import { IEntity } from 'src/shared/db/entity';
-import { User } from 'src/subdomains/user/domain/entities/user.entity';
+import { UserEntity } from 'src/subdomains/user/domain/entities/user.entity';
 import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
-import { LightningWallet } from './lightning-wallet.entity';
-import { WalletProvider } from './wallet-provider.entity';
+import { LightningWalletEntity } from './lightning-wallet.entity';
+import { WalletProviderEntity } from './wallet-provider.entity';
 
-@Entity()
-export class Wallet extends IEntity {
+@Entity('wallet')
+export class WalletEntity extends IEntity {
   @Column({ unique: true })
   address: string;
 
@@ -22,15 +22,15 @@ export class Wallet extends IEntity {
   @Column({ unique: true })
   addressOwnershipProof: string;
 
-  @ManyToOne(() => WalletProvider, { nullable: false, eager: true })
-  walletProvider: WalletProvider;
+  @ManyToOne(() => WalletProviderEntity, { nullable: false, eager: true })
+  walletProvider: WalletProviderEntity;
 
   @Column({ default: WalletRole.USER })
   role: WalletRole;
 
-  @ManyToOne(() => User, { nullable: false, eager: true })
-  user: User;
+  @ManyToOne(() => UserEntity, { nullable: false, eager: true })
+  user: UserEntity;
 
-  @OneToMany(() => LightningWallet, (wallet) => wallet.wallet, { cascade: true, eager: true })
-  lightningWallets: LightningWallet[];
+  @OneToMany(() => LightningWalletEntity, (wallet) => wallet.wallet, { cascade: true, eager: true })
+  lightningWallets: LightningWalletEntity[];
 }
