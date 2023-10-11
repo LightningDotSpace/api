@@ -45,12 +45,7 @@ export class LightningTransactionService {
   async getTransactionInfo(id: string): Promise<LightningTransactionDto[]> {
     if (64 !== id.length || '0'.repeat(64) === id) throw new BadRequestException(`invalid id: ${id}`);
 
-    let transactionEntities = await this.transactionLightningRepo.findBy({ transaction: id });
-
-    if (!transactionEntities.length) {
-      transactionEntities = await this.transactionLightningRepo.findBy({ secret: id });
-    }
-
+    const transactionEntities = await this.transactionLightningRepo.findBy([{ transaction: id }, { secret: id }]);
     if (!transactionEntities.length) throw new NotFoundException(`no transaction found: ${id}`);
 
     return LightningTransactionDtoMapper.entitiesToDto(transactionEntities);
