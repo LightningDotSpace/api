@@ -221,8 +221,8 @@ export class LightningWalletService {
     } else {
       return this.userTransactionRepository.save(
         Object.assign(dbUserTransactionEntity, {
-          amount: updateUserTransactionEntity.amount,
           fee: updateUserTransactionEntity.fee,
+          balance: updateUserTransactionEntity.balance,
           tag: updateUserTransactionEntity.tag,
         }),
       );

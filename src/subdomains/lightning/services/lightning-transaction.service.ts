@@ -345,6 +345,7 @@ export class LightningTransactionService {
     } else {
       return this.transactionLightningRepo.save(
         Object.assign(dbTransactionLightningEntity, {
+          fee: updateTransactionLightningEntity.fee,
           balance: updateTransactionLightningEntity.balance,
           state: updateTransactionLightningEntity.state,
           reason: updateTransactionLightningEntity.reason,
