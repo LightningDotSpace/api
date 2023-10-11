@@ -77,7 +77,7 @@ export class LightningWalletService {
   async processSyncLightningUserTransactions(): Promise<void> {
     if (Config.processDisabled(Process.UPDATE_LIGHTNING_USER_TRANSACTION)) return;
 
-    await this.syncLightningUserTransactions();
+    await this.syncLightningUserTransactions(undefined, undefined, undefined, true);
   }
 
   async syncLightningUserTransactions(
