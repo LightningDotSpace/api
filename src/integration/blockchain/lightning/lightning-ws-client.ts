@@ -36,7 +36,7 @@ export class LightningWebSocketClient<T> extends Subject<T> {
     });
   }
 
-  setup(openRequestBody: any, messageCallback: (message: any) => void) {
+  setup(openRequestBody: any) {
     this.webSocket.on('open', () => {
       this.logger.info(`WebSocket ${this.wsUrl}: open`);
 
@@ -54,17 +54,17 @@ export class LightningWebSocketClient<T> extends Subject<T> {
         setTimeout(() => {
           this.logger.info(`WebSocket ${this.wsUrl}: retry ${this.retryAttempt}`);
           this.createWebSocket();
-          this.setup(openRequestBody, messageCallback);
+          this.setup(openRequestBody);
         }, this.retryWaitTimeSec * 1000);
       } else {
         this.logger.error(`WebSocket ${this.wsUrl}: closed after ${this.retryCounter} retries`);
       }
     });
 
-    this.webSocket.on('message', (message: any) => {
+    this.webSocket.on('message', (message: string) => {
       this.retryAttempt = 0;
 
-      messageCallback(message);
+      this.next(JSON.parse(message));
     });
 
     this.webSocket.on('ping', (pingMessage: any) => {

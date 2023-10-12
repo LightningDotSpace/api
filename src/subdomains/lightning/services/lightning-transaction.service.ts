@@ -48,17 +48,9 @@ export class LightningTransactionService {
     this.invoiceTransactionMessageQueue = new QueueHandler();
     this.paymentTransactionMessageQueue = new QueueHandler();
 
-    lightningWebSocketService.subscribeToOnchainWebSocket((onchainTransaction: LndOnchainTransactionDto) =>
-      this.handleOnchainTransactionMessage(onchainTransaction),
-    );
-
-    lightningWebSocketService.subscribeInvoiceWebSocketSocket((invoice: LndTransactionDto) =>
-      this.handleInvoiceTransactionMessage(invoice),
-    );
-
-    lightningWebSocketService.subscribePaymentWebSocketSocket((payment: LndTransactionDto) =>
-      this.handlePaymentTransactionMessage(payment),
-    );
+    lightningWebSocketService.onChainTransactions.subscribe((m) => this.handleOnchainTransactionMessage(m));
+    lightningWebSocketService.invoiceTransactions.subscribe((m) => this.handleInvoiceTransactionMessage(m));
+    lightningWebSocketService.paymentTransactions.subscribe((m) => this.handlePaymentTransactionMessage(m));
   }
 
   async getLightningTransactionByTransaction(transaction: string): Promise<TransactionLightningEntity> {
