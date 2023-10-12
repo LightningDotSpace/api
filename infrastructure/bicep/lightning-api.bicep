@@ -310,6 +310,18 @@ resource apiAppService 'Microsoft.Web/sites@2018-11-01' = if (env != 'loc') {
           value: lightningLndAdminMacaroon
         }
         {
+          name: 'LIGHTNING_LND_WS_ONCHAIN_TRANSACTIONS_URL'
+          value: 'wss://${btcNodes[0].outputs.ip}:8080/v1/transactions/subscribe?method=GET'
+        }
+        {
+          name: 'LIGHTNING_LND_WS_INVOICES_URL'
+          value: 'wss://${btcNodes[0].outputs.ip}:8080/v1/invoices/subscribe?method=GET'
+        }
+        {
+          name: 'LIGHTNING_LND_WS_PAYMENTS_URL'
+          value: 'wss://${btcNodes[0].outputs.ip}:8080/v2/router/payments?method=GET'
+        }
+        {
           name: 'WEBSITE_RUN_FROM_PACKAGE'
           value: '1'
         }

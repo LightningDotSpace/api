@@ -92,9 +92,7 @@ export class LightningClient {
   }
 
   async getLndLightningBalance(): Promise<number> {
-    const balances = (await this.getChannels())
-      .filter((c) => c.active)
-      .map((c) => Number(c.local_balance) - Number(c.commit_fee) - Number(c.local_chan_reserve_sat));
+    const balances = (await this.getChannels()).filter((c) => c.active).map((c) => Number(c.local_balance));
 
     return Util.sum(balances);
   }

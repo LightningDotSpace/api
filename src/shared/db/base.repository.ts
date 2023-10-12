@@ -17,26 +17,11 @@ export abstract class BaseRepository<T extends ObjectLiteral> extends Repository
   }
 
   async first(numberOfEntries: number): Promise<T[]> {
-    this.numberOfEntries = numberOfEntries;
-    this.offset = 0;
-
-    return this.createQueryBuilder()
-      .select()
-      .orderBy({ id: 'ASC' })
-      .skip(this.offset)
-      .take(this.numberOfEntries)
-      .getMany();
+    return this.flatFirst<T>(numberOfEntries, '*');
   }
 
   async next(): Promise<T[]> {
-    this.offset += this.numberOfEntries;
-
-    return this.createQueryBuilder()
-      .select()
-      .orderBy({ id: 'ASC' })
-      .skip(this.offset)
-      .take(this.numberOfEntries)
-      .getMany();
+    return this.flatNext<T>();
   }
 
   async flatFirst<U>(numberOfEntries: number, select: string): Promise<U[]> {

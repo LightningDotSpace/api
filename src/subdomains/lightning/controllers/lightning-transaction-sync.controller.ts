@@ -8,10 +8,9 @@ import { LightningTransactionQueryDto } from '../dto/lightning-transaction-query
 import { TransactionLightningEntity } from '../entities/transaction-lightning.entity';
 import { TransactionOnchainEntity } from '../entities/transaction-onchain.entity';
 import { LightningTransactionService } from '../services/lightning-transaction.service';
-
 @ApiTags('Transaction')
 @Controller('synchronize')
-export class LightingTransactionController {
+export class LightingTransactionSynchronizeController {
   constructor(private lightningTransactionService: LightningTransactionService) {}
 
   @Post('onchainTransactions')
