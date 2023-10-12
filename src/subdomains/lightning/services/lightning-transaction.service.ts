@@ -7,9 +7,11 @@ import {
   LndTransactionResponseDto,
 } from 'src/integration/blockchain/lightning/dto/lnd.dto';
 import { LightningHelper } from 'src/integration/blockchain/lightning/lightning-helper';
+import { LightningWebSocketService } from 'src/integration/blockchain/lightning/services/lightning-ws.service';
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Lock } from 'src/shared/utils/lock';
+import { QueueHandler } from 'src/shared/utils/queue-handler';
 import { Util } from 'src/shared/utils/util';
 import { LessThan } from 'typeorm';
 import { LightningClient } from '../../../integration/blockchain/lightning/lightning-client';
@@ -30,12 +32,25 @@ export class LightningTransactionService {
 
   private readonly client: LightningClient;
 
+  private readonly onchainTransactionMessageQueue: QueueHandler;
+  private readonly invoiceTransactionMessageQueue: QueueHandler;
+  private readonly paymentTransactionMessageQueue: QueueHandler;
+
   constructor(
     lightningService: LightningService,
+    readonly lightningWebSocketService: LightningWebSocketService,
     private readonly transactionOnchainRepo: TransactionOnchainRepository,
     private readonly transactionLightningRepo: TransactionLightningRepository,
   ) {
     this.client = lightningService.getDefaultClient();
+
+    this.onchainTransactionMessageQueue = new QueueHandler();
+    this.invoiceTransactionMessageQueue = new QueueHandler();
+    this.paymentTransactionMessageQueue = new QueueHandler();
+
+    lightningWebSocketService.onChainTransactions.subscribe((m) => this.handleOnchainTransactionMessage(m));
+    lightningWebSocketService.invoiceTransactions.subscribe((m) => this.handleInvoiceTransactionMessage(m));
+    lightningWebSocketService.paymentTransactions.subscribe((m) => this.handlePaymentTransactionMessage(m));
   }
 
   async getLightningTransactionByTransaction(transaction: string): Promise<TransactionLightningEntity> {
@@ -228,7 +243,15 @@ export class LightningTransactionService {
     return allTransactions;
   }
 
-  async updateOnchainTransaction(onchainTransaction: LndOnchainTransactionDto): Promise<void> {
+  private handleOnchainTransactionMessage(onchainTransaction: LndOnchainTransactionDto): void {
+    this.onchainTransactionMessageQueue
+      .handle<void>(async () => this.updateOnchainTransaction(onchainTransaction))
+      .catch((e) => {
+        this.logger.error('Error while updating onchain transaction', e);
+      });
+  }
+
+  private async updateOnchainTransaction(onchainTransaction: LndOnchainTransactionDto): Promise<void> {
     const updateOnchainTransactionEntity = this.createTransactionOnchainEntity(onchainTransaction);
 
     if (0 !== updateOnchainTransactionEntity.block) {
@@ -270,12 +293,28 @@ export class LightningTransactionService {
     }
   }
 
-  async updatePayment(lndTransaction: LndTransactionDto): Promise<void> {
-    return this.updateLightningTransaction(TransactionLightningType.PAYMENT, lndTransaction);
+  private handleInvoiceTransactionMessage(invoice: LndTransactionDto): void {
+    this.invoiceTransactionMessageQueue
+      .handle<void>(async () => this.updateInvoice(invoice))
+      .catch((e) => {
+        this.logger.error('Error while updating invoice', e);
+      });
   }
 
-  async updateInvoice(lndTransaction: LndTransactionDto): Promise<void> {
+  private async updateInvoice(lndTransaction: LndTransactionDto): Promise<void> {
     return this.updateLightningTransaction(TransactionLightningType.INVOICE, lndTransaction);
+  }
+
+  private handlePaymentTransactionMessage(payment: LndTransactionDto): void {
+    this.paymentTransactionMessageQueue
+      .handle<void>(async () => this.updatePayment(payment))
+      .catch((e) => {
+        this.logger.error('Error while updating payment', e);
+      });
+  }
+
+  private async updatePayment(lndTransaction: LndTransactionDto): Promise<void> {
+    return this.updateLightningTransaction(TransactionLightningType.PAYMENT, lndTransaction);
   }
 
   private async updateLightningTransaction(
