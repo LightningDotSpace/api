@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { LightningWebSocketService } from 'src/integration/blockchain/lightning/services/lightning-ws.service';
 import { IntegrationModule } from 'src/integration/integration.module';
 import { SharedModule } from 'src/shared/shared.module';
 import { AuthService } from 'src/subdomains/user/application/services/auth.service';
@@ -50,7 +49,6 @@ import { WalletEntity } from './domain/entities/wallet.entity';
     WalletProviderService,
     WalletService,
     LightningWalletService,
-    LightningWebSocketService,
   ],
   exports: [UserService, WalletProviderService, WalletService],
 })

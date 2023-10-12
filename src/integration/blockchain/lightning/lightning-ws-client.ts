@@ -1,32 +1,33 @@
 import { Agent } from 'https';
-import { Config } from 'src/config/config';
+import { Subject } from 'rxjs';
+import { GetConfig } from 'src/config/config';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
-import { QueueHandler } from 'src/shared/utils/queue-handler';
 import WebSocket from 'ws';
 
-export class LightningWebSocketClient {
+export class LightningWebSocketClient<T> extends Subject<T> {
   private readonly logger = new LightningLogger(LightningWebSocketClient);
 
   private webSocket: WebSocket;
-  private readonly queue: QueueHandler;
 
   private readonly retryCounter = 6;
   private readonly retryWaitTimeSec = 10;
   private retryAttempt = 0;
 
   constructor(private wsUrl: string, private macaroon: string) {
+    super();
+
     if (!wsUrl) throw new Error('WebSocket URL not found');
     if (!macaroon) throw new Error('Macaroon not found');
 
     this.createWebSocket();
-
-    this.queue = new QueueHandler();
   }
 
   private createWebSocket() {
+    const config = GetConfig();
+
     this.webSocket = new WebSocket(this.wsUrl, {
       agent: new Agent({
-        ca: Config.blockchain.lightning.certificate,
+        ca: config.blockchain.lightning.certificate,
       }),
 
       headers: {
@@ -35,14 +36,14 @@ export class LightningWebSocketClient {
     });
   }
 
-  setup(openRequestBody: any, messageCallback: (message) => Promise<void>) {
+  setup(openRequestBody: any, messageCallback: (message: any) => void) {
     this.webSocket.on('open', () => {
       this.logger.info(`WebSocket ${this.wsUrl}: open`);
 
       this.webSocket.send(JSON.stringify(openRequestBody));
     });
 
-    this.webSocket.on('error', (err) => {
+    this.webSocket.on('error', (err: any) => {
       this.logger.error(`WebSocket ${this.wsUrl}: error`, err);
     });
 
@@ -60,17 +61,13 @@ export class LightningWebSocketClient {
       }
     });
 
-    this.webSocket.on('message', (message) => {
+    this.webSocket.on('message', (message: any) => {
       this.retryAttempt = 0;
 
-      this.queue
-        .handle<void>(async () => messageCallback(message))
-        .catch((e) => {
-          this.logger.error(e);
-        });
+      messageCallback(message);
     });
 
-    this.webSocket.on('ping', (pingMessage) => {
+    this.webSocket.on('ping', (pingMessage: any) => {
       this.webSocket.pong(pingMessage);
     });
   }

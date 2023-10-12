@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Configuration, GetConfig } from 'src/config/config';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
-import { LightningTransactionService } from 'src/subdomains/lightning/services/lightning-transaction.service';
 import { LndOnchainTransactionDto, LndTransactionDto } from '../dto/lnd.dto';
 import { LightningWebSocketClient } from '../lightning-ws-client';
 
@@ -9,16 +8,27 @@ import { LightningWebSocketClient } from '../lightning-ws-client';
 export class LightningWebSocketService {
   private readonly logger = new LightningLogger(LightningWebSocketService);
 
-  private onchainWebSocketClient: LightningWebSocketClient;
-  private invoiceWebSocketClient: LightningWebSocketClient;
-  private paymentWebSocketClient: LightningWebSocketClient;
+  private onchainWebSocketClient: LightningWebSocketClient<LndOnchainTransactionDto>;
+  private invoiceWebSocketClient: LightningWebSocketClient<LndTransactionDto>;
+  private paymentWebSocketClient: LightningWebSocketClient<LndTransactionDto>;
 
-  constructor(private lightningTransactionService: LightningTransactionService) {
+  constructor() {
     const config = GetConfig();
-
     this.setupOnchainWebSocketClient(config);
     this.setupInvoiceWebSocketClient(config);
     this.setupPaymentWebSocketClient(config);
+  }
+
+  subscribeToOnchainWebSocket(callback: (dto: LndOnchainTransactionDto) => void): void {
+    this.onchainWebSocketClient.subscribe(callback);
+  }
+
+  subscribeInvoiceWebSocketSocket(callback: (dto: LndTransactionDto) => void): void {
+    this.invoiceWebSocketClient.subscribe(callback);
+  }
+
+  subscribePaymentWebSocketSocket(callback: (dto: LndTransactionDto) => void): void {
+    this.paymentWebSocketClient.subscribe(callback);
   }
 
   private setupOnchainWebSocketClient(config: Configuration) {
@@ -64,7 +74,7 @@ export class LightningWebSocketService {
   }
 
   // --- Message Handling --- //
-  private async onchainMessage(message: any): Promise<void> {
+  private onchainMessage(message: any): void {
     const messageResult = JSON.parse(message).result;
 
     const onchainTransaction: LndOnchainTransactionDto = {
@@ -75,12 +85,10 @@ export class LightningWebSocketService {
       total_fees: messageResult.total_fees,
     };
 
-    return this.lightningTransactionService.updateOnchainTransaction(onchainTransaction).catch((e) => {
-      this.logger.error('Error while updating onchain transaction', e);
-    });
+    this.onchainWebSocketClient.next(onchainTransaction);
   }
 
-  private async invoiceMessage(message: any): Promise<void> {
+  private invoiceMessage(message: any): void {
     const messageResult = JSON.parse(message).result;
 
     const invoice: LndTransactionDto = {
@@ -97,12 +105,10 @@ export class LightningWebSocketService {
       paymentRequest: messageResult.payment_request,
     };
 
-    return this.lightningTransactionService.updateInvoice(invoice).catch((e) => {
-      this.logger.error('Error while updating invoice', e);
-    });
+    this.invoiceWebSocketClient.next(invoice);
   }
 
-  private async paymentMessage(message: any): Promise<void> {
+  private paymentMessage(message: any): void {
     const messageResult = JSON.parse(message).result;
 
     const payment: LndTransactionDto = {
@@ -116,8 +122,6 @@ export class LightningWebSocketService {
       paymentRequest: messageResult.payment_request,
     };
 
-    return this.lightningTransactionService.updatePayment(payment).catch((e) => {
-      this.logger.error('Error while updating payment', e);
-    });
+    this.paymentWebSocketClient.next(payment);
   }
 }
