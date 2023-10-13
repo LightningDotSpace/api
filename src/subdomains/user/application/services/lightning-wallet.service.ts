@@ -211,21 +211,17 @@ export class LightningWalletService {
   private async doUpdateUserTransaction(
     updateUserTransactionEntity: UserTransactionEntity,
   ): Promise<UserTransactionEntity> {
-    const dbUserTransactionEntity = await this.userTransactionRepository.findOneBy({
+    let dbUserTransactionEntity = await this.userTransactionRepository.findOneBy({
       lightningWallet: { id: updateUserTransactionEntity.lightningWallet.id },
       lightningTransaction: { id: updateUserTransactionEntity.lightningTransaction.id },
     });
 
     if (!dbUserTransactionEntity) {
-      return this.userTransactionRepository.save(updateUserTransactionEntity);
+      dbUserTransactionEntity = updateUserTransactionEntity;
     } else {
-      return this.userTransactionRepository.save(
-        Object.assign(dbUserTransactionEntity, {
-          fee: updateUserTransactionEntity.fee,
-          balance: updateUserTransactionEntity.balance,
-          tag: updateUserTransactionEntity.tag,
-        }),
-      );
+      Object.assign(dbUserTransactionEntity, updateUserTransactionEntity);
     }
+
+    return this.userTransactionRepository.save(dbUserTransactionEntity);
   }
 }

@@ -274,23 +274,17 @@ export class LightningTransactionService {
   private async doUpdateOnchainTransaction(
     updateOnchainTransactionEntity: TransactionOnchainEntity,
   ): Promise<TransactionOnchainEntity> {
-    const dbOnchainTransactionEntity = await this.transactionOnchainRepo.findOneBy({
+    let dbOnchainTransactionEntity = await this.transactionOnchainRepo.findOneBy({
       transaction: updateOnchainTransactionEntity.transaction,
     });
 
     if (!dbOnchainTransactionEntity) {
-      return this.transactionOnchainRepo.save(updateOnchainTransactionEntity);
+      dbOnchainTransactionEntity = updateOnchainTransactionEntity;
     } else {
-      return this.transactionOnchainRepo.save(
-        Object.assign(dbOnchainTransactionEntity, {
-          amount: updateOnchainTransactionEntity.amount,
-          fee: updateOnchainTransactionEntity.fee,
-          balance: updateOnchainTransactionEntity.balance,
-          block: updateOnchainTransactionEntity.block,
-          timestamp: updateOnchainTransactionEntity.timestamp,
-        }),
-      );
+      Object.assign(dbOnchainTransactionEntity, updateOnchainTransactionEntity);
     }
+
+    return this.transactionOnchainRepo.save(dbOnchainTransactionEntity);
   }
 
   private handleInvoiceTransactionMessage(invoice: LndTransactionDto): void {
@@ -374,22 +368,17 @@ export class LightningTransactionService {
   private async doUpdateLightningTransaction(
     updateTransactionLightningEntity: TransactionLightningEntity,
   ): Promise<TransactionLightningEntity> {
-    const dbTransactionLightningEntity = await this.transactionLightningRepo.findOneBy({
+    let dbTransactionLightningEntity = await this.transactionLightningRepo.findOneBy({
       type: updateTransactionLightningEntity.type,
       transaction: updateTransactionLightningEntity.transaction,
     });
 
     if (!dbTransactionLightningEntity) {
-      return this.transactionLightningRepo.save(updateTransactionLightningEntity);
+      dbTransactionLightningEntity = updateTransactionLightningEntity;
     } else {
-      return this.transactionLightningRepo.save(
-        Object.assign(dbTransactionLightningEntity, {
-          fee: updateTransactionLightningEntity.fee,
-          balance: updateTransactionLightningEntity.balance,
-          state: updateTransactionLightningEntity.state,
-          reason: updateTransactionLightningEntity.reason,
-        }),
-      );
+      Object.assign(dbTransactionLightningEntity, updateTransactionLightningEntity);
     }
+
+    return this.transactionLightningRepo.save(dbTransactionLightningEntity);
   }
 }
