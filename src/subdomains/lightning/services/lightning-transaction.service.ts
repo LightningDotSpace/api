@@ -352,6 +352,7 @@ export class LightningTransactionService {
     if (
       [TransactionLightningState.SETTLED, TransactionLightningState.SUCCEEDED].includes(updateTransactionEntity.state)
     ) {
+      await Util.delay(1000);
       updateTransactionEntity.balance = await this.client.getLndLightningBalance();
     }
 
