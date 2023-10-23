@@ -109,7 +109,7 @@ export class LightningTransactionService {
   async processSyncLightningTransactions(): Promise<void> {
     if (Config.processDisabled(Process.SYNC_LIGHTNING_TRANSACTIONS)) return;
 
-    const startDate = new Date('1970-01-01T00:00:00.000Z');
+    const startDate = new Date(0);
     const endDate = new Date('2099-12-31T23:59:59.999Z');
     const withBalance = false;
 
@@ -352,6 +352,8 @@ export class LightningTransactionService {
     if (
       [TransactionLightningState.SETTLED, TransactionLightningState.SUCCEEDED].includes(updateTransactionEntity.state)
     ) {
+      // 1s delay added, because of small delay in the LND to get the balance after the transaction.
+      // Without delay, we get the balance before the transaction.
       await Util.delay(1000);
       updateTransactionEntity.balance = await this.client.getLndLightningBalance();
     }
