@@ -88,6 +88,38 @@ export class LightningTransactionService {
     }
   }
 
+  @Cron(CronExpression.EVERY_DAY_AT_4AM)
+  @Lock()
+  async processSyncOnchainTransactions(): Promise<void> {
+    if (Config.processDisabled(Process.SYNC_ONCHAIN_TRANSACTIONS)) return;
+
+    const blockHeightStart = 0;
+    const blockHeightEnd = 100000000;
+    const withBalance = false;
+
+    const startTime = Date.now();
+    const entities = await this.syncOnchainTransactions(blockHeightStart, blockHeightEnd, withBalance);
+    const runTime = (Date.now() - startTime) / 1000;
+
+    this.logger.info(`syncOnchainTransactions: runtime=${runTime} sec., entries=${entities.length}`);
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_5AM)
+  @Lock()
+  async processSyncLightningTransactions(): Promise<void> {
+    if (Config.processDisabled(Process.SYNC_LIGHTNING_TRANSACTIONS)) return;
+
+    const startDate = new Date(0);
+    const endDate = new Date('2099-12-31T23:59:59.999Z');
+    const withBalance = false;
+
+    const startTime = Date.now();
+    const entities = await this.syncLightningTransactions(startDate, endDate, withBalance);
+    const runTime = (Date.now() - startTime) / 1000;
+
+    this.logger.info(`syncLightningTransactions: runtime=${runTime} sec., entries=${entities.length}`);
+  }
+
   async syncOnchainTransactions(
     blockHeightStart?: number,
     blockHeightEnd?: number,
@@ -320,6 +352,9 @@ export class LightningTransactionService {
     if (
       [TransactionLightningState.SETTLED, TransactionLightningState.SUCCEEDED].includes(updateTransactionEntity.state)
     ) {
+      // 1s delay added, because of small delay in the LND to get the balance after the transaction.
+      // Without delay, we get the balance before the transaction.
+      await Util.delay(1000);
       updateTransactionEntity.balance = await this.client.getLndLightningBalance();
     }
 

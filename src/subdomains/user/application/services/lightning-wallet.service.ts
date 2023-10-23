@@ -74,10 +74,26 @@ export class LightningWalletService {
 
   @Cron(CronExpression.EVERY_5_MINUTES)
   @Lock()
-  async processSyncLightningUserTransactions(): Promise<void> {
+  async processSyncRecentTransactions(): Promise<void> {
     if (Config.processDisabled(Process.UPDATE_LIGHTNING_USER_TRANSACTION)) return;
 
     await this.syncLightningUserTransactions(undefined, undefined, undefined, true);
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_6AM)
+  @Lock()
+  async processSyncAllTransactions(): Promise<void> {
+    if (Config.processDisabled(Process.SYNC_LIGHTNING_USER_TRANSACTIONS)) return;
+
+    const startDate = new Date(0);
+    const endDate = new Date('2099-12-31T23:59:59.999Z');
+    const withBalance = false;
+
+    const startTime = Date.now();
+    const entities = await this.syncLightningUserTransactions(startDate, endDate, undefined, withBalance);
+    const runTime = (Date.now() - startTime) / 1000;
+
+    this.logger.info(`syncLightningUserTransactions: runtime=${runTime} sec., entries=${entities.length}`);
   }
 
   async syncLightningUserTransactions(
