@@ -86,3 +86,13 @@ After Docker Compose is successfully executed for the very first time, the follo
 1. Open a Browser and connect to LNbits at: https://vm-{user}-{type}-{env}.westeurope.cloudapp.azure.com
 1. Find the User Id in the URL
 1. Set the value of the `LNBITS_ADMIN_USERS` in the config file `~/volumes/lnbits/.env` to the User Id
+
+# Infrastructure Update
+
+## Backup
+
+1. Run Script `runBackup.sh` before the update. This will backup all dynamic Bitcoin, Lightning, LNbits and ThunderHub data created from the different docker images - except the bitcoin blockchain.
+
+## Update
+
+Detailed Update Information can be found at: `https://docs.google.com/document/d/1WtpatYIxTcd-9E029Zu_4gLhd3H5MAfhytX3x-kUkwM`

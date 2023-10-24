@@ -21,7 +21,7 @@ services:
       bitcoind -conf=/home/bitcoin/.bitcoin/bitcoin.conf
 
   lnd:
-    image: lightninglabs/lnd:v0.16.4-beta
+    image: lightninglabs/lnd:v0.17.0-beta
     restart: always
     volumes:
       - ./volumes/lightning:/root/.lnd
@@ -40,8 +40,23 @@ services:
     command: >
       lnd --configfile=/root/.lnd/lnd.conf --bitcoin.mainnet
 
+  tapd:
+    image: polarlightning/tapd:0.3.0-alpha
+    restart: always
+    volumes:
+      - ./volumes/lightning:/home/tap/.lnd
+      - ./volumes/taproot:/home/tap/.tapd
+      - ./volumes/taproot/tapd.conf:/home/tap/tapd.conf
+    ports:
+      - '8089:8089'
+    depends_on:
+      lnd:
+        condition: service_healthy
+    command: >
+      tapd --configfile=/home/tap/tapd.conf
+
   lnbits:
-    image: lnbitsdocker/lnbits-legend
+    image: lnbitsdocker/lnbits-legend:0.10.10
     restart: always
     volumes:
       - ./volumes/lightning:/app/.lnd
@@ -62,14 +77,14 @@ services:
       poetry run lnbits --ssl-keyfile /app/.lnd/tls.key --ssl-certfile /app/.lnd/tls.cert
 
   thunderhub:
-    image: apotdevin/thunderhub:v0.13.20
+    image: apotdevin/thunderhub:v0.13.23
     restart: always
     volumes:
       - ./volumes/lightning:/app/.lnd
       - ./volumes/thunderhub/.env:/app/.env
       - ./volumes/thunderhub/accounts.yml:/app/accounts.yml
     ports:
-      - '4000:4000'
+      - '3000:3000'
     depends_on:
       lnd:
         condition: service_healthy
