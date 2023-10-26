@@ -1,6 +1,7 @@
 #!/bin/bash
 
 cd ~
+mkdir backup
 mkdir volumes
 
 cd ~/volumes

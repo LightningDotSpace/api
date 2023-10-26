@@ -2,6 +2,9 @@ import { Injectable, Optional } from '@nestjs/common';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 export enum Process {
+  SYNC_ONCHAIN_TRANSACTIONS = 'SyncOnchainTransactions',
+  SYNC_LIGHTNING_TRANSACTIONS = 'SyncLightningTransactions',
+  SYNC_LIGHTNING_USER_TRANSACTIONS = 'SyncLightningUserTransactions',
   UPDATE_INVOICE = 'UpdateInvoice',
   UPDATE_WALLET_BALANCE = 'UpdateWalletBalance',
   UPDATE_LIGHTNING_USER_TRANSACTION = 'UpdateLightingUserTransaction',

@@ -88,6 +88,38 @@ export class LightningTransactionService {
     }
   }
 
+  @Cron(CronExpression.EVERY_DAY_AT_4AM)
+  @Lock()
+  async processSyncOnchainTransactions(): Promise<void> {
+    if (Config.processDisabled(Process.SYNC_ONCHAIN_TRANSACTIONS)) return;
+
+    const blockHeightStart = 0;
+    const blockHeightEnd = 100000000;
+    const withBalance = false;
+
+    const startTime = Date.now();
+    const entities = await this.syncOnchainTransactions(blockHeightStart, blockHeightEnd, withBalance);
+    const runTime = (Date.now() - startTime) / 1000;
+
+    this.logger.info(`syncOnchainTransactions: runtime=${runTime} sec., entries=${entities.length}`);
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_5AM)
+  @Lock()
+  async processSyncLightningTransactions(): Promise<void> {
+    if (Config.processDisabled(Process.SYNC_LIGHTNING_TRANSACTIONS)) return;
+
+    const startDate = new Date(0);
+    const endDate = new Date('2099-12-31T23:59:59.999Z');
+    const withBalance = false;
+
+    const startTime = Date.now();
+    const entities = await this.syncLightningTransactions(startDate, endDate, withBalance);
+    const runTime = (Date.now() - startTime) / 1000;
+
+    this.logger.info(`syncLightningTransactions: runtime=${runTime} sec., entries=${entities.length}`);
+  }
+
   async syncOnchainTransactions(
     blockHeightStart?: number,
     blockHeightEnd?: number,
@@ -274,23 +306,17 @@ export class LightningTransactionService {
   private async doUpdateOnchainTransaction(
     updateOnchainTransactionEntity: TransactionOnchainEntity,
   ): Promise<TransactionOnchainEntity> {
-    const dbOnchainTransactionEntity = await this.transactionOnchainRepo.findOneBy({
+    let dbOnchainTransactionEntity = await this.transactionOnchainRepo.findOneBy({
       transaction: updateOnchainTransactionEntity.transaction,
     });
 
     if (!dbOnchainTransactionEntity) {
-      return this.transactionOnchainRepo.save(updateOnchainTransactionEntity);
+      dbOnchainTransactionEntity = updateOnchainTransactionEntity;
     } else {
-      return this.transactionOnchainRepo.save(
-        Object.assign(dbOnchainTransactionEntity, {
-          amount: updateOnchainTransactionEntity.amount,
-          fee: updateOnchainTransactionEntity.fee,
-          balance: updateOnchainTransactionEntity.balance,
-          block: updateOnchainTransactionEntity.block,
-          timestamp: updateOnchainTransactionEntity.timestamp,
-        }),
-      );
+      Object.assign(dbOnchainTransactionEntity, updateOnchainTransactionEntity);
     }
+
+    return this.transactionOnchainRepo.save(dbOnchainTransactionEntity);
   }
 
   private handleInvoiceTransactionMessage(invoice: LndTransactionDto): void {
@@ -326,6 +352,9 @@ export class LightningTransactionService {
     if (
       [TransactionLightningState.SETTLED, TransactionLightningState.SUCCEEDED].includes(updateTransactionEntity.state)
     ) {
+      // 1s delay added, because of small delay in the LND to get the balance after the transaction.
+      // Without delay, we get the balance before the transaction.
+      await Util.delay(1000);
       updateTransactionEntity.balance = await this.client.getLndLightningBalance();
     }
 
@@ -374,22 +403,17 @@ export class LightningTransactionService {
   private async doUpdateLightningTransaction(
     updateTransactionLightningEntity: TransactionLightningEntity,
   ): Promise<TransactionLightningEntity> {
-    const dbTransactionLightningEntity = await this.transactionLightningRepo.findOneBy({
+    let dbTransactionLightningEntity = await this.transactionLightningRepo.findOneBy({
       type: updateTransactionLightningEntity.type,
       transaction: updateTransactionLightningEntity.transaction,
     });
 
     if (!dbTransactionLightningEntity) {
-      return this.transactionLightningRepo.save(updateTransactionLightningEntity);
+      dbTransactionLightningEntity = updateTransactionLightningEntity;
     } else {
-      return this.transactionLightningRepo.save(
-        Object.assign(dbTransactionLightningEntity, {
-          fee: updateTransactionLightningEntity.fee,
-          balance: updateTransactionLightningEntity.balance,
-          state: updateTransactionLightningEntity.state,
-          reason: updateTransactionLightningEntity.reason,
-        }),
-      );
+      Object.assign(dbTransactionLightningEntity, updateTransactionLightningEntity);
     }
+
+    return this.transactionLightningRepo.save(dbTransactionLightningEntity);
   }
 }
