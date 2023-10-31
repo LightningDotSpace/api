@@ -43,15 +43,11 @@ export class LightningWalletService {
   async processUpdateLightningWalletBalances(): Promise<void> {
     if (Config.processDisabled(Process.UPDATE_WALLET_BALANCE)) return;
 
-    try {
-      let lightningWalletEntities = await this.lightingWalletRepository.first(1000);
+    let lightningWalletEntities = await this.lightingWalletRepository.first(1000);
 
-      while (lightningWalletEntities.length) {
-        await this.doProcessUpdateLightningWalletBalances(lightningWalletEntities);
-        lightningWalletEntities = await this.lightingWalletRepository.next();
-      }
-    } catch (e) {
-      this.logger.error('Error while updating wallet balances', e);
+    while (lightningWalletEntities.length) {
+      await this.doProcessUpdateLightningWalletBalances(lightningWalletEntities);
+      lightningWalletEntities = await this.lightingWalletRepository.next();
     }
   }
 
@@ -59,15 +55,22 @@ export class LightningWalletService {
     lightningWalletEntities: LightningWalletEntity[],
   ): Promise<void> {
     for (const lightningWalletEntity of lightningWalletEntities) {
-      const lnbitsWallet = await this.client.getLnBitsWallet(lightningWalletEntity.adminKey);
+      try {
+        const lnbitsWallet = await this.client.getLnBitsWallet(lightningWalletEntity.adminKey);
 
-      const lightningWalletEntityBalance = lightningWalletEntity.balance;
-      const lnbitsWalletBalance = LightningHelper.btcToSat(lnbitsWallet.balance);
+        const lightningWalletEntityBalance = lightningWalletEntity.balance;
+        const lnbitsWalletBalance = LightningHelper.btcToSat(lnbitsWallet.balance);
 
-      if (lightningWalletEntityBalance !== lnbitsWalletBalance) {
-        await this.lightingWalletRepository.update(lightningWalletEntity.id, {
-          balance: lnbitsWalletBalance,
-        });
+        if (lightningWalletEntityBalance !== lnbitsWalletBalance) {
+          await this.lightingWalletRepository.update(lightningWalletEntity.id, {
+            balance: lnbitsWalletBalance,
+          });
+        }
+      } catch (e) {
+        this.logger.error(
+          `Error while updating wallet balance: ${lightningWalletEntity.id} / ${lightningWalletEntity.lnbitsWalletId}`,
+          e,
+        );
       }
     }
   }
@@ -80,7 +83,7 @@ export class LightningWalletService {
     await this.syncLightningUserTransactions(undefined, undefined, undefined, true);
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_6AM)
+  @Cron(CronExpression.EVERY_DAY_AT_4AM)
   @Lock()
   async processSyncAllTransactions(): Promise<void> {
     if (Config.processDisabled(Process.SYNC_LIGHTNING_USER_TRANSACTIONS)) return;

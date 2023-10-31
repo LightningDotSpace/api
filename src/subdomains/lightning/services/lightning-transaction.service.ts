@@ -88,7 +88,7 @@ export class LightningTransactionService {
     }
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_4AM)
+  @Cron(CronExpression.EVERY_DAY_AT_2AM)
   @Lock()
   async processSyncOnchainTransactions(): Promise<void> {
     if (Config.processDisabled(Process.SYNC_ONCHAIN_TRANSACTIONS)) return;
@@ -104,7 +104,7 @@ export class LightningTransactionService {
     this.logger.info(`syncOnchainTransactions: runtime=${runTime} sec., entries=${entities.length}`);
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_5AM)
+  @Cron(CronExpression.EVERY_DAY_AT_3AM)
   @Lock()
   async processSyncLightningTransactions(): Promise<void> {
     if (Config.processDisabled(Process.SYNC_LIGHTNING_TRANSACTIONS)) return;
