@@ -121,15 +121,18 @@ export class LightningWalletService {
         ...(await this.getUserTransactionEntities(lightningWalletInfo, startDate, endDate, withBalance)),
       );
     } else {
-      const lightningWalletIterator = this.lightingWalletRepository.getIterator(100, 'lnbitsWalletId, adminKey');
-      let lightningWalletInfo = await lightningWalletIterator.nextForType<LightningWalletInfoDto>();
+      const lightningWalletIterator = this.lightingWalletRepository.getRawIterator<LightningWalletInfoDto>(
+        100,
+        'lnbitsWalletId, adminKey',
+      );
+      let lightningWalletInfo = await lightningWalletIterator.next();
 
       while (lightningWalletInfo.length) {
         userTransactionEntities.push(
           ...(await this.getUserTransactionEntities(lightningWalletInfo, startDate, endDate, withBalance)),
         );
 
-        lightningWalletInfo = await lightningWalletIterator.nextForType<LightningWalletInfoDto>();
+        lightningWalletInfo = await lightningWalletIterator.next();
       }
     }
 

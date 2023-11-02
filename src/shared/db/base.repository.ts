@@ -13,7 +13,11 @@ export abstract class BaseRepository<T extends ObjectLiteral> extends Repository
     });
   }
 
-  getIterator(numberOfEntries: number, select?: string): RepositoryIterator<T> {
-    return new RepositoryIterator<T>(this, numberOfEntries, select);
+  getIterator(numberOfEntries: number): RepositoryIterator<T> {
+    return new RepositoryIterator<T>(this, numberOfEntries);
+  }
+
+  getRawIterator<U extends ObjectLiteral>(numberOfEntries: number, selection: string): RepositoryIterator<U> {
+    return new RepositoryIterator<U>(this, numberOfEntries, selection);
   }
 }

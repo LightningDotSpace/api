@@ -9,7 +9,7 @@ export class LightningWebSocketClient<T> extends Subject<T> {
 
   private webSocket: WebSocket;
 
-  private readonly retryCounter = 6;
+  private readonly retryCounter = 30;
   private readonly retryWaitTimeSec = 10;
   private retryAttempt = 0;
 
@@ -62,9 +62,13 @@ export class LightningWebSocketClient<T> extends Subject<T> {
     });
 
     this.webSocket.on('message', (message: string) => {
-      this.retryAttempt = 0;
+      try {
+        this.retryAttempt = 0;
 
-      this.next(JSON.parse(message));
+        this.next(JSON.parse(message));
+      } catch (e) {
+        this.logger.error(`WebSocket ${this.wsUrl}: Error during message processing`, e);
+      }
     });
 
     this.webSocket.on('ping', (pingMessage: any) => {
