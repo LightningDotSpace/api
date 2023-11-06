@@ -43,11 +43,12 @@ export class LightningWalletService {
   async processUpdateLightningWalletBalances(): Promise<void> {
     if (Config.processDisabled(Process.UPDATE_WALLET_BALANCE)) return;
 
-    let lightningWalletEntities = await this.lightingWalletRepository.first(1000);
+    const lightningWalletIterator = this.lightingWalletRepository.getIterator(1000);
+    let lightningWalletEntities = await lightningWalletIterator.next();
 
     while (lightningWalletEntities.length) {
       await this.doProcessUpdateLightningWalletBalances(lightningWalletEntities);
-      lightningWalletEntities = await this.lightingWalletRepository.next();
+      lightningWalletEntities = await lightningWalletIterator.next();
     }
   }
 
@@ -120,17 +121,18 @@ export class LightningWalletService {
         ...(await this.getUserTransactionEntities(lightningWalletInfo, startDate, endDate, withBalance)),
       );
     } else {
-      let lightningWalletInfo = await this.lightingWalletRepository.flatFirst<LightningWalletInfoDto>(
+      const lightningWalletIterator = this.lightingWalletRepository.getRawIterator<LightningWalletInfoDto>(
         100,
         'lnbitsWalletId, adminKey',
       );
+      let lightningWalletInfo = await lightningWalletIterator.next();
 
       while (lightningWalletInfo.length) {
         userTransactionEntities.push(
           ...(await this.getUserTransactionEntities(lightningWalletInfo, startDate, endDate, withBalance)),
         );
 
-        lightningWalletInfo = await this.lightingWalletRepository.flatNext<LightningWalletInfoDto>();
+        lightningWalletInfo = await lightningWalletIterator.next();
       }
     }
 
