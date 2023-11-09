@@ -352,9 +352,9 @@ export class LightningTransactionService {
     if (
       [TransactionLightningState.SETTLED, TransactionLightningState.SUCCEEDED].includes(updateTransactionEntity.state)
     ) {
-      // 1s delay added, because of small delay in the LND to get the balance after the transaction.
+      // 2s delay added, because of small delay in the LND to get the balance after the transaction.
       // Without delay, we get the balance before the transaction.
-      await Util.delay(1000);
+      await Util.delay(2000);
       updateTransactionEntity.balance = await this.client.getLndLightningBalance();
     }
 
