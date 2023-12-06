@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post, Query, Req, Res } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
+import { LightningLndhubAuthDto } from '../dto/lightning-lndhub-auth.dto';
 import { LightningForwardService } from '../services/lightning-forward.service';
 
 @ApiTags('LNDHub')
@@ -14,26 +15,31 @@ export class LightingLndhubForwardController {
   }
 
   @Get('balance')
+  @ApiBearerAuth()
   async balance(@Req() req: Request, @Body() body: any, @Query() params: any): Promise<any> {
     return this.forwardService.lndhubRequest(req, body, params);
   }
 
   @Get('gettxs')
+  @ApiBearerAuth()
   async gettxs(@Req() req: Request, @Body() body: any, @Query() params: any): Promise<any> {
     return this.forwardService.lndhubRequest(req, body, params);
   }
 
   @Get('getuserinvoices')
+  @ApiBearerAuth()
   async getuserinvoices(@Req() req: Request, @Body() body: any, @Query() params: any): Promise<any> {
     return this.forwardService.lndhubRequest(req, body, params);
   }
 
   @Get('getbtc')
+  @ApiBearerAuth()
   async getbtc(@Req() req: Request, @Body() body: any, @Query() params: any): Promise<any> {
     return this.forwardService.lndhubRequest(req, body, params);
   }
 
   @Get('getpending')
+  @ApiBearerAuth()
   async getpending(@Req() req: Request, @Body() body: any, @Query() params: any): Promise<any> {
     return this.forwardService.lndhubRequest(req, body, params);
   }
@@ -60,16 +66,18 @@ export class LightingLndhubForwardController {
   }
 
   @Post('auth')
-  async auth(@Req() req: Request, @Body() body: any, @Query() params: any): Promise<any> {
+  async auth(@Req() req: Request, @Body() body: LightningLndhubAuthDto, @Query() params: any): Promise<any> {
     return this.forwardService.lndhubRequest(req, body, params);
   }
 
   @Post('addinvoice')
+  @ApiBearerAuth()
   async addinvoice(@Req() req: Request, @Body() body: any, @Query() params: any): Promise<any> {
     return this.forwardService.lndhubRequest(req, body, params);
   }
 
   @Post('payinvoice')
+  @ApiBearerAuth()
   async payinvoice(@Req() req: Request, @Body() body: any, @Query() params: any): Promise<any> {
     return this.forwardService.lndhubRequest(req, body, params);
   }
