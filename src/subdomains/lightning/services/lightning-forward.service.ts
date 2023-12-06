@@ -20,7 +20,7 @@ export class LightningForwardService {
   }
 
   // --- LNDHUB --- //
-  async lndhubRequest(req: Request, body: any, params: any): Promise<any> {
+  async lndhubRequest<T>(req: Request, body: any, params: any): Promise<T | null> {
     const lastUrlpart = this.getLastUrlPart(req);
     if (!lastUrlpart) return null;
 

@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post, Query, Req, Res } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
+import { LnBitsUserInvoiceDto } from 'src/integration/blockchain/lightning/dto/lnbits.dto';
 import { LightningLndhubAuthDto } from '../dto/lightning-lndhub-auth.dto';
 import { LightningForwardService } from '../services/lightning-forward.service';
 
@@ -29,7 +30,9 @@ export class LightingLndhubForwardController {
   @Get('getuserinvoices')
   @ApiBearerAuth()
   async getuserinvoices(@Req() req: Request, @Body() body: any, @Query() params: any): Promise<any> {
-    return this.forwardService.lndhubRequest(req, body, params);
+    return this.forwardService
+      .lndhubRequest<LnBitsUserInvoiceDto[]>(req, body, params)
+      .then((r) => r?.filter((i) => i.ispaid));
   }
 
   @Get('getbtc')
