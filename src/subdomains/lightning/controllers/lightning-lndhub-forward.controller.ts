@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post, Query, Req, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
+import { LnBitsUserInvoiceDto } from 'src/integration/blockchain/lightning/dto/lnbits.dto';
 import { LightningForwardService } from '../services/lightning-forward.service';
 
 @ApiTags('LNDHub')
@@ -25,7 +26,9 @@ export class LightingLndhubForwardController {
 
   @Get('getuserinvoices')
   async getuserinvoices(@Req() req: Request, @Body() body: any, @Query() params: any): Promise<any> {
-    return this.forwardService.lndhubRequest(req, body, params);
+    return this.forwardService
+      .lndhubRequest<LnBitsUserInvoiceDto[]>(req, body, params)
+      .then((r) => r?.filter((i) => i.ispaid));
   }
 
   @Get('getbtc')
