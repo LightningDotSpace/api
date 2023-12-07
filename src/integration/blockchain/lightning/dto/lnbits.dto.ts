@@ -129,19 +129,3 @@ export interface LnBitsLnurlwLinkDto {
   custom_url?: string;
   lnurl?: string;
 }
-
-export interface LnBitsUserInvoiceDto {
-  r_hash: {
-    type: string;
-    data: number[];
-  };
-  payment_request: string;
-  add_index: string;
-  description: string;
-  payment_hash: string;
-  ispaid: boolean;
-  amt: number;
-  expire_time: number;
-  timestamp: number;
-  type: string;
-}
