@@ -89,7 +89,7 @@ export class LightningWalletService {
   async processSyncAllTransactions(): Promise<void> {
     if (Config.processDisabled(Process.SYNC_LIGHTNING_USER_TRANSACTIONS)) return;
 
-    const startDate = new Date(0);
+    const startDate = Util.daysBefore(7);
     const endDate = new Date('2099-12-31T23:59:59.999Z');
     const withBalance = false;
 
