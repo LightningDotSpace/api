@@ -25,6 +25,11 @@ param lightningLnbitsAdminKey string
 @secure()
 param lightningLndAdminMacaroon string
 
+@secure()
+param umaSigningPrivKey string
+param umaSigningPubKey string
+param umaEncryptionPubKey string
+
 // --- VARIABLES --- //
 var compName = 'lds'
 var apiName = 'api'
@@ -151,14 +156,15 @@ resource sqlVNetRule 'Microsoft.Sql/servers/virtualNetworkRules@2021-02-01-previ
   }
 }
 
-resource sqlAllRule 'Microsoft.Sql/servers/firewallRules@2021-02-01-preview' = if (dbAllowAllIps) {
-  parent: sqlServer
-  name: 'all'
-  properties: {
-    startIpAddress: '0.0.0.0'
-    endIpAddress: '255.255.255.255'
+resource sqlAllRule 'Microsoft.Sql/servers/firewallRules@2021-02-01-preview' =
+  if (dbAllowAllIps) {
+    parent: sqlServer
+    name: 'all'
+    properties: {
+      startIpAddress: '0.0.0.0'
+      endIpAddress: '255.255.255.255'
+    }
   }
-}
 
 resource sqlDb 'Microsoft.Sql/servers/databases@2021-02-01-preview' = {
   parent: sqlServer
@@ -192,155 +198,170 @@ resource sqlDbLtrPolicy 'Microsoft.Sql/servers/databases/backupLongTermRetention
 }
 
 // API App Service
-resource appServicePlan 'Microsoft.Web/serverfarms@2018-02-01' = if (env != 'loc') {
-  name: apiServicePlanName
-  location: location
-  kind: 'linux'
-  properties: {
-    reserved: true
-  }
-  sku: {
-    name: 'P1v2'
-    tier: 'PremiumV2'
-    capacity: 1
-  }
-}
-
-resource apiAppService 'Microsoft.Web/sites@2018-11-01' = if (env != 'loc') {
-  name: apiAppName
-  location: location
-  kind: 'app,linux'
-  properties: {
-    serverFarmId: appServicePlan.id
-    httpsOnly: true
-    virtualNetworkSubnetId: virtualNet.properties.subnets[0].id
-
-    siteConfig: {
-      alwaysOn: true
-      linuxFxVersion: 'NODE|16-lts'
-      appCommandLine: 'npm run start:prod'
-      httpLoggingEnabled: true
-      logsDirectorySizeLimit: 100
-      vnetRouteAllEnabled: true
-      scmIpSecurityRestrictionsUseMain: true
-
-      appSettings: [
-        {
-          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-          value: env != 'loc' ? appInsights.properties.InstrumentationKey : ''
-        }
-        {
-          name: 'ENVIRONMENT'
-          value: env
-        }
-        {
-          name: 'SQL_HOST'
-          value: sqlServer.properties.fullyQualifiedDomainName
-        }
-        {
-          name: 'SQL_PORT'
-          value: '1433'
-        }
-        {
-          name: 'SQL_USERNAME'
-          value: dbAdminLogin
-        }
-        {
-          name: 'SQL_PASSWORD'
-          value: dbAdminPassword
-        }
-        {
-          name: 'SQL_DB'
-          value: sqlDbName
-        }
-        {
-          name: 'JWT_SECRET'
-          value: jwtSecret
-        }
-        {
-          name: 'SQL_SYNCHRONIZE'
-          value: 'false'
-        }
-        {
-          name: 'SQL_MIGRATE'
-          value: 'true'
-        }
-        {
-          name: 'LIGHTNING_API_CERTIFICATE'
-          value: lightningApiCertificate
-        }
-        {
-          name: 'LIGHTNING_LNBITS_ADMIN_USER_ID'
-          value: lightningLnbitsAdminUser
-        }
-        {
-          name: 'LIGHTNING_LNBITS_ADMIN_KEY'
-          value: lightningLnbitsAdminKey
-        }
-        {
-          name: 'LIGHTNING_LNBITS_API_URL'
-          value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/api/v1'
-        }
-        {
-          name: 'LIGHTNING_LNBITS_LNURLP_API_URL'
-          value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/lnurlp/api/v1'
-        }
-        {
-          name: 'LIGHTNING_LNBITS_LNURLP_URL'
-          value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/lnurlp'
-        }
-        {
-          name: 'LIGHTNING_LNBITS_LNURLW_API_URL'
-          value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/withdraw/api/v1'
-        }
-        {
-          name: 'LIGHTNING_LNBITS_LNDHUB_URL'
-          value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/lndhub/ext'
-        }
-        {
-          name: 'LIGHTNING_LNBITS_USERMANAGER_API_URL'
-          value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/usermanager/api/v1'
-        }
-        {
-          name: 'LIGHTNING_LND_API_URL'
-          value: 'https://${btcNodes[0].outputs.ip}:8080/v1'
-        }
-        {
-          name: 'LIGHTNING_LND_ADMIN_MACAROON'
-          value: lightningLndAdminMacaroon
-        }
-        {
-          name: 'LIGHTNING_LND_WS_ONCHAIN_TRANSACTIONS_URL'
-          value: 'wss://${btcNodes[0].outputs.ip}:8080/v1/transactions/subscribe?method=GET'
-        }
-        {
-          name: 'LIGHTNING_LND_WS_INVOICES_URL'
-          value: 'wss://${btcNodes[0].outputs.ip}:8080/v1/invoices/subscribe?method=GET'
-        }
-        {
-          name: 'LIGHTNING_LND_WS_PAYMENTS_URL'
-          value: 'wss://${btcNodes[0].outputs.ip}:8080/v2/router/payments?method=GET'
-        }
-        {
-          name: 'WEBSITE_RUN_FROM_PACKAGE'
-          value: '1'
-        }
-      ]
+resource appServicePlan 'Microsoft.Web/serverfarms@2018-02-01' =
+  if (env != 'loc') {
+    name: apiServicePlanName
+    location: location
+    kind: 'linux'
+    properties: {
+      reserved: true
+    }
+    sku: {
+      name: 'P1v2'
+      tier: 'PremiumV2'
+      capacity: 1
     }
   }
-}
 
-resource appInsights 'microsoft.insights/components@2020-02-02-preview' = if (env != 'loc') {
-  name: appInsightsName
-  location: location
-  kind: 'web'
-  properties: {
-    Application_Type: 'web'
-    IngestionMode: 'ApplicationInsights'
-    publicNetworkAccessForIngestion: 'Enabled'
-    publicNetworkAccessForQuery: 'Enabled'
+resource apiAppService 'Microsoft.Web/sites@2018-11-01' =
+  if (env != 'loc') {
+    name: apiAppName
+    location: location
+    kind: 'app,linux'
+    properties: {
+      serverFarmId: appServicePlan.id
+      httpsOnly: true
+      virtualNetworkSubnetId: virtualNet.properties.subnets[0].id
+
+      siteConfig: {
+        alwaysOn: true
+        linuxFxVersion: 'NODE|16-lts'
+        appCommandLine: 'npm run start:prod'
+        httpLoggingEnabled: true
+        logsDirectorySizeLimit: 100
+        vnetRouteAllEnabled: true
+        scmIpSecurityRestrictionsUseMain: true
+
+        appSettings: [
+          {
+            name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+            value: env != 'loc' ? appInsights.properties.InstrumentationKey : ''
+          }
+          {
+            name: 'ENVIRONMENT'
+            value: env
+          }
+          {
+            name: 'SQL_HOST'
+            value: sqlServer.properties.fullyQualifiedDomainName
+          }
+          {
+            name: 'SQL_PORT'
+            value: '1433'
+          }
+          {
+            name: 'SQL_USERNAME'
+            value: dbAdminLogin
+          }
+          {
+            name: 'SQL_PASSWORD'
+            value: dbAdminPassword
+          }
+          {
+            name: 'SQL_DB'
+            value: sqlDbName
+          }
+          {
+            name: 'JWT_SECRET'
+            value: jwtSecret
+          }
+          {
+            name: 'SQL_SYNCHRONIZE'
+            value: 'false'
+          }
+          {
+            name: 'SQL_MIGRATE'
+            value: 'true'
+          }
+          {
+            name: 'LIGHTNING_API_CERTIFICATE'
+            value: lightningApiCertificate
+          }
+          {
+            name: 'LIGHTNING_LNBITS_ADMIN_USER_ID'
+            value: lightningLnbitsAdminUser
+          }
+          {
+            name: 'LIGHTNING_LNBITS_ADMIN_KEY'
+            value: lightningLnbitsAdminKey
+          }
+          {
+            name: 'LIGHTNING_LNBITS_API_URL'
+            value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/api/v1'
+          }
+          {
+            name: 'LIGHTNING_LNBITS_LNURLP_API_URL'
+            value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/lnurlp/api/v1'
+          }
+          {
+            name: 'LIGHTNING_LNBITS_LNURLP_URL'
+            value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/lnurlp'
+          }
+          {
+            name: 'LIGHTNING_LNBITS_LNURLW_API_URL'
+            value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/withdraw/api/v1'
+          }
+          {
+            name: 'LIGHTNING_LNBITS_LNDHUB_URL'
+            value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/lndhub/ext'
+          }
+          {
+            name: 'LIGHTNING_LNBITS_USERMANAGER_API_URL'
+            value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/usermanager/api/v1'
+          }
+          {
+            name: 'LIGHTNING_LND_API_URL'
+            value: 'https://${btcNodes[0].outputs.ip}:8080/v1'
+          }
+          {
+            name: 'LIGHTNING_LND_ADMIN_MACAROON'
+            value: lightningLndAdminMacaroon
+          }
+          {
+            name: 'LIGHTNING_LND_WS_ONCHAIN_TRANSACTIONS_URL'
+            value: 'wss://${btcNodes[0].outputs.ip}:8080/v1/transactions/subscribe?method=GET'
+          }
+          {
+            name: 'LIGHTNING_LND_WS_INVOICES_URL'
+            value: 'wss://${btcNodes[0].outputs.ip}:8080/v1/invoices/subscribe?method=GET'
+          }
+          {
+            name: 'LIGHTNING_LND_WS_PAYMENTS_URL'
+            value: 'wss://${btcNodes[0].outputs.ip}:8080/v2/router/payments?method=GET'
+          }
+          {
+            name: 'UMA_SIGNING_PRIV_KEY'
+            value: umaSigningPrivKey
+          }
+          {
+            name: 'UMA_SIGNING_PUB_KEY'
+            value: umaSigningPubKey
+          }
+          {
+            name: 'UMA_ENCRYPTION_PUB_KEY'
+            value: umaEncryptionPubKey
+          }
+          {
+            name: 'WEBSITE_RUN_FROM_PACKAGE'
+            value: '1'
+          }
+        ]
+      }
+    }
   }
-}
+
+resource appInsights 'microsoft.insights/components@2020-02-02-preview' =
+  if (env != 'loc') {
+    name: appInsightsName
+    location: location
+    kind: 'web'
+    properties: {
+      Application_Type: 'web'
+      IngestionMode: 'ApplicationInsights'
+      publicNetworkAccessForIngestion: 'Enabled'
+      publicNetworkAccessForQuery: 'Enabled'
+    }
+  }
 
 // BTC Node
 resource vmNsg 'Microsoft.Network/networkSecurityGroups@2020-11-01' = {
@@ -391,16 +412,18 @@ resource vmNsg 'Microsoft.Network/networkSecurityGroups@2020-11-01' = {
   }
 }
 
-module btcNodes 'btc-node.bicep' = [for node in btcNodeProps: {
-  name: node.name
-  params: {
-    location: location
-    pipName: node.pipName
-    vmName: node.vmName
-    vmDiskName: node.vmDiskName
-    nicName: node.nicName
-    vmUser: btcVmUser
-    vmPassword: btcVmPassword
-    subnetId: virtualNet.properties.subnets[1].id
+module btcNodes 'btc-node.bicep' = [
+  for node in btcNodeProps: {
+    name: node.name
+    params: {
+      location: location
+      pipName: node.pipName
+      vmName: node.vmName
+      vmDiskName: node.vmDiskName
+      nicName: node.nicName
+      vmUser: btcVmUser
+      vmPassword: btcVmPassword
+      subnetId: virtualNet.properties.subnets[1].id
+    }
   }
-}]
+]
