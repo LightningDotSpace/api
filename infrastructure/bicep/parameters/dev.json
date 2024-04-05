@@ -43,6 +43,15 @@
     },
     "lightningLndAdminMacaroon": {
       "value": "xxx"
+    },
+    "umaSigningPrivKey": {
+      "value": "xxx"
+    },
+    "umaSigningPubKey": {
+      "value": "xxx"
+    },
+    "umaEncryptionPubKey": {
+      "value": "xxx"
     }
   }
 }

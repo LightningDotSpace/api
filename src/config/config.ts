@@ -88,6 +88,16 @@ export class Configuration {
     },
   };
 
+  uma = {
+    signingPrivKey: process.env.UMA_SIGNING_PRIV_KEY || '',
+    signingPubKey: process.env.UMA_SIGNING_PUB_KEY || '',
+    encryptionPubKey: process.env.UMA_ENCRYPTION_PUB_KEY || '',
+  };
+
+  coinGecko = {
+    apiKey: process.env.COIN_GECKO_API_KEY,
+  };
+
   processDisabled = (processName: Process) =>
     process.env.DISABLED_PROCESSES === '*' || (process.env.DISABLED_PROCESSES?.split(',') ?? []).includes(processName);
 

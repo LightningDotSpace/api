@@ -1,19 +1,33 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Param, Query, Req } from '@nestjs/common';
+import { ApiExcludeEndpoint, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { PubKeyResponse } from '@uma-sdk/core';
 import { LnBitsLnurlPayRequestDto } from 'src/integration/blockchain/lightning/dto/lnbits.dto';
+import { UmaService } from 'src/integration/blockchain/uma/services/uma.service';
 import { LightningForwardService } from '../services/lightning-forward.service';
 
 @ApiTags('Wellknown')
-@Controller('.well-known/lnurlp')
+@Controller('.well-known')
 export class LightingWellknownForwardController {
-  constructor(private forwardService: LightningForwardService) {}
+  constructor(private forwardService: LightningForwardService, private umaService: UmaService) {}
 
-  @Get(':address')
+  @Get('lnurlp/:address')
   @ApiQuery({ name: 'asset', required: false, type: String })
   async wellknownForward(
+    @Req() request,
     @Param('address') address: string,
     @Query('asset') asset?: string,
   ): Promise<LnBitsLnurlPayRequestDto> {
+    // Address starts with $: It's a UMA request!
+    if (address.startsWith('$')) {
+      const url = `${request.protocol}://${request.get('Host')}${request.originalUrl}`;
+      return this.umaService.wellknownRequest(address, url);
+    }
     return this.forwardService.wellknownForward(address, asset);
+  }
+
+  @Get('lnurlpubkey')
+  @ApiExcludeEndpoint()
+  wellknownUmaPubKey(): PubKeyResponse {
+    return this.umaService.wellknownUmaPubKey();
   }
 }

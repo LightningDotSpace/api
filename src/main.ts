@@ -27,7 +27,7 @@ async function bootstrap() {
 
   app.use('*', json({ type: 'application/json', limit: '10mb' }));
 
-  app.setGlobalPrefix(Config.version, { exclude: ['', '.well-known/lnurlp/(.*)'] });
+  app.setGlobalPrefix(Config.version, { exclude: ['', '.well-known/(.*)'] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.useGlobalFilters(new ApiExceptionFilter());
 
