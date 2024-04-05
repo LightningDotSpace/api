@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, OnModuleInit } from '@nestjs/common';
 import {
+  Currency,
   InMemoryNonceValidator,
   KycStatus,
   LnurlpRequest,
@@ -26,12 +27,14 @@ import { UmaClient } from '../uma-client';
 import { CoinGeckoService } from './coingecko.service';
 
 @Injectable()
-export class UmaService {
+export class UmaService implements OnModuleInit {
   private readonly logger = new LightningLogger(UmaService);
 
   private readonly umaClient: UmaClient;
 
   private nonceValidator: InMemoryNonceValidator;
+
+  private currencyCache: Map<string, Currency>;
 
   constructor(
     readonly http: HttpService,
@@ -42,6 +45,41 @@ export class UmaService {
 
     // InMemoryNonceValidator should not be used in production!
     this.nonceValidator = new InMemoryNonceValidator(1000);
+
+    this.currencyCache = new Map();
+  }
+
+  // TODO: data will be provided via a database table in the next version
+  onModuleInit() {
+    this.currencyCache.set('usd', {
+      symbol: 'USD',
+      code: 'usd',
+      name: 'US Dollar',
+      minSendable: 1,
+      maxSendable: 10_000_000,
+      multiplier: 0,
+      decimals: 2,
+    });
+
+    this.currencyCache.set('chf', {
+      symbol: 'CHF',
+      code: 'chf',
+      name: 'Swiss Franc',
+      minSendable: 1,
+      maxSendable: 10_000_000,
+      multiplier: 0,
+      decimals: 2,
+    });
+
+    this.currencyCache.set('sat', {
+      symbol: 'SAT',
+      code: 'sat',
+      name: 'Satoshi',
+      minSendable: 1,
+      maxSendable: 10_000_000_000,
+      multiplier: 1000,
+      decimals: 0,
+    });
   }
 
   getDefaultClient(): UmaClient {
@@ -114,8 +152,11 @@ export class UmaService {
       const callback = `${Config.url}/uma/${address}?senderVaspDomain=${senderVaspDomain}`;
       const metadata = '[["text/plain", "Pay on VASP1"]]';
 
-      const usdMultiplier = LightningHelper.btcToMsat(0.01 / (await this.getPriceInBTC('usd')));
-      const chfMultiplier = LightningHelper.btcToMsat(0.01 / (await this.getPriceInBTC('chf')));
+      for (const currency of this.currencyCache.values()) {
+        if (currency.code !== 'sat') {
+          currency.multiplier = await this.getMultiplier(currency);
+        }
+      }
 
       return await getLnurlpResponse({
         request: umaQuery,
@@ -132,40 +173,22 @@ export class UmaService {
           email: { mandatory: false },
           compliance: { mandatory: false },
         },
-        currencyOptions: [
-          {
-            symbol: 'USD',
-            code: 'usd',
-            name: 'US Dollar',
-            minSendable: 1,
-            maxSendable: 10_000_000,
-            multiplier: usdMultiplier,
-            decimals: 2,
-          },
-          {
-            symbol: 'CHF',
-            code: 'chf',
-            name: 'Swiss Franc',
-            minSendable: 1,
-            maxSendable: 10_000_000,
-            multiplier: chfMultiplier,
-            decimals: 2,
-          },
-          {
-            symbol: 'SAT',
-            code: 'sat',
-            name: 'Satoshi',
-            minSendable: 1,
-            maxSendable: 10_000_000_000,
-            multiplier: 1000,
-            decimals: 0,
-          },
-        ],
+        currencyOptions: [...this.currencyCache.values()],
       });
     } catch (e) {
       this.logger.error(`Failed to create lnurlp response for address ${address}`, e);
       throw new BadRequestException('Failed to create lnurlp response');
     }
+  }
+
+  private async getMultiplier(currency: Currency): Promise<number> {
+    const decimals = currency.decimals;
+
+    const base = decimals ? 1 / 10 ** decimals : 1;
+
+    const price = await this.getPriceInBTC(currency.code);
+
+    return LightningHelper.btcToMsat(base / price);
   }
 
   private async getPriceInBTC(from: string): Promise<number> {
@@ -177,6 +200,8 @@ export class UmaService {
   }
 
   async sendPayRequest(
+    currencyCode: string,
+    amount: number,
     senderAddress: string,
     receiverAddress: string,
     response: LnurlpResponse,
@@ -184,23 +209,21 @@ export class UmaService {
     try {
       const receiverVaspDomain = receiverAddress.slice(receiverAddress.indexOf('@') + 1);
 
-      await this.checkResponse(receiverVaspDomain, response);
+      const receiverPubKey = await this.checkResponse(receiverVaspDomain, response);
 
       const callback = response.callback;
       const currencies = response.currencies;
 
-      // TODO:
-      // Hier muss eine Auswahl der Währung und der Menge erfolgen
-      const currency = currencies[0];
-      const amount = 1; // 1 cent
+      const currency = currencies.find((c) => c.code.toLowerCase() === currencyCode.toLowerCase());
+      if (!currency) throw new BadRequestException(`Unknown Currency ${currencyCode}`);
 
-      const receiverPubKey = await this.umaClient.getPublicKey(receiverVaspDomain);
+      const payAmount = amount * 10 ** currency.decimals;
 
       const payRequest = await getPayRequest({
         receiverEncryptionPubKey: Util.stringToUint8(receiverPubKey.encryptionPubKey, 'hex'),
         sendingVaspPrivateKey: Util.stringToUint8(Config.uma.signingPrivKey, 'hex'),
         currencyCode: currency.code,
-        amount: amount,
+        amount: payAmount,
         payerIdentifier: senderAddress,
         payerName: undefined,
         payerEmail: undefined,
@@ -221,7 +244,7 @@ export class UmaService {
     }
   }
 
-  private async checkResponse(receiverVaspDomain: string, response: LnurlpResponse): Promise<void> {
+  private async checkResponse(receiverVaspDomain: string, response: LnurlpResponse): Promise<PubKeyResponse> {
     const receiverPubKey = await this.umaClient.getPublicKey(receiverVaspDomain);
 
     // TODO NEXT VERSION: VASP ID Authority
@@ -234,6 +257,8 @@ export class UmaService {
     );
 
     if (!isResponseValid) throw new BadRequestException('Invalid lnurlp response');
+
+    return receiverPubKey;
   }
 
   async createPayRequestResponse(
@@ -244,12 +269,15 @@ export class UmaService {
     try {
       await this.checkPayRequest(receiverVaspDomain, payRequest);
 
-      // TODO: get the smallest unit of the currency, e.g. 0.01 for USD
-      const conversionRate = LightningHelper.btcToMsat(0.01 / (await this.getPriceInBTC(payRequest.currency)));
+      const currencyCode = payRequest.currency;
+      const currency = this.currencyCache.get(currencyCode);
+      if (!currency) throw new BadRequestException(`Unknown currency ${currencyCode}`);
+
+      const conversionRate = await this.getMultiplier(currency);
 
       const payReqResp = await getPayReqResponse({
         conversionRate: conversionRate,
-        currencyCode: payRequest.currency,
+        currencyCode: currencyCode,
         currencyDecimals: 2,
         invoiceCreator: this,
         metadata: `{"receiver":"${receiverAddress}"}`,

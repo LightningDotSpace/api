@@ -1,7 +1,7 @@
 import { Body, Controller, Param, Post, Query } from '@nestjs/common';
 import { ApiProperty, ApiTags } from '@nestjs/swagger';
 import { LnurlpResponse, PayReqResponse, PayRequest } from '@uma-sdk/core';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { UmaService } from 'src/integration/blockchain/uma/services/uma.service';
 import { UmaClient } from 'src/integration/blockchain/uma/uma-client';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
@@ -17,6 +17,16 @@ export class WorkflowDto {
   @IsString()
   @IsNotEmpty()
   receiverAddress: string;
+
+  @ApiProperty({ default: 'usd' })
+  @IsString()
+  @IsNotEmpty()
+  currencyCode: string;
+
+  @ApiProperty({ default: '0.01' })
+  @IsNumber()
+  @IsNotEmpty()
+  amount: number;
 }
 
 @ApiTags('UMA')
@@ -44,7 +54,13 @@ export class UmaController {
     this.logger.info(JSON.stringify(response));
     this.logger.info('--------------------------------------------------------------------------------');
 
-    const payRequestResponse = await this.umaService.sendPayRequest(dto.senderAddress, dto.receiverAddress, response);
+    const payRequestResponse = await this.umaService.sendPayRequest(
+      dto.currencyCode,
+      dto.amount,
+      dto.senderAddress,
+      dto.receiverAddress,
+      response,
+    );
     this.logger.info('Pay Request Response:');
     this.logger.info(JSON.stringify(payRequestResponse));
     this.logger.info('--------------------------------------------------------------------------------');
