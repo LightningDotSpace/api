@@ -150,13 +150,9 @@ export class UmaService implements OnModuleInit {
   ): Promise<LnurlpResponse> {
     try {
       const callback = `${Config.url}/uma/${address}?senderVaspDomain=${senderVaspDomain}`;
-      const metadata = '[["text/plain", "Pay on VASP1"]]';
+      const metadata = '[["text/plain", "Pay on lightning.space"]]';
 
-      for (const currency of this.currencyCache.values()) {
-        if (currency.code !== 'sat') {
-          currency.multiplier = await this.getMultiplier(currency);
-        }
-      }
+      await this.updateCurrencyMultipliers();
 
       return await getLnurlpResponse({
         request: umaQuery,
@@ -181,6 +177,14 @@ export class UmaService implements OnModuleInit {
     }
   }
 
+  private async updateCurrencyMultipliers(): Promise<void> {
+    for (const currency of this.currencyCache.values()) {
+      if (currency.code !== 'sat') {
+        currency.multiplier = await this.getMultiplier(currency);
+      }
+    }
+  }
+
   private async getMultiplier(currency: Currency): Promise<number> {
     const decimals = currency.decimals;
 
@@ -192,11 +196,10 @@ export class UmaService implements OnModuleInit {
   }
 
   private async getPriceInBTC(from: string): Promise<number> {
-    //const price = await this.coingeckoService.getPrice(from, 'btc');
-    //if (!price.isValid) throw new InternalServerErrorException(`Invalid price from ${from} to btc`);
+    const price = await this.coingeckoService.getPrice(from, 'btc');
+    if (!price.isValid) throw new InternalServerErrorException(`Invalid price from ${from} to btc`);
 
-    //return price.price;
-    return from === 'usd' ? 66500 : 62500;
+    return price.price;
   }
 
   async sendPayRequest(

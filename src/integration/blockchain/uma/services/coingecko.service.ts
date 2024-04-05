@@ -16,7 +16,7 @@ export class CoinGeckoService implements OnModuleInit {
   }
 
   onModuleInit() {
-    //void this.client.simpleSupportedCurrencies().then((cs) => (this.currencies = cs));
+    void this.client.simpleSupportedCurrencies().then((cs) => (this.currencies = cs));
   }
 
   async getPrice(from: string, to: string): Promise<Price> {
