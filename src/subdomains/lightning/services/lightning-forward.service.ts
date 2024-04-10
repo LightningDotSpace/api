@@ -35,6 +35,12 @@ export class LightningForwardService {
 
   // --- Wellknown --- //
   async wellknownForward(address: string, assetName?: string): Promise<LnBitsLnurlPayRequestDto> {
+    const lnurlpId = await this.getLnurlpId(address, assetName);
+
+    return this.lnurlpForward(lnurlpId);
+  }
+
+  async getLnurlpId(address: string, assetName?: string): Promise<string> {
     const wallet = await this.walletService.getByLnbitsAddress(address);
     if (!wallet) throw new NotFoundException('Wallet not found');
 
@@ -43,7 +49,7 @@ export class LightningForwardService {
     const lighningWallet = wallet.lightningWallets.find((w) => w.asset.name === assetName);
     if (!lighningWallet) throw new NotFoundException('Lightning Wallet not found');
 
-    return this.lnurlpForward(lighningWallet.lnurlpId);
+    return lighningWallet.lnurlpId;
   }
 
   // --- LNURLp --- //

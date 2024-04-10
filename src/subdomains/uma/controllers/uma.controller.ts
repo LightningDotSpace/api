@@ -1,5 +1,5 @@
 import { Body, Controller, Param, Post, Query } from '@nestjs/common';
-import { ApiProperty, ApiTags } from '@nestjs/swagger';
+import { ApiExcludeEndpoint, ApiProperty, ApiTags } from '@nestjs/swagger';
 import { PayReqResponse, PayRequest } from '@uma-sdk/core';
 import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { UmaService } from 'src/integration/blockchain/uma/services/uma.service';
@@ -43,6 +43,7 @@ export class UmaController {
 
   // TODO: Workflow API only for testing purposes, will be removed
   @Post('workflow')
+  @ApiExcludeEndpoint()
   async testWorkflow(@Body() dto: WorkflowDto): Promise<PayReqResponse> {
     const requestUrl = await this.umaService.createRequestUrl(dto.receiverAddress);
     this.logger.info('Request URL:');
@@ -71,6 +72,7 @@ export class UmaController {
   }
 
   @Post(':callbackAddress')
+  @ApiExcludeEndpoint()
   async callback(
     @Param('callbackAddress') callbackAddress: string,
     @Query('senderVaspDomain') senderVaspDomain: string,

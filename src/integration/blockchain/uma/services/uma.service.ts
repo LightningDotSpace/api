@@ -22,6 +22,7 @@ import { HttpService } from 'src/shared/services/http.service';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Util } from 'src/shared/utils/util';
 import { LightningForwardService } from 'src/subdomains/lightning/services/lightning-forward.service';
+import { LnBitsLnurlpInvoiceDto } from '../../lightning/dto/lnbits.dto';
 import { LightningHelper } from '../../lightning/lightning-helper';
 import { UmaClient } from '../uma-client';
 import { CoinGeckoService } from './coingecko.service';
@@ -281,7 +282,7 @@ export class UmaService implements OnModuleInit {
       const payReqResp = await getPayReqResponse({
         conversionRate: conversionRate,
         currencyCode: currencyCode,
-        currencyDecimals: 2,
+        currencyDecimals: currency.decimals,
         invoiceCreator: this,
         metadata: `{"receiver":"${receiverAddress}"}`,
         query: payRequest,
@@ -318,9 +319,7 @@ export class UmaService implements OnModuleInit {
     const receiverMetadataAsJson = JSON.parse(receiverMetadata);
     const lnReceiverAddress = (<string>receiverMetadataAsJson.receiver).replace('$', '');
 
-    const lnPayRequest = await this.lightningForwardService.wellknownForward(lnReceiverAddress);
-    const lnCallback = lnPayRequest.callback;
-    const lnUrlpId = lnCallback.slice(lnCallback.lastIndexOf('/') + 1);
+    const lnUrlpId = await this.lightningForwardService.getLnurlpId(lnReceiverAddress);
 
     return this.lightningForwardService.lnurlpCallbackForward(lnUrlpId, { amount: amountMsats }).then((i) => i.pr);
   }
@@ -340,5 +339,17 @@ export class UmaService implements OnModuleInit {
 
     // TODO: LN
     // Send payment after user confirmation
+  }
+
+  async createAssetInvoice(address: string, asset: string, amount: number): Promise<LnBitsLnurlpInvoiceDto> {
+    const currency = this.currencyCache.get(asset);
+    if (!currency) throw new BadRequestException(`Unknown asset ${asset}`);
+
+    const conversionRate = await this.getMultiplier(currency);
+    const payAmount = amount * 10 ** currency.decimals * conversionRate;
+
+    const lnUrlpId = await this.lightningForwardService.getLnurlpId(address);
+
+    return this.lightningForwardService.lnurlpCallbackForward(lnUrlpId, { amount: payAmount });
   }
 }
