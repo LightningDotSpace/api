@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Req } from '@nestjs/common';
+import { Controller, Get, Param, Query, Req } from '@nestjs/common';
 import { ApiExcludeEndpoint, ApiTags } from '@nestjs/swagger';
 import { LnurlpResponse, PubKeyResponse } from '@uma-sdk/core';
 import { LnBitsLnurlPayRequestDto } from 'src/integration/blockchain/lightning/dto/lnbits.dto';
@@ -22,6 +22,11 @@ export class LightingWellknownForwardController {
     }
 
     return this.forwardService.wellknownForward(address);
+  }
+
+  @Get('lnurlp/:address/cb')
+  async lnUrlPCallbackForward(@Param('address') address: string, @Query() params: any): Promise<any> {
+    return this.forwardService.lnurlpCallbackForward(address, params);
   }
 
   @Get('lnurlpubkey')
