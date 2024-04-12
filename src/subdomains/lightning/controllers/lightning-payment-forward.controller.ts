@@ -8,8 +8,8 @@ import { LightningForwardService } from '../services/lightning-forward.service';
 export class LightingPaymentForwardController {
   constructor(private forwardService: LightningForwardService) {}
 
-  @Get('cb/:id')
-  async lnUrlPCallbackForward(@Param('id') id: string, @Query() params: any): Promise<any> {
-    return this.forwardService.lnurlpCallbackForward(id, params);
+  @Get('cb/:address')
+  async lnUrlPCallbackForward(@Param('address') address: string, @Query() params: any): Promise<any> {
+    return this.forwardService.lnurlpCallbackForward(address, params);
   }
 }

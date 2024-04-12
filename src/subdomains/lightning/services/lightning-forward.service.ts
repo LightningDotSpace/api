@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Request } from 'express';
+import { LightningLogger } from 'src/shared/services/lightning-logger';
+import { LightningCurrencyService } from 'src/subdomains/lightning/services/lightning-currency.service';
 import { WalletService } from 'src/subdomains/user/application/services/wallet.service';
 import {
   LnBitsLnurlPayRequestDto,
@@ -13,9 +15,15 @@ import { LightningService } from '../../../integration/blockchain/lightning/serv
 
 @Injectable()
 export class LightningForwardService {
+  private readonly logger = new LightningLogger(LightningForwardService);
+
   private readonly client: LightningClient;
 
-  constructor(private readonly walletService: WalletService, lightningService: LightningService) {
+  constructor(
+    private readonly walletService: WalletService,
+    lightningService: LightningService,
+    private readonly lightningCurrencyService: LightningCurrencyService,
+  ) {
     this.client = lightningService.getDefaultClient();
   }
 
@@ -34,17 +42,15 @@ export class LightningForwardService {
   }
 
   // --- Wellknown --- //
-  async wellknownForward(address: string, assetName?: string): Promise<LnBitsLnurlPayRequestDto> {
-    const lnurlpId = await this.getLnurlpId(address, assetName);
-
-    return this.lnurlpForward(lnurlpId);
+  async wellknownForward(address: string): Promise<LnBitsLnurlPayRequestDto> {
+    return this.lnurlpForward(address);
   }
 
-  async getLnurlpId(address: string, assetName?: string): Promise<string> {
+  async getLnurlpId(address: string): Promise<string> {
     const wallet = await this.walletService.getByLnbitsAddress(address);
     if (!wallet) throw new NotFoundException('Wallet not found');
 
-    assetName ??= 'BTC';
+    const assetName = 'BTC';
 
     const lighningWallet = wallet.lightningWallets.find((w) => w.asset.name === assetName);
     if (!lighningWallet) throw new NotFoundException('Lightning Wallet not found');
@@ -53,16 +59,36 @@ export class LightningForwardService {
   }
 
   // --- LNURLp --- //
-  async lnurlpForward(id: string): Promise<LnBitsLnurlPayRequestDto> {
-    const payRequest = await this.client.getLnurlpPaymentRequest(id);
+  async lnurlpForward(address: string): Promise<LnBitsLnurlPayRequestDto> {
+    const lnurlpId = await this.getLnurlpId(address);
+    const payRequest = await this.client.getLnurlpPaymentRequest(lnurlpId);
 
-    payRequest.callback = LightningHelper.createLnurlpCallbackUrl(id);
+    payRequest.callback = LightningHelper.createLnurlpCallbackUrl(address);
+
+    await this.addCurrencies(payRequest);
 
     return payRequest;
   }
 
-  async lnurlpCallbackForward(id: string, params: any): Promise<LnBitsLnurlpInvoiceDto> {
-    return this.client.getLnurlpInvoice(id, params);
+  private async addCurrencies(payRequest: LnBitsLnurlPayRequestDto) {
+    try {
+      await this.lightningCurrencyService.updateCurrencyMultipliers();
+      payRequest.currencies = this.lightningCurrencyService.getCurrencies();
+    } catch (e) {
+      this.logger.error('Cannot add currencies to pay request', e);
+    }
+  }
+
+  async lnurlpCallbackForward(address: string, params: any): Promise<LnBitsLnurlpInvoiceDto> {
+    const currencyCode = params.currency;
+    const amount = params.amount;
+
+    if (currencyCode && amount) {
+      params.amount = await this.lightningCurrencyService.calculatePayAmount(currencyCode, amount);
+    }
+
+    const lnurlpId = await this.getLnurlpId(address);
+    return this.client.getLnurlpInvoice(lnurlpId, params);
   }
 
   // --- LNURLw --- //
