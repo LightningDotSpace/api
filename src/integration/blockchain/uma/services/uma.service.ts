@@ -1,6 +1,5 @@
-import { BadRequestException, Injectable, InternalServerErrorException, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import {
-  Currency,
   InMemoryNonceValidator,
   KycStatus,
   LnurlpRequest,
@@ -22,64 +21,26 @@ import { HttpService } from 'src/shared/services/http.service';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Util } from 'src/shared/utils/util';
 import { LightningForwardService } from 'src/subdomains/lightning/services/lightning-forward.service';
-import { LightningHelper } from '../../lightning/lightning-helper';
+import { LightningCurrencyService } from '../../../../subdomains/lightning/services/lightning-currency.service';
 import { UmaClient } from '../uma-client';
-import { CoinGeckoService } from './coingecko.service';
 
 @Injectable()
-export class UmaService implements OnModuleInit {
+export class UmaService {
   private readonly logger = new LightningLogger(UmaService);
 
   private readonly umaClient: UmaClient;
 
   private nonceValidator: InMemoryNonceValidator;
 
-  private currencyCache: Map<string, Currency>;
-
   constructor(
     readonly http: HttpService,
     private readonly lightningForwardService: LightningForwardService,
-    private readonly coingeckoService: CoinGeckoService,
+    private readonly lightningCurrencyService: LightningCurrencyService,
   ) {
     this.umaClient = new UmaClient(http);
 
     // InMemoryNonceValidator should not be used in production!
     this.nonceValidator = new InMemoryNonceValidator(1000);
-
-    this.currencyCache = new Map();
-  }
-
-  // TODO: data will be provided via a database table in the next version
-  onModuleInit() {
-    this.currencyCache.set('usd', {
-      symbol: 'USD',
-      code: 'usd',
-      name: 'US Dollar',
-      minSendable: 1,
-      maxSendable: 10_000_000,
-      multiplier: 0,
-      decimals: 2,
-    });
-
-    this.currencyCache.set('chf', {
-      symbol: 'CHF',
-      code: 'chf',
-      name: 'Swiss Franc',
-      minSendable: 1,
-      maxSendable: 10_000_000,
-      multiplier: 0,
-      decimals: 2,
-    });
-
-    this.currencyCache.set('sat', {
-      symbol: 'SAT',
-      code: 'sat',
-      name: 'Satoshi',
-      minSendable: 1,
-      maxSendable: 10_000_000_000,
-      multiplier: 1000,
-      decimals: 0,
-    });
   }
 
   getDefaultClient(): UmaClient {
@@ -152,7 +113,7 @@ export class UmaService implements OnModuleInit {
       const callback = `${Config.url}/uma/${address}?senderVaspDomain=${senderVaspDomain}`;
       const metadata = '[["text/plain", "Pay on lightning.space"]]';
 
-      await this.updateCurrencyMultipliers();
+      await this.lightningCurrencyService.updateCurrencyMultipliers();
 
       return await getLnurlpResponse({
         request: umaQuery,
@@ -169,37 +130,12 @@ export class UmaService implements OnModuleInit {
           email: { mandatory: false },
           compliance: { mandatory: false },
         },
-        currencyOptions: [...this.currencyCache.values()],
+        currencyOptions: this.lightningCurrencyService.getCurrencies(),
       });
     } catch (e) {
       this.logger.error(`Failed to create lnurlp response for address ${address}`, e);
       throw new BadRequestException('Failed to create lnurlp response');
     }
-  }
-
-  private async updateCurrencyMultipliers(): Promise<void> {
-    for (const currency of this.currencyCache.values()) {
-      if (currency.code !== 'sat') {
-        currency.multiplier = await this.getMultiplier(currency);
-      }
-    }
-  }
-
-  private async getMultiplier(currency: Currency): Promise<number> {
-    const decimals = currency.decimals;
-
-    const base = decimals ? 1 / 10 ** decimals : 1;
-
-    const price = await this.getPriceInBTC(currency.code);
-
-    return LightningHelper.btcToMsat(base / price);
-  }
-
-  private async getPriceInBTC(from: string): Promise<number> {
-    const price = await this.coingeckoService.getPrice(from, 'btc');
-    if (!price.isValid) throw new InternalServerErrorException(`Invalid price from ${from} to btc`);
-
-    return price.price;
   }
 
   async sendPayRequest(
@@ -273,15 +209,15 @@ export class UmaService implements OnModuleInit {
       await this.checkPayRequest(receiverVaspDomain, payRequest);
 
       const currencyCode = payRequest.currency;
-      const currency = this.currencyCache.get(currencyCode);
+      const currency = this.lightningCurrencyService.getCurrency(currencyCode);
       if (!currency) throw new BadRequestException(`Unknown currency ${currencyCode}`);
 
-      const conversionRate = await this.getMultiplier(currency);
+      const conversionRate = await this.lightningCurrencyService.getMultiplier(currency);
 
       const payReqResp = await getPayReqResponse({
         conversionRate: conversionRate,
         currencyCode: currencyCode,
-        currencyDecimals: 2,
+        currencyDecimals: currency.decimals,
         invoiceCreator: this,
         metadata: `{"receiver":"${receiverAddress}"}`,
         query: payRequest,
@@ -318,9 +254,7 @@ export class UmaService implements OnModuleInit {
     const receiverMetadataAsJson = JSON.parse(receiverMetadata);
     const lnReceiverAddress = (<string>receiverMetadataAsJson.receiver).replace('$', '');
 
-    const lnPayRequest = await this.lightningForwardService.wellknownForward(lnReceiverAddress);
-    const lnCallback = lnPayRequest.callback;
-    const lnUrlpId = lnCallback.slice(lnCallback.lastIndexOf('/') + 1);
+    const lnUrlpId = await this.lightningForwardService.getLnurlpId(lnReceiverAddress);
 
     return this.lightningForwardService.lnurlpCallbackForward(lnUrlpId, { amount: amountMsats }).then((i) => i.pr);
   }

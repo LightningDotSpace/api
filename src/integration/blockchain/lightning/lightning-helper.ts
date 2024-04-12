@@ -33,8 +33,9 @@ export class LightningHelper {
     return this.encodeLnurl(url);
   }
 
-  static createLnurlpCallbackUrl(id: string): string {
-    return `${Config.url}/lnurlp/cb/${id}`;
+  static createLnurlpCallbackUrl(lnbitsAddress: string): string {
+    const protocol = Config.environment === Environment.LOC ? 'http' : 'https';
+    return `${protocol}://${Config.baseUrl}/.well-known/lnurlp/${lnbitsAddress}/cb`;
   }
 
   // --- LNURLw --- //
