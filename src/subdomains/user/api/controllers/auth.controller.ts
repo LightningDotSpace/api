@@ -11,6 +11,12 @@ import { AuthService } from '../../application/services/auth.service';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @Post()
+  @ApiCreatedResponse({ type: AuthResponseDto })
+  authenticate(@Body() dto: SignUpDto): Promise<AuthResponseDto> {
+    return this.authService.authenticate(dto);
+  }
+
   @Post('sign-up')
   @ApiCreatedResponse({ type: AuthResponseDto })
   signUp(@Body() dto: SignUpDto): Promise<AuthResponseDto> {
