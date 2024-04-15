@@ -16,6 +16,7 @@ import {
   LnBitsTransactionDto,
   LnBitsUsermanagerWalletDto,
   LnBitsWalletDto,
+  LnBitsWalletPaymentDto,
   LnbitsUsermanagerUserDto,
 } from './dto/lnbits.dto';
 import {
@@ -385,6 +386,27 @@ export class LightningClient {
       `${Config.blockchain.lightning.lnbits.lnurlpApiUrl}/links/${linkId}`,
       this.httpLnBitsConfig(adminKey),
     );
+  }
+
+  async getLnBitsWalletPayment(
+    adminKey: string,
+    amount: number,
+    currencyCode: string,
+  ): Promise<LnBitsWalletPaymentDto> {
+    const memo = `Pay this Lightning bill to transfer ${amount} ${currencyCode.toUpperCase()}`;
+
+    return this.http
+      .post<LnBitsWalletPaymentDto>(
+        `${Config.blockchain.lightning.lnbits.apiUrl}/payments`,
+        {
+          out: false,
+          amount: amount,
+          unit: currencyCode,
+          memo: memo,
+        },
+        this.httpLnBitsConfig(adminKey),
+      )
+      .catch((e) => this.throwHttpException(e));
   }
 
   // --- LNDHUB --- //
