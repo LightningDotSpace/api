@@ -105,7 +105,7 @@ export class LightningForwardService {
 
     const adminKey = await this.getLightningWallet(address).then((lw) => lw.adminKey);
 
-    return this.client.getLnBitsWalletPayment(adminKey, amount, currencyCode).then((p) => ({ pr: p.payment_request }));
+    return this.client.getLnBitsWalletPayment(adminKey, amount, currencyCode);
   }
 
   // --- LNURLw --- //

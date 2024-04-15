@@ -392,7 +392,7 @@ export class LightningClient {
     adminKey: string,
     amount: number,
     currencyCode: string,
-  ): Promise<LnBitsWalletPaymentDto> {
+  ): Promise<LnBitsLnurlpInvoiceDto> {
     const memo = `Pay this Lightning bill to transfer ${amount} ${currencyCode.toUpperCase()}`;
 
     return this.http
@@ -406,7 +406,15 @@ export class LightningClient {
         },
         this.httpLnBitsConfig(adminKey),
       )
+      .then((p) => this.mapLnBitsWalletPaymentResponse(p))
       .catch((e) => this.throwHttpException(e));
+  }
+
+  private mapLnBitsWalletPaymentResponse(payment: LnBitsWalletPaymentDto): LnBitsLnurlpInvoiceDto {
+    return {
+      pr: payment.payment_request,
+      routes: [],
+    };
   }
 
   // --- LNDHUB --- //

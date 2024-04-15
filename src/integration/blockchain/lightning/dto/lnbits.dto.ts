@@ -102,6 +102,7 @@ export interface LnBitsLnurlPayRequestDto {
 
 export interface LnBitsLnurlpInvoiceDto {
   pr: string;
+  routes: [];
 }
 
 export interface LnBitsLnurlWithdrawRequestDto {
