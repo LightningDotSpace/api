@@ -52,6 +52,9 @@
     },
     "umaEncryptionPubKey": {
       "value": "xxx"
+    },
+    "coingeckoApiKey": {
+      "value": "xxx"
     }
   }
 }

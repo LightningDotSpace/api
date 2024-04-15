@@ -1,3 +1,5 @@
+import { Currency } from '@uma-sdk/core';
+
 export interface LnbitsUsermanagerUserDto {
   id: string;
   name: string;
@@ -22,6 +24,13 @@ export interface LnBitsWalletDto {
   adminkey: string;
   name: string;
   balance: number;
+}
+
+export interface LnBitsWalletPaymentDto {
+  payment_hash: string;
+  payment_request: string;
+  checking_id: string;
+  lnurl_response: string;
 }
 
 export interface LnBitsTransactionDto {
@@ -88,10 +97,12 @@ export interface LnBitsLnurlPayRequestDto {
   minSendable: number;
   maxSendable: number;
   metadata: string;
+  currencies: Currency[];
 }
 
 export interface LnBitsLnurlpInvoiceDto {
   pr: string;
+  routes: [];
 }
 
 export interface LnBitsLnurlWithdrawRequestDto {

@@ -30,6 +30,9 @@ param umaSigningPrivKey string
 param umaSigningPubKey string
 param umaEncryptionPubKey string
 
+@secure()
+param coingeckoApiKey string
+
 // --- VARIABLES --- //
 var compName = 'lds'
 var apiName = 'api'
@@ -340,6 +343,10 @@ resource apiAppService 'Microsoft.Web/sites@2018-11-01' =
           {
             name: 'UMA_ENCRYPTION_PUB_KEY'
             value: umaEncryptionPubKey
+          }
+          {
+            name: 'COIN_GECKO_API_KEY'
+            value: coingeckoApiKey
           }
           {
             name: 'WEBSITE_RUN_FROM_PACKAGE'
