@@ -27,6 +27,8 @@ export class Configuration {
 
   dfxApiUrl = 'https://api.dfx.swiss/v1';
 
+  azureIpSubstring = '169.254';
+
   database: TypeOrmModuleOptions = {
     type: 'mssql',
     host: process.env.SQL_HOST,
@@ -98,8 +100,10 @@ export class Configuration {
     apiKey: process.env.COIN_GECKO_API_KEY,
   };
 
-  processDisabled = (processName: Process) =>
-    process.env.DISABLED_PROCESSES === '*' || (process.env.DISABLED_PROCESSES?.split(',') ?? []).includes(processName);
+  request = {
+    knownIps: process.env.REQUEST_KNOWN_IPS?.split(',') ?? [],
+    limitCheck: process.env.REQUEST_LIMIT_CHECK === 'true',
+  };
 
   // --- GETTERS --- //
   get baseUrl(): string {
@@ -113,6 +117,10 @@ export class Configuration {
       ? `http://${this.baseUrl}/${this.version}`
       : `https://${this.baseUrl}/${this.version}`;
   }
+
+  // --- HELPERS --- //
+  processDisabled = (processName: Process) =>
+    process.env.DISABLED_PROCESSES === '*' || (process.env.DISABLED_PROCESSES?.split(',') ?? []).includes(processName);
 }
 
 @Injectable()

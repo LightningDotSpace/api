@@ -24,10 +24,19 @@ export class AuthService {
     private readonly cryptoService: CryptoService,
   ) {}
 
+  async authenticate(signUp: SignUpDto): Promise<AuthResponseDto> {
+    const existingWallet = await this.walletService.getByAddress(signUp.address);
+    return existingWallet ? this.doSignIn(signUp, existingWallet) : this.doSignUp(signUp);
+  }
+
   async signUp(signUp: SignUpDto): Promise<AuthResponseDto> {
     const existingWallet = await this.walletService.getByAddress(signUp.address);
     if (existingWallet) throw new ConflictException('User already exists');
 
+    return this.doSignUp(signUp);
+  }
+
+  private async doSignUp(signUp: SignUpDto): Promise<AuthResponseDto> {
     if (!this.verifySignature(signUp.address, signUp.signature)) throw new BadRequestException('Invalid signature');
 
     const wallet = await this.walletService.create(signUp);
@@ -35,11 +44,15 @@ export class AuthService {
     return { accessToken: this.generateToken(wallet) };
   }
 
-  async signIn({ address, signature }: SignInDto): Promise<AuthResponseDto> {
-    const wallet = await this.walletService.getByAddress(address);
+  async signIn(signIn: SignInDto): Promise<AuthResponseDto> {
+    const wallet = await this.walletService.getByAddress(signIn.address);
     if (!wallet) throw new NotFoundException('User not found');
 
-    if (!this.verifySignature(address, signature)) throw new UnauthorizedException('Invalid credentials');
+    return this.doSignIn(signIn, wallet);
+  }
+
+  private async doSignIn(signIn: SignInDto, wallet: WalletEntity): Promise<AuthResponseDto> {
+    if (!this.verifySignature(signIn.address, signIn.signature)) throw new UnauthorizedException('Invalid credentials');
 
     return { accessToken: this.generateToken(wallet) };
   }
