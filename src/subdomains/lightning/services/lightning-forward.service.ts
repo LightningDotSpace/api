@@ -3,6 +3,7 @@ import { Request } from 'express';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { LightningCurrencyService } from 'src/subdomains/lightning/services/lightning-currency.service';
 import { WalletService } from 'src/subdomains/user/application/services/wallet.service';
+import { LightningWalletEntity } from 'src/subdomains/user/domain/entities/lightning-wallet.entity';
 import {
   LnBitsLnurlPayRequestDto,
   LnBitsLnurlWithdrawRequestDto,
@@ -47,15 +48,19 @@ export class LightningForwardService {
   }
 
   async getLnurlpId(address: string): Promise<string> {
+    return this.getLightningWallet(address).then((lw) => lw.lnurlpId);
+  }
+
+  private async getLightningWallet(address: string): Promise<LightningWalletEntity> {
     const wallet = await this.walletService.getByLnbitsAddress(address);
     if (!wallet) throw new NotFoundException('Wallet not found');
 
     const assetName = 'BTC';
 
-    const lighningWallet = wallet.lightningWallets.find((w) => w.asset.name === assetName);
-    if (!lighningWallet) throw new NotFoundException('Lightning Wallet not found');
+    const lightningWallet = wallet.lightningWallets.find((w) => w.asset.name === assetName);
+    if (!lightningWallet) throw new NotFoundException('Lightning Wallet not found');
 
-    return lighningWallet.lnurlpId;
+    return lightningWallet;
   }
 
   // --- LNURLp --- //
@@ -84,11 +89,23 @@ export class LightningForwardService {
     const amount = params.amount;
 
     if (currencyCode && amount) {
-      params.amount = await this.lightningCurrencyService.calculatePayAmount(currencyCode, amount);
+      return this.lnbitsWalletPayment(address, currencyCode, amount);
     }
 
     const lnurlpId = await this.getLnurlpId(address);
     return this.client.getLnurlpInvoice(lnurlpId, params);
+  }
+
+  private async lnbitsWalletPayment(
+    address: string,
+    currencyCode: string,
+    amount: number,
+  ): Promise<LnBitsLnurlpInvoiceDto> {
+    this.lightningCurrencyService.paymentCheck(currencyCode, amount);
+
+    const adminKey = await this.getLightningWallet(address).then((lw) => lw.adminKey);
+
+    return this.client.getLnBitsWalletPayment(adminKey, amount, currencyCode);
   }
 
   // --- LNURLw --- //

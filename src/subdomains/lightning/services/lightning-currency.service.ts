@@ -73,29 +73,6 @@ export class LightningCurrencyService implements OnModuleInit {
     }
   }
 
-  async calculatePayAmount(currencyCode: string, amount: number): Promise<number> {
-    try {
-      const currency = this.getCurrency(currencyCode.toLowerCase());
-      if (!currency) throw new BadRequestException(`Unknown currency ${currencyCode}`);
-
-      if (Number.isNaN(+amount)) throw new BadRequestException(`Amount ${amount} must be a number`);
-
-      const minSendable = currency.minSendable / 10 ** currency.decimals;
-      const maxSendable = currency.maxSendable / 10 ** currency.decimals;
-
-      if (amount < minSendable) throw new BadRequestException(`Amount ${amount} is lower than min. ${minSendable}`);
-      if (amount > maxSendable) throw new BadRequestException(`Amount ${amount} is higher than max. ${maxSendable}`);
-
-      const conversionRate = currencyCode === 'sat' ? currency.multiplier : await this.getMultiplier(currency);
-      return amount * 10 ** currency.decimals * conversionRate;
-    } catch (e) {
-      if (e instanceof BadRequestException) throw e;
-
-      this.logger.error(`Calculate pay amount for currency ${currencyCode} failed`, e);
-      throw new BadRequestException(`Calculate pay amount for currency ${currencyCode} failed`);
-    }
-  }
-
   async getMultiplier(currency: Currency): Promise<number> {
     const decimals = currency.decimals;
 
@@ -111,5 +88,25 @@ export class LightningCurrencyService implements OnModuleInit {
     if (!price.isValid) throw new InternalServerErrorException(`Invalid price from ${from} to btc`);
 
     return price.price;
+  }
+
+  paymentCheck(currencyCode: string, amount: number) {
+    const currency = this.getCurrency(currencyCode.toLowerCase());
+    if (!currency) throw new BadRequestException(`Unknown currency ${currencyCode}`);
+
+    if (Number.isNaN(+amount))
+      throw new BadRequestException(`${currencyCode.toUpperCase()} amount ${amount} must be a number`);
+
+    const minSendable = currency.minSendable / 10 ** currency.decimals;
+
+    if (amount < minSendable)
+      throw new BadRequestException(`${currencyCode.toUpperCase()} amount ${amount} is lower than min. ${minSendable}`);
+
+    const maxSendable = currency.maxSendable / 10 ** currency.decimals;
+
+    if (amount > maxSendable)
+      throw new BadRequestException(
+        `${currencyCode.toUpperCase()} amount ${amount} is higher than max. ${maxSendable}`,
+      );
   }
 }
