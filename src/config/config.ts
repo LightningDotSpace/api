@@ -67,6 +67,8 @@ export class Configuration {
     signature: /^(.{87}=)$/,
   };
 
+  commonPaymentAddress = process.env.COMMON_PAYMENT_ADDRESS;
+
   blockchain = {
     lightning: {
       lnbits: {

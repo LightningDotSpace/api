@@ -13,6 +13,7 @@ import {
 import { LightningClient } from '../../../integration/blockchain/lightning/lightning-client';
 import { LightningHelper } from '../../../integration/blockchain/lightning/lightning-helper';
 import { LightningService } from '../../../integration/blockchain/lightning/services/lightning.service';
+import { LightingWalletPaymentParamDto } from '../dto/lightning-wallet.dto';
 
 @Injectable()
 export class LightningForwardService {
@@ -85,27 +86,23 @@ export class LightningForwardService {
   }
 
   async lnurlpCallbackForward(address: string, params: any): Promise<LnBitsLnurlpInvoiceDto> {
-    const currencyCode = params.currency;
-    const amount = params.amount;
-
-    if (currencyCode && amount) {
-      return this.lnbitsWalletPayment(address, currencyCode, amount);
-    }
+    const walletPaymentParam = this.lightningCurrencyService.getWalletPaymentParam(address, params);
+    if (walletPaymentParam.currencyCode && walletPaymentParam.amount)
+      return this.lnbitsWalletPayment(walletPaymentParam);
 
     const lnurlpId = await this.getLnurlpId(address);
     return this.client.getLnurlpInvoice(lnurlpId, params);
   }
 
   private async lnbitsWalletPayment(
-    address: string,
-    currencyCode: string,
-    amount: number,
+    walletPaymentParam: LightingWalletPaymentParamDto,
   ): Promise<LnBitsLnurlpInvoiceDto> {
-    this.lightningCurrencyService.paymentCheck(currencyCode, amount);
+    this.lightningCurrencyService.walletPaymentParamCheck(walletPaymentParam);
+    this.lightningCurrencyService.fillWalletPaymentMemo(walletPaymentParam);
 
-    const adminKey = await this.getLightningWallet(address).then((lw) => lw.adminKey);
+    const adminKey = await this.getLightningWallet(walletPaymentParam.address).then((lw) => lw.adminKey);
 
-    return this.client.getLnBitsWalletPayment(adminKey, amount, currencyCode);
+    return this.client.getLnBitsWalletPayment(adminKey, walletPaymentParam);
   }
 
   // --- LNURLw --- //

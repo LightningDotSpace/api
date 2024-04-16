@@ -1,14 +1,18 @@
 import { BadRequestException, Injectable, InternalServerErrorException, OnModuleInit } from '@nestjs/common';
 import { Currency } from '@uma-sdk/core';
+import { Config } from 'src/config/config';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { LightningHelper } from '../../../integration/blockchain/lightning/lightning-helper';
 import { CoinGeckoService } from '../../support/services/coingecko.service';
+import { LightingWalletPaymentParamDto } from '../dto/lightning-wallet.dto';
 
 @Injectable()
 export class LightningCurrencyService implements OnModuleInit {
   private readonly logger = new LightningLogger(LightningCurrencyService);
 
   private currencyCache: Map<string, Currency>;
+
+  private currencyFormat = /^([$₣€§])?(\d+\.?\d*)$/;
 
   constructor(private readonly coingeckoService: CoinGeckoService) {
     this.currencyCache = new Map();
@@ -47,7 +51,7 @@ export class LightningCurrencyService implements OnModuleInit {
     });
 
     this.currencyCache.set('sat', {
-      symbol: 'SAT',
+      symbol: '§',
       code: 'sat',
       name: 'Satoshi',
       minSendable: 1,
@@ -61,8 +65,12 @@ export class LightningCurrencyService implements OnModuleInit {
     return [...this.currencyCache.values()];
   }
 
-  getCurrency(currencyCode: string): Currency | undefined {
-    return this.currencyCache.get(currencyCode);
+  getCurrencyByCode(currencyCode: string): Currency | undefined {
+    return this.currencyCache.get(currencyCode.toLowerCase());
+  }
+
+  getCurrencyBySymbol(symbol: string): Currency | undefined {
+    return this.getCurrencies().find((c) => c.symbol === symbol);
   }
 
   async updateCurrencyMultipliers(): Promise<void> {
@@ -90,8 +98,18 @@ export class LightningCurrencyService implements OnModuleInit {
     return price.price;
   }
 
-  paymentCheck(currencyCode: string, amount: number) {
-    const currency = this.getCurrency(currencyCode.toLowerCase());
+  getWalletPaymentParam(address: string, params: any): LightingWalletPaymentParamDto {
+    const match = new RegExp(this.currencyFormat).exec(params.amount);
+    if (!match?.[1]) return { address, currencyCode: params.currency, amount: params.amount };
+
+    return { address, currencyCode: this.getCurrencyBySymbol(match[1])?.code ?? '', amount: match[2] };
+  }
+
+  walletPaymentParamCheck(walletPaymentParam: LightingWalletPaymentParamDto) {
+    const currencyCode = walletPaymentParam.currencyCode ?? '';
+    const amount = walletPaymentParam.amount ?? '';
+
+    const currency = this.getCurrencyByCode(currencyCode);
     if (!currency) throw new BadRequestException(`Unknown currency ${currencyCode}`);
 
     if (Number.isNaN(+amount))
@@ -99,14 +117,28 @@ export class LightningCurrencyService implements OnModuleInit {
 
     const minSendable = currency.minSendable / 10 ** currency.decimals;
 
-    if (amount < minSendable)
+    if (+amount < minSendable)
       throw new BadRequestException(`${currencyCode.toUpperCase()} amount ${amount} is lower than min. ${minSendable}`);
 
     const maxSendable = currency.maxSendable / 10 ** currency.decimals;
 
-    if (amount > maxSendable)
+    if (+amount > maxSendable)
       throw new BadRequestException(
         `${currencyCode.toUpperCase()} amount ${amount} is higher than max. ${maxSendable}`,
       );
+  }
+
+  fillWalletPaymentMemo(walletPaymentParam: LightingWalletPaymentParamDto) {
+    const currencyCode = walletPaymentParam.currencyCode?.toUpperCase() ?? '';
+    const amount = walletPaymentParam.amount;
+    const address = walletPaymentParam.address;
+
+    let memo = `Pay this Lightning bill to transfer ${amount} ${currencyCode} to ${address}.`;
+
+    if (currencyCode === 'CHF') {
+      memo += ` Alternatively, send ${amount} ${currencyCode} to ${Config.commonPaymentAddress} via Ethereum, Polygon, Arbitrum, Optimism or Base.`;
+    }
+
+    walletPaymentParam.memo = memo;
   }
 }

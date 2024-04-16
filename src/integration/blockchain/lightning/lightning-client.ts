@@ -5,6 +5,7 @@ import { Config } from 'src/config/config';
 import { HttpRequestConfig, HttpService } from 'src/shared/services/http.service';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Util } from 'src/shared/utils/util';
+import { LightingWalletPaymentParamDto } from 'src/subdomains/lightning/dto/lightning-wallet.dto';
 import {
   LnBitsLnurlPayRequestDto,
   LnBitsLnurlWithdrawRequestDto,
@@ -390,19 +391,17 @@ export class LightningClient {
 
   async getLnBitsWalletPayment(
     adminKey: string,
-    amount: number,
-    currencyCode: string,
+    walletPaymentParam: LightingWalletPaymentParamDto,
   ): Promise<LnBitsLnurlpInvoiceDto> {
-    const memo = `Pay this Lightning bill to transfer ${amount} ${currencyCode.toUpperCase()}`;
-
     return this.http
       .post<LnBitsWalletPaymentDto>(
         `${Config.blockchain.lightning.lnbits.apiUrl}/payments`,
         {
           out: false,
-          amount: amount,
-          unit: currencyCode,
-          memo: memo,
+          amount: walletPaymentParam.amount,
+          unit: walletPaymentParam.currencyCode,
+          memo: walletPaymentParam.memo,
+          expiry: 60,
         },
         this.httpLnBitsConfig(adminKey),
       )

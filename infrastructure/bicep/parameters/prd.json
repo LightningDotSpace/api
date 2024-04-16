@@ -53,6 +53,9 @@
     "umaEncryptionPubKey": {
       "value": "xxx"
     },
+    "commonPaymentAddress": {
+      "value": "xxx"
+    },
     "coingeckoApiKey": {
       "value": "xxx"
     }
