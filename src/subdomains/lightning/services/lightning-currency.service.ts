@@ -136,7 +136,7 @@ export class LightningCurrencyService implements OnModuleInit {
     let memo = `Pay this Lightning bill to transfer ${amount} ${currencyCode} to ${address}.`;
 
     if (currencyCode === 'CHF') {
-      memo += ` Alternatively, send ${amount} ${currencyCode} to ${Config.commonPaymentAddress} via Ethereum, Polygon, Arbitrum, Optimism or Base.`;
+      memo += ` Alternatively, send ${amount} ZCHF to ${Config.evmPaymentAddress} via Ethereum, Polygon, Arbitrum, Optimism or Base.`;
     }
 
     walletPaymentParam.memo = memo;

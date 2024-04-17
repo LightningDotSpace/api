@@ -30,7 +30,7 @@ param umaSigningPrivKey string
 param umaSigningPubKey string
 param umaEncryptionPubKey string
 
-param commonPaymentAddress string
+param evmPaymentAddress string
 
 @secure()
 param coingeckoApiKey string
@@ -347,8 +347,8 @@ resource apiAppService 'Microsoft.Web/sites@2018-11-01' =
             value: umaEncryptionPubKey
           }
           {
-            name: 'COMMON_PAYMENT_ADDRESS'
-            value: commonPaymentAddress
+            name: 'EVM_PAYMENT_ADDRESS'
+            value: evmPaymentAddress
           }
           {
             name: 'COIN_GECKO_API_KEY'

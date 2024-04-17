@@ -11,7 +11,7 @@ describe('LightningCurrencyService', () => {
 
   beforeAll(async () => {
     const config = {
-      commonPaymentAddress: 'TestEVMPaymentAddress',
+      evmPaymentAddress: 'TestEVMPaymentAddress',
     };
 
     coingeckoService = createMock<CoinGeckoService>();
@@ -166,7 +166,7 @@ describe('LightningCurrencyService', () => {
     service.fillWalletPaymentMemo(walletPaymentParam);
 
     expect(walletPaymentParam.memo).toBe(
-      'Pay this Lightning bill to transfer 100 CHF to TestLightningAddress. Alternatively, send 100 CHF to TestEVMPaymentAddress via Ethereum, Polygon, Arbitrum, Optimism or Base.',
+      'Pay this Lightning bill to transfer 100 CHF to TestLightningAddress. Alternatively, send 100 ZCHF to TestEVMPaymentAddress via Ethereum, Polygon, Arbitrum, Optimism or Base.',
     );
   });
 });
