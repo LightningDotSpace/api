@@ -209,7 +209,7 @@ export class UmaService {
       await this.checkPayRequest(receiverVaspDomain, payRequest);
 
       const currencyCode = payRequest.currency;
-      const currency = this.lightningCurrencyService.getCurrency(currencyCode);
+      const currency = this.lightningCurrencyService.getCurrencyByCode(currencyCode);
       if (!currency) throw new BadRequestException(`Unknown currency ${currencyCode}`);
 
       const conversionRate = await this.lightningCurrencyService.getMultiplier(currency);

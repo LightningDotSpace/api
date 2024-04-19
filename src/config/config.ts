@@ -67,6 +67,8 @@ export class Configuration {
     signature: /^(.{87}=)$/,
   };
 
+  evmPaymentAddress = process.env.EVM_PAYMENT_ADDRESS;
+
   blockchain = {
     lightning: {
       lnbits: {
