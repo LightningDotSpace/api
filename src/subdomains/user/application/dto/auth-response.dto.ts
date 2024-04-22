@@ -5,4 +5,5 @@ export class AuthResponseDto {
     description: 'Access token of lightning.space API',
   })
   accessToken: string;
+  lightningAddress: string;
 }
