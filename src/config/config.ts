@@ -61,10 +61,19 @@ export class Configuration {
     this.environment === Environment.PRD
       ? '([13]|bc1)[a-zA-HJ-NP-Z0-9]{25,62}'
       : '(([13]|bc1)[a-zA-HJ-NP-Z0-9]{25,62})|(tb(0([ac-hj-np-z02-9]{39}|[ac-hj-np-z02-9]{59})|1[ac-hj-np-z02-9]{8,87})|[mn2][a-km-zA-HJ-NP-Z1-9]{25,39})';
+  ethereumAddressFormat = '0x\\w{40}';
+
+  allAddressFormat = `${this.bitcoinAddressFormat}|${this.ethereumAddressFormat}`;
+
+  bitcoinSignatureFormat = /^(.{87}=)$/;
+
+  ethereumSignatureFormat = '(0x)?[a-f0-9]{130}';
+
+  allSignatureFormat = `${this.bitcoinSignatureFormat}|${this.ethereumSignatureFormat}`;
 
   formats = {
-    address: new RegExp(`^(${this.bitcoinAddressFormat})$`),
-    signature: /^(.{87}=)$/,
+    address: new RegExp(`^(${this.allAddressFormat})$`),
+    signature: new RegExp(`^(${this.allSignatureFormat})$`),
   };
 
   evmPaymentAddress = process.env.EVM_PAYMENT_ADDRESS;
