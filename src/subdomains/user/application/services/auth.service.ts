@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Config } from 'src/config/config';
+import { LightningHelper } from 'src/integration/blockchain/lightning/lightning-helper';
 import { CryptoService } from 'src/integration/blockchain/services/crypto.service';
 import { JwtPayload } from 'src/shared/auth/jwt-payload.interface';
 import { SignMessageDto } from 'src/subdomains/user/application/dto/sign-message.dto';
@@ -41,7 +42,10 @@ export class AuthService {
 
     const wallet = await this.walletService.create(signUp);
 
-    return { accessToken: this.generateToken(wallet) };
+    return {
+      accessToken: this.generateToken(wallet),
+      lightningAddress: LightningHelper.getLightningAddress(wallet.lnbitsAddress),
+    };
   }
 
   async signIn(signIn: SignInDto): Promise<AuthResponseDto> {
@@ -54,7 +58,10 @@ export class AuthService {
   private async doSignIn(signIn: SignInDto, wallet: WalletEntity): Promise<AuthResponseDto> {
     if (!this.verifySignature(signIn.address, signIn.signature)) throw new UnauthorizedException('Invalid credentials');
 
-    return { accessToken: this.generateToken(wallet) };
+    return {
+      accessToken: this.generateToken(wallet),
+      lightningAddress: LightningHelper.getLightningAddress(wallet.lnbitsAddress),
+    };
   }
 
   getSignInfo(address: string): SignMessageDto {

@@ -65,7 +65,7 @@ export class Configuration {
 
   allAddressFormat = `${this.bitcoinAddressFormat}|${this.ethereumAddressFormat}`;
 
-  bitcoinSignatureFormat = /^(.{87}=)$/;
+  bitcoinSignatureFormat = '(.{87}=)$';
 
   ethereumSignatureFormat = '(0x)?[a-f0-9]{130}';
 
