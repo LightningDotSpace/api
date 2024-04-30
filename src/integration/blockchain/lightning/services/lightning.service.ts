@@ -1,7 +1,13 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Currency } from '@uma-sdk/core';
 import { Config } from 'src/config/config';
+import { LightningCurrencyService } from 'src/integration/blockchain/lightning/services/lightning-currency.service';
+import { Blockchain, blockchainFindBy } from 'src/shared/enums/blockchain.enum';
 import { HttpService } from 'src/shared/services/http.service';
-import { LnBitsUserDto } from '../dto/lnbits.dto';
+import { LightingWalletPaymentParamDto } from 'src/subdomains/lightning/dto/lightning-wallet.dto';
+import { PaymentRequestService } from 'src/subdomains/payment-request/services/payment-request.service';
+import { LightningWalletEntity } from 'src/subdomains/user/domain/entities/lightning-wallet.entity';
+import { LnBitsLnurlpInvoiceDto, LnBitsUserDto } from '../dto/lnbits.dto';
 import { LightningClient, UserFilterData } from '../lightning-client';
 import { LightningHelper } from '../lightning-helper';
 
@@ -9,7 +15,11 @@ import { LightningHelper } from '../lightning-helper';
 export class LightningService {
   private readonly client: LightningClient;
 
-  constructor(private readonly http: HttpService) {
+  constructor(
+    private readonly http: HttpService,
+    private readonly lightningCurrencyService: LightningCurrencyService,
+    private readonly paymentRequestService: PaymentRequestService,
+  ) {
     this.client = new LightningClient(http);
   }
 
@@ -108,5 +118,49 @@ export class LightningService {
         await this.client.removeLnurlpLink(adminKey, lnurlpLink.id);
       }
     }
+  }
+
+  async getCurrencies(withMultiplier = false): Promise<Currency[]> {
+    return this.lightningCurrencyService.getCurrencies(withMultiplier);
+  }
+
+  async getPaymentMethods(): Promise<Blockchain[]> {
+    return this.lightningCurrencyService.getPaymentMethods();
+  }
+
+  async getWalletPaymentParam(address: string, params: any): Promise<LightingWalletPaymentParamDto> {
+    return this.lightningCurrencyService.getWalletPaymentParam(address, params);
+  }
+
+  async walletPaymentParamCheck(walletPaymentParam: LightingWalletPaymentParamDto) {
+    return this.lightningCurrencyService.walletPaymentParamCheck(walletPaymentParam);
+  }
+
+  async createPaymentRequest(
+    walletPaymentParam: LightingWalletPaymentParamDto,
+    lightningWallet: LightningWalletEntity,
+  ): Promise<LnBitsLnurlpInvoiceDto> {
+    //await this.paymentRequestService.checkDuplicate(walletPaymentParam)
+
+    this.lightningCurrencyService.fillWalletPaymentMemo(walletPaymentParam);
+
+    const invoice = await this.client.getLnBitsWalletPayment(lightningWallet.adminKey, walletPaymentParam);
+
+    const accountAmount = walletPaymentParam.amount;
+    const transferAmount = walletPaymentParam.amount;
+    if (!accountAmount || !transferAmount) return { pr: '', routes: [] };
+
+    const blockchain = blockchainFindBy(walletPaymentParam.method ?? '');
+    if (!blockchain) return { pr: '', routes: [] };
+
+    await this.paymentRequestService.savePaymentRequest(
+      Number(accountAmount),
+      Number(transferAmount),
+      invoice.pr,
+      blockchain,
+      lightningWallet,
+    );
+
+    return invoice;
   }
 }

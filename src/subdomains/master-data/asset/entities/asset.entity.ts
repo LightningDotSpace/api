@@ -1,14 +1,21 @@
 import { IEntity } from 'src/shared/db/entity';
-import { Column, Entity } from 'typeorm';
+import { Blockchain } from 'src/shared/enums/blockchain.enum';
+import { Column, Entity, Index } from 'typeorm';
+
+export enum AssetType {
+  COIN = 'Coin',
+  TOKEN = 'Token',
+}
 
 export enum AssetStatus {
-  COMING_SOON = 'ComingSoon',
   ACTIVE = 'Active',
+  INACTIVE = 'Inactive',
 }
 
 @Entity('asset')
+@Index((asset: AssetEntity) => [asset.name, asset.type, asset.blockchain], { unique: true })
 export class AssetEntity extends IEntity {
-  @Column({ unique: true })
+  @Column()
   name: string;
 
   @Column()
@@ -19,4 +26,25 @@ export class AssetEntity extends IEntity {
 
   @Column()
   status: AssetStatus;
+
+  @Column({ default: AssetType.COIN })
+  type: AssetType;
+
+  @Column({ default: Blockchain.LIGHTNING })
+  blockchain: Blockchain;
+
+  @Column({ nullable: true })
+  address: string;
+
+  @Column({ nullable: true })
+  symbol: string;
+
+  @Column({ nullable: true, type: 'smallint' })
+  minSendable: number;
+
+  @Column({ nullable: true, type: 'bigint' })
+  maxSendable: number;
+
+  @Column({ nullable: true, type: 'smallint' })
+  decimals: number;
 }

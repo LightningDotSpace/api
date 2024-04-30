@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Request } from 'express';
+import { Blockchain } from 'src/shared/enums/blockchain.enum';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
-import { LightningCurrencyService } from 'src/subdomains/lightning/services/lightning-currency.service';
+import { Util } from 'src/shared/utils/util';
+import { EvmPaymentService } from 'src/subdomains/evm/payment/services/evm-payment.service';
 import { WalletService } from 'src/subdomains/user/application/services/wallet.service';
 import { LightningWalletEntity } from 'src/subdomains/user/domain/entities/lightning-wallet.entity';
 import {
@@ -23,8 +25,8 @@ export class LightningForwardService {
 
   constructor(
     private readonly walletService: WalletService,
-    lightningService: LightningService,
-    private readonly lightningCurrencyService: LightningCurrencyService,
+    private readonly lightningService: LightningService,
+    private readonly evmPaymentService: EvmPaymentService,
   ) {
     this.client = lightningService.getDefaultClient();
   }
@@ -72,37 +74,50 @@ export class LightningForwardService {
     payRequest.callback = LightningHelper.createLnurlpCallbackUrl(address);
 
     await this.addCurrencies(payRequest);
+    await this.addPaymentMethods(payRequest);
 
     return payRequest;
   }
 
   private async addCurrencies(payRequest: LnBitsLnurlPayRequestDto) {
     try {
-      await this.lightningCurrencyService.updateCurrencyMultipliers();
-      payRequest.currencies = this.lightningCurrencyService.getCurrencies();
+      payRequest.currencies = await this.lightningService.getCurrencies(true);
     } catch (e) {
       this.logger.error('Cannot add currencies to pay request', e);
     }
   }
 
+  private async addPaymentMethods(payRequest: LnBitsLnurlPayRequestDto) {
+    try {
+      payRequest.methods = await this.lightningService.getPaymentMethods();
+    } catch (e) {
+      this.logger.error('Cannot add payment methods to pay request', e);
+    }
+  }
+
   async lnurlpCallbackForward(address: string, params: any): Promise<LnBitsLnurlpInvoiceDto> {
-    const walletPaymentParam = this.lightningCurrencyService.getWalletPaymentParam(address, params);
+    const walletPaymentParam = await this.lightningService.getWalletPaymentParam(address, params);
     if (walletPaymentParam.currencyCode && walletPaymentParam.amount)
-      return this.lnbitsWalletPayment(walletPaymentParam);
+      return this.createPaymentRequest(walletPaymentParam);
 
     const lnurlpId = await this.getLnurlpId(address);
     return this.client.getLnurlpInvoice(lnurlpId, params);
   }
 
-  private async lnbitsWalletPayment(
+  private async createPaymentRequest(
     walletPaymentParam: LightingWalletPaymentParamDto,
   ): Promise<LnBitsLnurlpInvoiceDto> {
-    this.lightningCurrencyService.walletPaymentParamCheck(walletPaymentParam);
-    this.lightningCurrencyService.fillWalletPaymentMemo(walletPaymentParam);
+    walletPaymentParam.method ??= Blockchain.LIGHTNING;
 
-    const adminKey = await this.getLightningWallet(walletPaymentParam.address).then((lw) => lw.adminKey);
+    await this.lightningService.walletPaymentParamCheck(walletPaymentParam);
 
-    return this.client.getLnBitsWalletPayment(adminKey, walletPaymentParam);
+    const lightningWallet = await this.getLightningWallet(walletPaymentParam.address);
+
+    if (Util.equalsIgnoreCase(walletPaymentParam.method, Blockchain.LIGHTNING)) {
+      return this.lightningService.createPaymentRequest(walletPaymentParam, lightningWallet);
+    }
+
+    return this.evmPaymentService.createPaymentRequest(walletPaymentParam, lightningWallet);
   }
 
   // --- LNURLw --- //

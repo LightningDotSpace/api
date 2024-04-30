@@ -14,6 +14,7 @@ import {
   UserTransactionType,
 } from 'src/subdomains/user/domain/entities/user-transaction.entity';
 import { LightningWalletEntity } from '../../domain/entities/lightning-wallet.entity';
+import { UserTransactionDto } from '../dto/user-transaction.dto';
 import { LightingWalletRepository } from '../repositories/lightning-wallet.repository';
 import { WalletRepository } from '../repositories/wallet.repository';
 
@@ -203,7 +204,7 @@ export class LightningWalletService {
         updateUserWalletTransaction.payment_hash,
       );
 
-      const userTransactionEntity = this.userTransactionRepository.create({
+      const userTransaction: UserTransactionDto = {
         type: updateUserWalletTransaction.checking_id.startsWith('internal')
           ? UserTransactionType.INTERN
           : UserTransactionType.EXTERN,
@@ -212,11 +213,13 @@ export class LightningWalletService {
         creationTimestamp: new Date(updateUserWalletTransaction.time * 1000),
         expiresTimestamp: new Date(updateUserWalletTransaction.expiry * 1000),
         tag: updateUserWalletTransaction.extra.tag,
-        lightningWallet: lightningWalletEntity,
-        lightningTransaction: lightningTransactionEntity,
-      });
+      };
 
-      userTransactionEntities.push(userTransactionEntity);
+      userTransactionEntities.push(
+        UserTransactionEntity.createUserTransactionEntity(userTransaction, lightningWalletEntity, {
+          lightningTransactionEntity,
+        }),
+      );
     }
 
     if (withBalance && userTransactionEntities.length > 0) {
@@ -234,7 +237,7 @@ export class LightningWalletService {
   ): Promise<UserTransactionEntity> {
     let dbUserTransactionEntity = await this.userTransactionRepository.findOneBy({
       lightningWallet: { id: updateUserTransactionEntity.lightningWallet.id },
-      lightningTransaction: { id: updateUserTransactionEntity.lightningTransaction.id },
+      lightningTransaction: { id: updateUserTransactionEntity.lightningTransaction?.id },
     });
 
     if (!dbUserTransactionEntity) {

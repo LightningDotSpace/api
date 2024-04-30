@@ -8,6 +8,7 @@ export enum Process {
   UPDATE_INVOICE = 'UpdateInvoice',
   UPDATE_WALLET_BALANCE = 'UpdateWalletBalance',
   UPDATE_LIGHTNING_USER_TRANSACTION = 'UpdateLightingUserTransaction',
+  UPDATE_CURRENCY_TRANSACTION = 'UpdateCurrencyTransaction',
 }
 
 export enum Environment {
@@ -99,6 +100,31 @@ export class Configuration {
       },
       certificate: process.env.LIGHTNING_API_CERTIFICATE?.split('<br>').join('\n'),
     },
+    ethereum: {
+      chainId: process.env.ETHEREUM_CHAIN_ID,
+      walletAddress: process.env.EVM_PAYMENT_ADDRESS || '',
+    },
+    arbitrum: {
+      chainId: process.env.ARBITRUM_CHAIN_ID,
+      walletAddress: process.env.EVM_PAYMENT_ADDRESS || '',
+    },
+    optimism: {
+      chainId: process.env.OPTIMISM_CHAIN_ID,
+      walletAddress: process.env.EVM_PAYMENT_ADDRESS || '',
+    },
+    polygon: {
+      chainId: process.env.POLYGON_CHAIN_ID,
+      walletAddress: process.env.EVM_PAYMENT_ADDRESS || '',
+    },
+    base: {
+      chainId: process.env.BASE_CHAIN_ID,
+      walletAddress: process.env.EVM_PAYMENT_ADDRESS || '',
+    },
+  };
+
+  alchemy = {
+    apiKey: process.env.ALCHEMY_API_KEY,
+    authToken: process.env.ALCHEMY_AUTH_TOKEN,
   };
 
   uma = {

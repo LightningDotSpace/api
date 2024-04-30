@@ -1,4 +1,5 @@
 import { Currency } from '@uma-sdk/core';
+import { Blockchain } from 'src/shared/enums/blockchain.enum';
 
 export interface LnbitsUsermanagerUserDto {
   id: string;
@@ -98,6 +99,7 @@ export interface LnBitsLnurlPayRequestDto {
   maxSendable: number;
   metadata: string;
   currencies: Currency[];
+  methods: Blockchain[];
 }
 
 export interface LnBitsLnurlpInvoiceDto {

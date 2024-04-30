@@ -21,7 +21,7 @@ import { HttpService } from 'src/shared/services/http.service';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Util } from 'src/shared/utils/util';
 import { LightningForwardService } from 'src/subdomains/lightning/services/lightning-forward.service';
-import { LightningCurrencyService } from '../../../../subdomains/lightning/services/lightning-currency.service';
+import { LightningCurrencyService } from '../../lightning/services/lightning-currency.service';
 import { UmaClient } from '../uma-client';
 
 @Injectable()
@@ -113,8 +113,6 @@ export class UmaService {
       const callback = `${Config.url}/uma/${address}?senderVaspDomain=${senderVaspDomain}`;
       const metadata = '[["text/plain", "Pay on lightning.space"]]';
 
-      await this.lightningCurrencyService.updateCurrencyMultipliers();
-
       return await getLnurlpResponse({
         request: umaQuery,
         callback: callback,
@@ -130,7 +128,7 @@ export class UmaService {
           email: { mandatory: false },
           compliance: { mandatory: false },
         },
-        currencyOptions: this.lightningCurrencyService.getCurrencies(),
+        currencyOptions: await this.lightningCurrencyService.getCurrencies(true),
       });
     } catch (e) {
       this.logger.error(`Failed to create lnurlp response for address ${address}`, e);
@@ -209,10 +207,10 @@ export class UmaService {
       await this.checkPayRequest(receiverVaspDomain, payRequest);
 
       const currencyCode = payRequest.currency;
-      const currency = this.lightningCurrencyService.getCurrencyByCode(currencyCode);
+      const currency = await this.lightningCurrencyService.getCurrencyByCode(currencyCode);
       if (!currency) throw new BadRequestException(`Unknown currency ${currencyCode}`);
 
-      const conversionRate = await this.lightningCurrencyService.getMultiplier(currency);
+      const conversionRate = await this.lightningCurrencyService.getMultiplier(currency.code, currency.decimals);
 
       const payReqResp = await getPayReqResponse({
         conversionRate: conversionRate,

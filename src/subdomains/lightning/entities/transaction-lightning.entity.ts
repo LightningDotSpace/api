@@ -68,6 +68,6 @@ export class TransactionLightningEntity extends IEntity {
   @Column({ length: 'MAX', nullable: true })
   paymentRequest?: string;
 
-  @OneToMany(() => UserTransactionEntity, (tx) => tx.lightningTransaction, { eager: true })
+  @OneToMany(() => UserTransactionEntity, (tx) => tx.lightningTransaction, { nullable: true, eager: true })
   userTransactions: UserTransactionEntity[];
 }

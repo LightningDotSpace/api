@@ -74,7 +74,7 @@ export class WalletService {
   }): Promise<Partial<LightningWalletEntity>> {
     const wallet: Partial<LightningWalletEntity> = {
       lnbitsWalletId: w.wallet.id,
-      asset: await this.assetService.getAssetByName(w.wallet.name),
+      asset: await this.assetService.getAssetByNameOrThrow(w.wallet.name),
       adminKey: w.wallet.adminkey,
       invoiceKey: w.wallet.inkey,
       lnurlpId: w.lnurlp.id,

@@ -14,6 +14,7 @@ import { UserRepository } from './application/repositories/user.repository';
 import { WalletProviderRepository } from './application/repositories/wallet-provider.repository';
 import { WalletRepository } from './application/repositories/wallet.repository';
 import { LightningWalletService } from './application/services/lightning-wallet.service';
+import { UserTransactionService } from './application/services/user-transaction.service';
 import { UserService } from './application/services/user.service';
 import { WalletProviderService } from './application/services/wallet-provider.service';
 import { WalletService } from './application/services/wallet.service';
@@ -49,7 +50,8 @@ import { WalletEntity } from './domain/entities/wallet.entity';
     WalletProviderService,
     WalletService,
     LightningWalletService,
+    UserTransactionService,
   ],
-  exports: [UserService, WalletProviderService, WalletService],
+  exports: [UserService, WalletProviderService, WalletService, UserTransactionService],
 })
 export class UserModule {}
