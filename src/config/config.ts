@@ -8,7 +8,7 @@ export enum Process {
   UPDATE_INVOICE = 'UpdateInvoice',
   UPDATE_WALLET_BALANCE = 'UpdateWalletBalance',
   UPDATE_LIGHTNING_USER_TRANSACTION = 'UpdateLightingUserTransaction',
-  UPDATE_CURRENCY_TRANSACTION = 'UpdateCurrencyTransaction',
+  UPDATE_PAYMENT_REQUEST = 'UpdatePaymentRequest',
 }
 
 export enum Environment {

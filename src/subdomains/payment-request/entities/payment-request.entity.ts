@@ -57,6 +57,12 @@ export class PaymentRequestEntity extends IEntity {
     return this;
   }
 
+  expire(): this {
+    this.state = PaymentRequestState.EXPIRED;
+
+    return this;
+  }
+
   fail(errorMessage: string): this {
     this.state = PaymentRequestState.FAILED;
     this.errorMessage = errorMessage;

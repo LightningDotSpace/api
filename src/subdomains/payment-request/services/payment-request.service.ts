@@ -2,8 +2,11 @@ import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 //import { Cron, CronExpression } from '@nestjs/schedule';
 //import { Config, Process } from 'src/config/config';
 //import { Lock } from 'src/shared/utils/lock';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { Config, Process } from 'src/config/config';
 import { Blockchain } from 'src/shared/enums/blockchain.enum';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
+import { Lock } from 'src/shared/utils/lock';
 import { Util } from 'src/shared/utils/util';
 import { LightingWalletPaymentParamDto } from 'src/subdomains/lightning/dto/lightning-wallet.dto';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
@@ -22,26 +25,22 @@ export class PaymentRequestService {
     private readonly assetService: AssetService,
   ) {}
 
-  //@Cron(CronExpression.EVERY_10_SECONDS)
-  //@Lock()
+  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Lock()
   async processOpenTransactions(): Promise<void> {
-    //if (Config.processDisabled(Process.UPDATE_CURRENCY_TRANSACTION)) return;
+    if (Config.processDisabled(Process.UPDATE_PAYMENT_REQUEST)) return;
 
-    const createdCurrencyTransactionEntities = await this.paymentRequestRepository.findBy({
+    const pendingPaymentRequestEntities = await this.paymentRequestRepository.findBy({
       state: PaymentRequestState.PENDING,
     });
 
-    for (const createdCurrencyTransactionEntity of createdCurrencyTransactionEntities) {
-      const currentDate = new Date();
-      const currentUtcTime = currentDate.getTime() + currentDate.getTimezoneOffset() * 60 * 1000;
+    const currentDate = new Date();
 
-      const createdUtcTime = createdCurrencyTransactionEntity.created.getTime();
-
-      const secondsDiff = (currentUtcTime - createdUtcTime) / 1000;
+    for (const pendingPaymentRequestEntity of pendingPaymentRequestEntities) {
+      const secondsDiff = Util.secondsDiff(pendingPaymentRequestEntity.expiryDate, currentDate);
 
       if (secondsDiff > PaymentRequestService.MAX_TIMEOUT_SECONDS) {
-        createdCurrencyTransactionEntity.state = PaymentRequestState.EXPIRED;
-        await this.paymentRequestRepository.save(createdCurrencyTransactionEntity);
+        await this.expirePaymentRequest(pendingPaymentRequestEntity);
       }
     }
   }
@@ -100,7 +99,7 @@ export class PaymentRequestService {
         transferAmount,
         transferAsset: transferAsset,
         paymentRequest,
-        expiryDate: Util.secondsAfter(70),
+        expiryDate: Util.secondsAfter(PaymentRequestService.MAX_TIMEOUT_SECONDS),
         blockchain,
         lightningWallet,
       });
@@ -113,6 +112,10 @@ export class PaymentRequestService {
 
   async completePaymentRequest(entity: PaymentRequestEntity): Promise<void> {
     await this.paymentRequestRepository.save(entity.complete());
+  }
+
+  async expirePaymentRequest(entity: PaymentRequestEntity): Promise<void> {
+    await this.paymentRequestRepository.save(entity.expire());
   }
 
   async failPaymentRequest(entity: PaymentRequestEntity, errorMessage: string): Promise<void> {

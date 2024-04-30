@@ -17,9 +17,11 @@ export class AlchemyController {
     this.logger.info('Incoming addressWebhook ...');
     this.log(dto);
 
-    const testDto = this.createTestDto();
+    this.alchemyWebhookService.processAddressWebhook(dto);
 
-    this.alchemyWebhookService.processAddressWebhook(testDto);
+    // TODO: Only for testing purposes, will be removed in the final version ...
+    //const testDto = this.createTestDto();
+    //this.alchemyWebhookService.processAddressWebhook(testDto);
   }
 
   private log(dto: AlchemyWebhookDto) {
@@ -33,6 +35,7 @@ export class AlchemyController {
     }
   }
 
+  // TODO: Only for testing purposes, will be removed in the final version ...
   private createTestDto(): AlchemyWebhookDto {
     return {
       webhookId: 'wh_mkqqsz7ydb7cgc3b',
