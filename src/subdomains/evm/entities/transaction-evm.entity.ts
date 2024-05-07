@@ -1,7 +1,6 @@
 import { IEntity } from 'src/shared/db/entity';
-import { Blockchain } from 'src/shared/enums/blockchain.enum';
 import { AssetTransferEntity } from 'src/subdomains/master-data/asset/entities/asset-transfer.entity';
-import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
+import { Column, Entity, ManyToOne, OneToOne } from 'typeorm';
 import { UserTransactionEntity } from '../../user/domain/entities/user-transaction.entity';
 
 export enum TransactionEvmState {
@@ -24,14 +23,11 @@ export class TransactionEvmEntity extends IEntity {
   @Column()
   transaction: string;
 
-  @Column()
-  blockchain: Blockchain;
-
   @Column({ length: 'MAX', nullable: true })
   errorMessage?: string;
 
-  @OneToMany(() => UserTransactionEntity, (tx) => tx.lightningTransaction, { nullable: true, eager: true })
-  userTransactions: UserTransactionEntity[];
+  @OneToOne(() => UserTransactionEntity, (tx) => tx.evmTransaction, { nullable: true, eager: true })
+  userTransactions?: UserTransactionEntity[];
 
   // --- ENTITY METHODS --- //
 

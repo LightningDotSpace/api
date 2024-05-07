@@ -6,6 +6,7 @@ import { LightingWalletPaymentParamDto } from 'src/subdomains/lightning/dto/ligh
 import { AssetAccountEntity } from 'src/subdomains/master-data/asset/entities/asset-account.entity';
 import { AssetTransferEntity } from 'src/subdomains/master-data/asset/entities/asset-transfer.entity';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
+import { PaymentRequestMethod } from 'src/subdomains/payment-request/entities/payment-request.entity';
 import { CoinGeckoService } from 'src/subdomains/pricing/services/coingecko.service';
 import { LightningCurrencyService } from '../lightning-currency.service';
 
@@ -208,11 +209,10 @@ describe('LightningCurrencyService', () => {
 
   it('should detect all payment methods', async () => {
     const paymentMethods = await service.getPaymentMethods();
-    expect(paymentMethods.length).toBe(3);
+    expect(paymentMethods.length).toBe(2);
 
-    expect(paymentMethods[0]).toBe(Blockchain.LIGHTNING);
-    expect(paymentMethods[1]).toBe(Blockchain.ETHEREUM);
-    expect(paymentMethods[2]).toBe(Blockchain.POLYGON);
+    expect(paymentMethods[0]).toBe(PaymentRequestMethod.LIGHTNING);
+    expect(paymentMethods[1]).toBe(PaymentRequestMethod.EVM);
   });
 
   // --- HELPERS --- //

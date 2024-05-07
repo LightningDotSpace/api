@@ -1,12 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AssetDto } from 'src/subdomains/master-data/asset/dto/asset.dto';
+import { AssetAccountDto } from 'src/subdomains/master-data/asset/dto/asset-account.dto';
 
 export class LnWalletDto {
   @ApiProperty({
     description: 'Lightning wallet asset',
-    type: AssetDto,
+    type: AssetAccountDto,
   })
-  asset: AssetDto;
+  asset: AssetAccountDto;
 
   @ApiPropertyOptional({
     description: 'Lightning LndHUB admin URL',

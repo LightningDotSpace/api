@@ -9,7 +9,7 @@ export class PaymentRequestRepository extends BaseRepository<PaymentRequestEntit
     super(PaymentRequestEntity, manager);
   }
 
-  async findPendingByAmount(amount: number): Promise<PaymentRequestEntity[] | undefined> {
-    return this.findBy({ state: PaymentRequestState.PENDING, transferAmount: amount });
+  async findPendingByAccountAmount(accountAmount: number): Promise<PaymentRequestEntity[] | undefined> {
+    return this.findBy({ state: PaymentRequestState.PENDING, accountAmount: accountAmount });
   }
 }

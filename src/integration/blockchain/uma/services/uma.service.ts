@@ -21,6 +21,7 @@ import { HttpService } from 'src/shared/services/http.service';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Util } from 'src/shared/utils/util';
 import { LightningForwardService } from 'src/subdomains/lightning/services/lightning-forward.service';
+import { isLightning } from 'src/subdomains/payment-request/dto/payment-request.dto';
 import { LightningCurrencyService } from '../../lightning/services/lightning-currency.service';
 import { UmaClient } from '../uma-client';
 
@@ -254,7 +255,8 @@ export class UmaService {
 
     const lnUrlpId = await this.lightningForwardService.getLnurlpId(lnReceiverAddress);
 
-    return this.lightningForwardService.lnurlpCallbackForward(lnUrlpId, { amount: amountMsats }).then((i) => i.pr);
+    const invoiceDto = await this.lightningForwardService.lnurlpCallbackForward(lnUrlpId, { amount: amountMsats });
+    if (isLightning(invoiceDto)) return invoiceDto.pr;
   }
 
   async finishPayment(payRequestReponse: PayReqResponse): Promise<void> {

@@ -281,8 +281,12 @@ export class Util {
     return hash.digest(encoding);
   }
 
-  static createRandomHash(size: number): string {
-    return Util.createHash(crypto.randomBytes(size), 'sha256', 'base64');
+  static createRandomHash(
+    size: number,
+    algo: CryptoAlgorithm = 'sha256',
+    encoding: crypto.BinaryToTextEncoding = 'base64',
+  ): string {
+    return Util.createHash(crypto.randomBytes(size), algo, encoding);
   }
 
   static createSign(data: BinaryLike, key: KeyLike, algo: CryptoAlgorithm): string {

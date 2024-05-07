@@ -1,5 +1,3 @@
-import { Util } from '../utils/util';
-
 export enum Blockchain {
   LIGHTNING = 'Lightning',
   BITCOIN = 'Bitcoin',
@@ -8,8 +6,4 @@ export enum Blockchain {
   ARBITRUM = 'Arbitrum',
   POLYGON = 'Polygon',
   BASE = 'Base',
-}
-
-export function blockchainFindBy(value: string): Blockchain | undefined {
-  return Object.values(Blockchain).find((b) => Util.equalsIgnoreCase(b, value));
 }

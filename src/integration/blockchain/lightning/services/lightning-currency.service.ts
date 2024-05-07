@@ -6,6 +6,7 @@ import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Util } from 'src/shared/utils/util';
 import { AssetAccountEntity } from 'src/subdomains/master-data/asset/entities/asset-account.entity';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
+import { PaymentRequestMethod } from 'src/subdomains/payment-request/entities/payment-request.entity';
 import { LightingWalletPaymentParamDto } from '../../../../subdomains/lightning/dto/lightning-wallet.dto';
 import { CoinGeckoService } from '../../../../subdomains/pricing/services/coingecko.service';
 import { LightningHelper } from '../lightning-helper';
@@ -18,9 +19,18 @@ export class LightningCurrencyService {
 
   constructor(private readonly assetService: AssetService, private readonly coingeckoService: CoinGeckoService) {}
 
-  async getPaymentMethods(): Promise<Blockchain[]> {
-    const zchfAssets = await this.assetService.getActiveTransferAssets();
-    return [...zchfAssets.map((a) => a.blockchain)];
+  async getPaymentMethods(): Promise<PaymentRequestMethod[]> {
+    const paymentMethods: PaymentRequestMethod[] = [];
+
+    const activeTransferAssets = await this.assetService.getActiveTransferAssets();
+
+    const activeLightningTransferAsset = activeTransferAssets.find((a) => a.blockchain === Blockchain.LIGHTNING);
+    if (activeLightningTransferAsset) paymentMethods.push(PaymentRequestMethod.LIGHTNING);
+
+    const activeEvmTransferAssets = activeTransferAssets.filter((a) => a.blockchain !== Blockchain.LIGHTNING);
+    if (activeEvmTransferAssets.length) paymentMethods.push(PaymentRequestMethod.EVM);
+
+    return paymentMethods;
   }
 
   async getCurrencies(withMultiplier = false): Promise<Currency[]> {

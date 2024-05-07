@@ -1,10 +1,9 @@
 import { IEntity } from 'src/shared/db/entity';
-import { Blockchain } from 'src/shared/enums/blockchain.enum';
 import { AssetAccountEntity } from 'src/subdomains/master-data/asset/entities/asset-account.entity';
 import { AssetTransferEntity } from 'src/subdomains/master-data/asset/entities/asset-transfer.entity';
-import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
+import { UserTransactionEntity } from 'src/subdomains/user/domain/entities/user-transaction.entity';
+import { Column, Entity, ManyToOne, OneToOne } from 'typeorm';
 import { LightningWalletEntity } from '../../user/domain/entities/lightning-wallet.entity';
-import { UserTransactionEntity } from '../../user/domain/entities/user-transaction.entity';
 
 export enum PaymentRequestState {
   PENDING = 'pending',
@@ -12,6 +11,11 @@ export enum PaymentRequestState {
   DUPLICATE = 'duplicate',
   FAILED = 'failed',
   COMPLETED = 'completed',
+}
+
+export enum PaymentRequestMethod {
+  LIGHTNING = 'lightning',
+  EVM = 'evm',
 }
 
 @Entity('payment_request')
@@ -25,8 +29,8 @@ export class PaymentRequestEntity extends IEntity {
   @Column({ type: 'float' })
   accountAmount: number;
 
-  @ManyToOne(() => AssetTransferEntity, { eager: true })
-  transferAsset: AssetTransferEntity;
+  @ManyToOne(() => AssetTransferEntity, { eager: true, nullable: true })
+  transferAsset?: AssetTransferEntity;
 
   @Column({ type: 'float' })
   transferAmount: number;
@@ -38,7 +42,7 @@ export class PaymentRequestEntity extends IEntity {
   expiryDate: Date;
 
   @Column()
-  blockchain: Blockchain;
+  paymentMethod: PaymentRequestMethod;
 
   @Column({ length: 'MAX', nullable: true })
   errorMessage?: string;
@@ -46,8 +50,8 @@ export class PaymentRequestEntity extends IEntity {
   @ManyToOne(() => LightningWalletEntity, { eager: true })
   lightningWallet: LightningWalletEntity;
 
-  @OneToMany(() => UserTransactionEntity, (tx) => tx.lightningTransaction, { nullable: true, eager: true })
-  userTransactions: UserTransactionEntity[];
+  @OneToOne(() => UserTransactionEntity, (tx) => tx.paymentRequest, { nullable: true, eager: true })
+  userTransactions?: UserTransactionEntity[];
 
   // --- ENTITY METHODS --- //
 

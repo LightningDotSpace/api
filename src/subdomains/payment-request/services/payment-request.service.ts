@@ -1,17 +1,14 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
-//import { Cron, CronExpression } from '@nestjs/schedule';
-//import { Config, Process } from 'src/config/config';
-//import { Lock } from 'src/shared/utils/lock';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Config, Process } from 'src/config/config';
-import { Blockchain } from 'src/shared/enums/blockchain.enum';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Lock } from 'src/shared/utils/lock';
 import { Util } from 'src/shared/utils/util';
 import { LightingWalletPaymentParamDto } from 'src/subdomains/lightning/dto/lightning-wallet.dto';
+import { AssetAccountEntity } from 'src/subdomains/master-data/asset/entities/asset-account.entity';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
 import { LightningWalletEntity } from '../../user/domain/entities/lightning-wallet.entity';
-import { PaymentRequestEntity, PaymentRequestState } from '../entities/payment-request.entity';
+import { PaymentRequestEntity, PaymentRequestMethod, PaymentRequestState } from '../entities/payment-request.entity';
 import { PaymentRequestRepository } from '../repositories/payment-request.repository';
 
 @Injectable()
@@ -47,13 +44,13 @@ export class PaymentRequestService {
 
   // --- FUNCTIONS --- //
 
-  async findPendingByAmount(amount: number): Promise<PaymentRequestEntity | undefined> {
-    const paymentRequests = await this.paymentRequestRepository.findPendingByAmount(amount);
+  async findPendingByAccountAmount(accountAmount: number): Promise<PaymentRequestEntity | undefined> {
+    const paymentRequests = await this.paymentRequestRepository.findPendingByAccountAmount(accountAmount);
     if (!paymentRequests?.length) return;
 
     if (1 != paymentRequests.length) {
       for (const paymentRequest of paymentRequests) {
-        const errorMessage = `Payment request id ${paymentRequest.id}: ${paymentRequests.length} pending payment request entries with amount ${amount} found`;
+        const errorMessage = `Payment request id ${paymentRequest.id}: ${paymentRequests.length} pending payment request entries with amount ${accountAmount} found`;
         await this.failPaymentRequest(paymentRequest, errorMessage);
       }
 
@@ -66,9 +63,8 @@ export class PaymentRequestService {
   async checkDuplicate(walletPaymentParam: LightingWalletPaymentParamDto) {
     const duplicates = await this.paymentRequestRepository
       .createQueryBuilder()
-      .where('state = :state)', { state: PaymentRequestState.PENDING })
-      .andWhere('currency = :currency', { currency: walletPaymentParam.currencyCode })
-      .andWhere('amount = :amount', { amount: Number(walletPaymentParam.amount) })
+      .where('state = :state', { state: PaymentRequestState.PENDING })
+      .andWhere('transferAmount = :transferAmount', { transferAmount: Number(walletPaymentParam.amount) })
       .getExists();
 
     if (duplicates)
@@ -78,35 +74,29 @@ export class PaymentRequestService {
   }
 
   async savePaymentRequest(
+    accountAsset: AssetAccountEntity,
     accountAmount: number,
     transferAmount: number,
     paymentRequest: string,
-    blockchain: Blockchain,
+    expiryDate: Date,
+    paymentMethod: PaymentRequestMethod,
     lightningWallet: LightningWalletEntity,
   ): Promise<void> {
     try {
-      const accountAsset = await this.assetService.getBtcAccountAssetOrThrow();
-
-      const transferAsset =
-        blockchain === Blockchain.LIGHTNING
-          ? await this.assetService.getSatTransferAssetOrThrow()
-          : await this.assetService.getZchfTransferAssetOrThrow(blockchain);
-
       const newPaymentRequestEntity = this.paymentRequestRepository.create({
         state: PaymentRequestState.PENDING,
+        accountAsset,
         accountAmount,
-        accountAsset: accountAsset,
         transferAmount,
-        transferAsset: transferAsset,
         paymentRequest,
-        expiryDate: Util.secondsAfter(PaymentRequestService.MAX_TIMEOUT_SECONDS),
-        blockchain,
+        expiryDate,
+        paymentMethod,
         lightningWallet,
       });
 
       await this.paymentRequestRepository.save(newPaymentRequestEntity);
     } catch (e) {
-      this.logger.error(`Save payment request failed for blockchain ${blockchain}: ${paymentRequest}`, e);
+      this.logger.error(`Save payment request failed for method ${paymentMethod}: ${paymentRequest}`, e);
     }
   }
 

@@ -1,7 +1,7 @@
 import { IEntity } from 'src/shared/db/entity';
 import { TransactionEvmEntity } from 'src/subdomains/evm/entities/transaction-evm.entity';
 import { LightningWalletEntity } from 'src/subdomains/user/domain/entities/lightning-wallet.entity';
-import { Column, Entity, ManyToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToOne } from 'typeorm';
 import { TransactionLightningEntity } from '../../../lightning/entities/transaction-lightning.entity';
 import { PaymentRequestEntity } from '../../../payment-request/entities/payment-request.entity';
 import { UserTransactionDto } from '../../application/dto/user-transaction.dto';
@@ -40,10 +40,12 @@ export class UserTransactionEntity extends IEntity {
   @ManyToOne(() => TransactionLightningEntity, { nullable: true })
   lightningTransaction?: TransactionLightningEntity;
 
-  @ManyToOne(() => TransactionEvmEntity, { nullable: true })
+  @OneToOne(() => TransactionEvmEntity, { nullable: true })
+  @JoinColumn()
   evmTransaction?: TransactionEvmEntity;
 
-  @ManyToOne(() => PaymentRequestEntity, { nullable: true })
+  @OneToOne(() => PaymentRequestEntity, { nullable: true })
+  @JoinColumn()
   paymentRequest?: PaymentRequestEntity;
 
   // --- CREATE --- //

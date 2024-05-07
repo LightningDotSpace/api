@@ -44,6 +44,27 @@
     "lightningLndAdminMacaroon": {
       "value": "xxx"
     },
+    "ethereumChainId": {
+      "value": "5"
+    },
+    "arbitrumChainId": {
+      "value": "421613"
+    },
+    "optimismChainId": {
+      "value": "420"
+    },
+    "polygonChainId": {
+      "value": "80001"
+    },
+    "baseChainId": {
+      "value": "84531"
+    },
+    "alchemyApiKey": {
+      "value": "xxx"
+    },
+    "alchemyAuthToken": {
+      "value": "xxx"
+    },
     "umaSigningPrivKey": {
       "value": "xxx"
     },

@@ -25,6 +25,17 @@ param lightningLnbitsAdminKey string
 @secure()
 param lightningLndAdminMacaroon string
 
+param ethereumChainId string
+param arbitrumChainId string
+param optimismChainId string
+param polygonChainId string
+param baseChainId string
+
+@secure()
+param alchemyApiKey string
+@secure()
+param alchemyAuthToken string
+
 @secure()
 param umaSigningPrivKey string
 param umaSigningPubKey string
@@ -321,6 +332,34 @@ resource apiAppService 'Microsoft.Web/sites@2018-11-01' =
           {
             name: 'LIGHTNING_LND_ADMIN_MACAROON'
             value: lightningLndAdminMacaroon
+          }
+          {
+            name: 'ETHEREUM_CHAIN_ID'
+            value: ethereumChainId
+          }
+          {
+            name: 'ARBITRUM_CHAIN_ID'
+            value: arbitrumChainId
+          }
+          {
+            name: 'OPTIMISM_CHAIN_ID'
+            value: optimismChainId
+          }
+          {
+            name: 'POLYGON_CHAIN_ID'
+            value: polygonChainId
+          }
+          {
+            name: 'BASE_CHAIN_ID'
+            value: baseChainId
+          }
+          {
+            name: 'ALCHEMY_API_KEY'
+            value: alchemyApiKey
+          }
+          {
+            name: 'ALCHEMY_AUTH_TOKEN'
+            value: alchemyAuthToken
           }
           {
             name: 'LIGHTNING_LND_WS_ONCHAIN_TRANSACTIONS_URL'

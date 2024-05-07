@@ -1,9 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Request } from 'express';
-import { Blockchain } from 'src/shared/enums/blockchain.enum';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Util } from 'src/shared/utils/util';
 import { EvmPaymentService } from 'src/subdomains/evm/payment/services/evm-payment.service';
+import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
+import { PaymentRequestDto } from 'src/subdomains/payment-request/dto/payment-request.dto';
+import { PaymentRequestMethod } from 'src/subdomains/payment-request/entities/payment-request.entity';
 import { WalletService } from 'src/subdomains/user/application/services/wallet.service';
 import { LightningWalletEntity } from 'src/subdomains/user/domain/entities/lightning-wallet.entity';
 import {
@@ -54,11 +56,9 @@ export class LightningForwardService {
     return this.getLightningWallet(address).then((lw) => lw.lnurlpId);
   }
 
-  private async getLightningWallet(address: string): Promise<LightningWalletEntity> {
+  private async getLightningWallet(address: string, assetName = 'BTC'): Promise<LightningWalletEntity> {
     const wallet = await this.walletService.getByLnbitsAddress(address);
     if (!wallet) throw new NotFoundException('Wallet not found');
-
-    const assetName = 'BTC';
 
     const lightningWallet = wallet.lightningWallets.find((w) => w.asset.name === assetName);
     if (!lightningWallet) throw new NotFoundException('Lightning Wallet not found');
@@ -95,7 +95,7 @@ export class LightningForwardService {
     }
   }
 
-  async lnurlpCallbackForward(address: string, params: any): Promise<LnBitsLnurlpInvoiceDto> {
+  async lnurlpCallbackForward(address: string, params: any): Promise<LnBitsLnurlpInvoiceDto | PaymentRequestDto> {
     const walletPaymentParam = await this.lightningService.getWalletPaymentParam(address, params);
     if (walletPaymentParam.currencyCode && walletPaymentParam.amount)
       return this.createPaymentRequest(walletPaymentParam);
@@ -104,16 +104,19 @@ export class LightningForwardService {
     return this.client.getLnurlpInvoice(lnurlpId, params);
   }
 
-  private async createPaymentRequest(
-    walletPaymentParam: LightingWalletPaymentParamDto,
-  ): Promise<LnBitsLnurlpInvoiceDto> {
-    walletPaymentParam.method ??= Blockchain.LIGHTNING;
+  private async createPaymentRequest(walletPaymentParam: LightingWalletPaymentParamDto): Promise<PaymentRequestDto> {
+    walletPaymentParam.method ??= PaymentRequestMethod.LIGHTNING;
 
     await this.lightningService.walletPaymentParamCheck(walletPaymentParam);
 
-    const lightningWallet = await this.getLightningWallet(walletPaymentParam.address);
+    const lightningWalletAssetName =
+      walletPaymentParam.method === PaymentRequestMethod.LIGHTNING
+        ? AssetService.BTC_ACCOUNT_ASSET_NAME
+        : AssetService.CHF_ACCOUNT_ASSET_NAME;
 
-    if (Util.equalsIgnoreCase(walletPaymentParam.method, Blockchain.LIGHTNING)) {
+    const lightningWallet = await this.getLightningWallet(walletPaymentParam.address, lightningWalletAssetName);
+
+    if (Util.equalsIgnoreCase(walletPaymentParam.method, PaymentRequestMethod.LIGHTNING)) {
       return this.lightningService.createPaymentRequest(walletPaymentParam, lightningWallet);
     }
 

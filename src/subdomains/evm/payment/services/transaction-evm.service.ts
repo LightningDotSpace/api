@@ -30,7 +30,6 @@ export class TransactionEvmService {
         asset: zchfAsset,
         amount: EvmUtil.fromWeiAmount(transaction.rawContract.rawValue, transaction.rawContract.decimals),
         transaction: transaction.hash,
-        blockchain: blockchain,
       });
 
       const transactionEvmEntity = await this.transactionEvmRepo.save(newTransactionEvmEntity);
@@ -43,7 +42,9 @@ export class TransactionEvmService {
 
   async syncUserPayment(transactionEvmEntity: TransactionEvmEntity, txId: string, blockchain: Blockchain) {
     try {
-      const paymentRequestEntity = await this.paymentRequestService.findPendingByAmount(transactionEvmEntity.amount);
+      const paymentRequestEntity = await this.paymentRequestService.findPendingByAccountAmount(
+        transactionEvmEntity.amount,
+      );
 
       if (!paymentRequestEntity) {
         const errorMessage = `No pending payment request found for blockchain ${blockchain} with amount ${transactionEvmEntity.amount}`;
@@ -51,6 +52,8 @@ export class TransactionEvmService {
 
         return;
       }
+
+      paymentRequestEntity.transferAsset = transactionEvmEntity.asset;
 
       const userTransactionEntity = await this.userTransactionService.saveUserTransactionEvmRelated(
         paymentRequestEntity,

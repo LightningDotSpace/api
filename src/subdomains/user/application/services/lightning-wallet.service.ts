@@ -8,6 +8,7 @@ import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Lock } from 'src/shared/utils/lock';
 import { Util } from 'src/shared/utils/util';
 import { LightningTransactionService } from 'src/subdomains/lightning/services/lightning-transaction.service';
+import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
 import { UserTransactionRepository } from 'src/subdomains/user/application/repositories/user-transaction.repository';
 import {
   UserTransactionEntity,
@@ -19,8 +20,10 @@ import { LightingWalletRepository } from '../repositories/lightning-wallet.repos
 import { WalletRepository } from '../repositories/wallet.repository';
 
 interface LightningWalletInfoDto {
+  lightningWalletId: number;
   lnbitsWalletId: string;
   adminKey: string;
+  accountAssetId: number;
 }
 
 @Injectable()
@@ -31,6 +34,7 @@ export class LightningWalletService {
 
   constructor(
     lightningService: LightningService,
+    private readonly assetService: AssetService,
     private readonly lightningTransactionService: LightningTransactionService,
     private readonly userTransactionRepository: UserTransactionRepository,
     private readonly lightingWalletRepository: LightingWalletRepository,
@@ -56,21 +60,58 @@ export class LightningWalletService {
   private async doProcessUpdateLightningWalletBalances(
     lightningWalletEntities: LightningWalletEntity[],
   ): Promise<void> {
-    for (const lightningWalletEntity of lightningWalletEntities) {
-      try {
-        const lnbitsWallet = await this.client.getLnBitsWallet(lightningWalletEntity.adminKey);
+    const btcWalletEntities = lightningWalletEntities.filter(
+      (a) => a.asset.name === AssetService.BTC_ACCOUNT_ASSET_NAME,
+    );
 
-        const lightningWalletEntityBalance = lightningWalletEntity.balance;
+    const fiatWalletEntities = lightningWalletEntities.filter(
+      (a) => a.asset.name !== AssetService.BTC_ACCOUNT_ASSET_NAME,
+    );
+
+    await this.doProcessUpdateBtcWalletBalances(btcWalletEntities);
+    await this.doProcessUpdateFiatWalletBalances(fiatWalletEntities);
+  }
+
+  private async doProcessUpdateBtcWalletBalances(btcWalletEntities: LightningWalletEntity[]): Promise<void> {
+    for (const btcWalletEntity of btcWalletEntities) {
+      try {
+        const lnbitsWallet = await this.client.getLnBitsWallet(btcWalletEntity.adminKey);
+
+        const lightningWalletEntityBalance = btcWalletEntity.balance;
         const lnbitsWalletBalance = LightningHelper.btcToSat(lnbitsWallet.balance);
 
         if (lightningWalletEntityBalance !== lnbitsWalletBalance) {
-          await this.lightingWalletRepository.update(lightningWalletEntity.id, {
+          await this.lightingWalletRepository.update(btcWalletEntity.id, {
             balance: lnbitsWalletBalance,
           });
         }
       } catch (e) {
         this.logger.error(
-          `Error while updating wallet balance: ${lightningWalletEntity.id} / ${lightningWalletEntity.lnbitsWalletId}`,
+          `Error while updating wallet balance: ${btcWalletEntity.id} / ${btcWalletEntity.lnbitsWalletId}`,
+          e,
+        );
+      }
+    }
+  }
+
+  private async doProcessUpdateFiatWalletBalances(fiatWalletEntities: LightningWalletEntity[]): Promise<void> {
+    for (const fiatWalletEntity of fiatWalletEntities) {
+      try {
+        const userTransactionEntities = await this.userTransactionRepository.getByLightningWalletId(
+          fiatWalletEntity.id,
+        );
+
+        const fiatWalletEntityBalance = fiatWalletEntity.balance;
+        const fiatWalletBalance = Util.sum(userTransactionEntities.map((t) => t.amount));
+
+        if (fiatWalletEntityBalance !== fiatWalletBalance) {
+          await this.lightingWalletRepository.update(fiatWalletEntity.id, {
+            balance: fiatWalletBalance,
+          });
+        }
+      } catch (e) {
+        this.logger.error(
+          `Error while updating wallet balance: ${fiatWalletEntity.id} / ${fiatWalletEntity.lnbitsWalletId}`,
           e,
         );
       }
@@ -114,8 +155,10 @@ export class LightningWalletService {
       if (!walletEntity) throw new NotFoundException(`${address}: Wallet not found`);
 
       const lightningWalletInfo = walletEntity.lightningWallets.map<LightningWalletInfoDto>((lw) => ({
+        lightningWalletId: lw.id,
         lnbitsWalletId: lw.lnbitsWalletId,
         adminKey: lw.adminKey,
+        accountAssetId: lw.asset.id,
       }));
 
       userTransactionEntities.push(
@@ -124,7 +167,7 @@ export class LightningWalletService {
     } else {
       const lightningWalletIterator = this.lightingWalletRepository.getRawIterator<LightningWalletInfoDto>(
         100,
-        'lnbitsWalletId, adminKey',
+        'id AS lightningWalletId, lnbitsWalletId, adminKey, assetId AS accountAssetId',
       );
       let lightningWalletInfo = await lightningWalletIterator.next();
 
@@ -169,22 +212,31 @@ export class LightningWalletService {
     const userTransactionEntities: UserTransactionEntity[] = [];
 
     for (const lightningWallet of lightningWalletInfo) {
-      const startDate =
-        timeStart ??
-        (await this.userTransactionRepository.getMaxCreationTimestamp(lightningWallet.lnbitsWalletId))
-          ?.maxCreationTimestamp ??
-        new Date(0);
+      const accountAsset = await this.assetService.getAccountAssetByIdOrThrow(lightningWallet.accountAssetId);
 
-      const endDate = timeEnd ?? new Date('2099-12-31T23:59:59.999');
-      userTransactionEntities.push(
-        ...(await this.createUserTransactionEntities(lightningWallet, startDate, endDate, withBalance)),
-      );
+      if (accountAsset.name === AssetService.BTC_ACCOUNT_ASSET_NAME) {
+        const startDate =
+          timeStart ??
+          (await this.userTransactionRepository.getMaxCreationTimestamp(lightningWallet.lnbitsWalletId))
+            ?.maxCreationTimestamp ??
+          new Date(0);
+
+        const endDate = timeEnd ?? new Date('2099-12-31T23:59:59.999');
+
+        userTransactionEntities.push(
+          ...(await this.createLightningUserTransactionEntities(lightningWallet, startDate, endDate, withBalance)),
+        );
+      }
+
+      if (accountAsset.name === AssetService.CHF_ACCOUNT_ASSET_NAME) {
+        userTransactionEntities.push(...(await this.createEvmUserTransactionEntities(lightningWallet, withBalance)));
+      }
     }
 
     return userTransactionEntities;
   }
 
-  private async createUserTransactionEntities(
+  private async createLightningUserTransactionEntities(
     lightningWalletInfo: LightningWalletInfoDto,
     startDate: Date,
     endDate: Date,
@@ -226,6 +278,20 @@ export class LightningWalletService {
       const lnbitsWallet = await this.client.getLnBitsWallet(lightningWalletInfo.adminKey);
       userTransactionEntities[userTransactionEntities.length - 1].balance = LightningHelper.btcToSat(
         lnbitsWallet.balance,
+      );
+    }
+
+    return userTransactionEntities;
+  }
+
+  private async createEvmUserTransactionEntities(lightningWalletInfo: LightningWalletInfoDto, withBalance = false) {
+    const userTransactionEntities = await this.userTransactionRepository.getByLightningWalletId(
+      lightningWalletInfo.lightningWalletId,
+    );
+
+    if (withBalance && userTransactionEntities.length > 0) {
+      userTransactionEntities[userTransactionEntities.length - 1].balance = Util.sum(
+        userTransactionEntities.map((t) => t.amount),
       );
     }
 
