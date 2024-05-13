@@ -284,7 +284,10 @@ export class LightningWalletService {
     return userTransactionEntities;
   }
 
-  private async createEvmUserTransactionEntities(lightningWalletInfo: LightningWalletInfoDto, withBalance = false) {
+  private async createEvmUserTransactionEntities(
+    lightningWalletInfo: LightningWalletInfoDto,
+    withBalance = false,
+  ): Promise<UserTransactionEntity[]> {
     const userTransactionEntities = await this.userTransactionRepository.getByLightningWalletId(
       lightningWalletInfo.lightningWalletId,
     );

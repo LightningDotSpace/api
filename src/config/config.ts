@@ -77,48 +77,53 @@ export class Configuration {
     signature: new RegExp(`^(${this.allSignatureFormat})$`),
   };
 
-  evmPaymentAddress = process.env.EVM_PAYMENT_ADDRESS;
+  payment = {
+    timeout: +(process.env.PAYMENT_TIMEOUT ?? 60),
+    timeoutDelay: +(process.env.PAYMENT_TIMEOUT_DELAY ?? 10),
+
+    evmAddress: process.env.PAYMENT_EVM_ADDRESS,
+  };
 
   blockchain = {
     lightning: {
       lnbits: {
-        adminUserId: process.env.LIGHTNING_LNBITS_ADMIN_USER_ID || '',
-        adminKey: process.env.LIGHTNING_LNBITS_ADMIN_KEY || '',
-        apiUrl: process.env.LIGHTNING_LNBITS_API_URL || '',
-        lnurlpApiUrl: process.env.LIGHTNING_LNBITS_LNURLP_API_URL || '',
-        lnurlpUrl: process.env.LIGHTNING_LNBITS_LNURLP_URL || '',
-        lnurlwApiUrl: process.env.LIGHTNING_LNBITS_LNURLW_API_URL || '',
-        lndhubUrl: process.env.LIGHTNING_LNBITS_LNDHUB_URL || '',
-        usermanagerApiUrl: process.env.LIGHTNING_LNBITS_USERMANAGER_API_URL || '',
+        adminUserId: process.env.LIGHTNING_LNBITS_ADMIN_USER_ID ?? '',
+        adminKey: process.env.LIGHTNING_LNBITS_ADMIN_KEY ?? '',
+        apiUrl: process.env.LIGHTNING_LNBITS_API_URL ?? '',
+        lnurlpApiUrl: process.env.LIGHTNING_LNBITS_LNURLP_API_URL ?? '',
+        lnurlpUrl: process.env.LIGHTNING_LNBITS_LNURLP_URL ?? '',
+        lnurlwApiUrl: process.env.LIGHTNING_LNBITS_LNURLW_API_URL ?? '',
+        lndhubUrl: process.env.LIGHTNING_LNBITS_LNDHUB_URL ?? '',
+        usermanagerApiUrl: process.env.LIGHTNING_LNBITS_USERMANAGER_API_URL ?? '',
       },
       lnd: {
-        apiUrl: process.env.LIGHTNING_LND_API_URL || '',
-        adminMacaroon: process.env.LIGHTNING_LND_ADMIN_MACAROON || '',
-        wsOnchainTransactionsUrl: process.env.LIGHTNING_LND_WS_ONCHAIN_TRANSACTIONS_URL || '',
-        wsInvoicesUrl: process.env.LIGHTNING_LND_WS_INVOICES_URL || '',
-        wsPaymentsUrl: process.env.LIGHTNING_LND_WS_PAYMENTS_URL || '',
+        apiUrl: process.env.LIGHTNING_LND_API_URL ?? '',
+        adminMacaroon: process.env.LIGHTNING_LND_ADMIN_MACAROON ?? '',
+        wsOnchainTransactionsUrl: process.env.LIGHTNING_LND_WS_ONCHAIN_TRANSACTIONS_URL ?? '',
+        wsInvoicesUrl: process.env.LIGHTNING_LND_WS_INVOICES_URL ?? '',
+        wsPaymentsUrl: process.env.LIGHTNING_LND_WS_PAYMENTS_URL ?? '',
       },
       certificate: process.env.LIGHTNING_API_CERTIFICATE?.split('<br>').join('\n'),
     },
     ethereum: {
       chainId: process.env.ETHEREUM_CHAIN_ID,
-      walletAddress: process.env.EVM_PAYMENT_ADDRESS || '',
+      walletAddress: process.env.EVM_PAYMENT_ADDRESS ?? '',
     },
     arbitrum: {
       chainId: process.env.ARBITRUM_CHAIN_ID,
-      walletAddress: process.env.EVM_PAYMENT_ADDRESS || '',
+      walletAddress: process.env.EVM_PAYMENT_ADDRESS ?? '',
     },
     optimism: {
       chainId: process.env.OPTIMISM_CHAIN_ID,
-      walletAddress: process.env.EVM_PAYMENT_ADDRESS || '',
+      walletAddress: process.env.EVM_PAYMENT_ADDRESS ?? '',
     },
     polygon: {
       chainId: process.env.POLYGON_CHAIN_ID,
-      walletAddress: process.env.EVM_PAYMENT_ADDRESS || '',
+      walletAddress: process.env.EVM_PAYMENT_ADDRESS ?? '',
     },
     base: {
       chainId: process.env.BASE_CHAIN_ID,
-      walletAddress: process.env.EVM_PAYMENT_ADDRESS || '',
+      walletAddress: process.env.EVM_PAYMENT_ADDRESS ?? '',
     },
   };
 
@@ -128,9 +133,9 @@ export class Configuration {
   };
 
   uma = {
-    signingPrivKey: process.env.UMA_SIGNING_PRIV_KEY || '',
-    signingPubKey: process.env.UMA_SIGNING_PUB_KEY || '',
-    encryptionPubKey: process.env.UMA_ENCRYPTION_PUB_KEY || '',
+    signingPrivKey: process.env.UMA_SIGNING_PRIV_KEY ?? '',
+    signingPubKey: process.env.UMA_SIGNING_PUB_KEY ?? '',
+    encryptionPubKey: process.env.UMA_ENCRYPTION_PUB_KEY ?? '',
   };
 
   coinGecko = {

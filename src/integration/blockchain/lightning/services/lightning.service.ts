@@ -10,6 +10,7 @@ import { PaymentRequestMethod } from 'src/subdomains/payment-request/entities/pa
 import { PaymentRequestService } from 'src/subdomains/payment-request/services/payment-request.service';
 import { LightningWalletEntity } from 'src/subdomains/user/domain/entities/lightning-wallet.entity';
 import { LnBitsUserDto } from '../dto/lnbits.dto';
+import { LndInvoiceInfoDto } from '../dto/lnd.dto';
 import { LightningClient, UserFilterData } from '../lightning-client';
 import { LightningHelper } from '../lightning-helper';
 
@@ -141,35 +142,66 @@ export class LightningService {
 
   async createPaymentRequest(
     walletPaymentParam: LightingWalletPaymentParamDto,
-    lightningWallet: LightningWalletEntity,
+    btcLightningWallet: LightningWalletEntity,
+    chfLightningWallet: LightningWalletEntity,
   ): Promise<LightningPaymentRequestDto> {
     await this.paymentRequestService.checkDuplicate(walletPaymentParam);
 
-    const transferAmount = walletPaymentParam.amount;
-    if (!transferAmount) throw new NotFoundException(`Lightning Wallet ${lightningWallet.id}: amount not found`);
+    const invoiceAmount = walletPaymentParam.amount;
+    if (!invoiceAmount)
+      throw new NotFoundException(`Lightning Wallet ${btcLightningWallet.id}: invoice amount not found`);
 
     this.lightningCurrencyService.fillWalletPaymentMemo(walletPaymentParam);
 
-    const invoice = await this.client.getLnBitsWalletPayment(lightningWallet.adminKey, walletPaymentParam);
+    const invoice = await this.client.getLnBitsWalletPayment(btcLightningWallet.adminKey, walletPaymentParam);
     const pr = invoice.pr;
 
     const invoiceInfo = LightningHelper.getInvoiceInfo(pr);
 
-    const accountAmount = invoiceInfo.sats;
-    const expiryDate = invoiceInfo.expiryDate;
+    await this.saveLightningPaymentRequest(+invoiceAmount, pr, invoiceInfo, btcLightningWallet);
 
-    const accountAsset = await this.assetService.getBtcAccountAssetOrThrow();
-
-    await this.paymentRequestService.savePaymentRequest(
-      accountAsset,
-      Number(accountAmount),
-      Number(transferAmount),
-      pr,
-      expiryDate,
-      PaymentRequestMethod.LIGHTNING,
-      lightningWallet,
-    );
+    if (walletPaymentParam.currencyCode !== AssetService.BTC_ACCOUNT_ASSET_NAME) {
+      await this.saveEvmPaymentRequest(+invoiceAmount, pr, invoiceInfo, chfLightningWallet);
+    }
 
     return { pr };
+  }
+
+  private async saveLightningPaymentRequest(
+    invoiceAmount: number,
+    pr: string,
+    invoiceInfo: LndInvoiceInfoDto,
+    btcLightningWallet: LightningWalletEntity,
+  ) {
+    const invoiceAsset = await this.assetService.getBtcAccountAssetOrThrow();
+
+    await this.paymentRequestService.savePaymentRequest(
+      invoiceAsset,
+      Number(invoiceAmount),
+      LightningHelper.satToBtc(invoiceInfo.sats),
+      pr,
+      invoiceInfo.expiryDate,
+      PaymentRequestMethod.LIGHTNING,
+      btcLightningWallet,
+    );
+  }
+
+  private async saveEvmPaymentRequest(
+    invoiceAmount: number,
+    pr: string,
+    invoiceInfo: LndInvoiceInfoDto,
+    chfLightningWallet: LightningWalletEntity,
+  ) {
+    const invoiceAsset = await this.assetService.getChfAccountAssetOrThrow();
+
+    await this.paymentRequestService.savePaymentRequest(
+      invoiceAsset,
+      invoiceAmount,
+      invoiceAmount,
+      pr,
+      invoiceInfo.expiryDate,
+      PaymentRequestMethod.EVM,
+      chfLightningWallet,
+    );
   }
 }

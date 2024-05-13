@@ -24,10 +24,10 @@ export class PaymentRequestEntity extends IEntity {
   state: PaymentRequestState;
 
   @ManyToOne(() => AssetAccountEntity, { eager: true })
-  accountAsset: AssetAccountEntity;
+  invoiceAsset: AssetAccountEntity;
 
   @Column({ type: 'float' })
-  accountAmount: number;
+  invoiceAmount: number;
 
   @ManyToOne(() => AssetTransferEntity, { eager: true, nullable: true })
   transferAsset?: AssetTransferEntity;
@@ -51,11 +51,12 @@ export class PaymentRequestEntity extends IEntity {
   lightningWallet: LightningWalletEntity;
 
   @OneToOne(() => UserTransactionEntity, (tx) => tx.paymentRequest, { nullable: true, eager: true })
-  userTransactions?: UserTransactionEntity[];
+  userTransaction?: UserTransactionEntity;
 
   // --- ENTITY METHODS --- //
 
-  complete(): this {
+  complete(asset: AssetTransferEntity): this {
+    this.transferAsset = asset;
     this.state = PaymentRequestState.COMPLETED;
 
     return this;

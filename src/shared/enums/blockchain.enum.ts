@@ -1,9 +1,9 @@
 export enum Blockchain {
-  LIGHTNING = 'Lightning',
-  BITCOIN = 'Bitcoin',
-  ETHEREUM = 'Ethereum',
-  OPTIMISM = 'Optimism',
-  ARBITRUM = 'Arbitrum',
-  POLYGON = 'Polygon',
-  BASE = 'Base',
+  LIGHTNING = 'lightning',
+  BITCOIN = 'bitcoin',
+  ETHEREUM = 'ethereum',
+  OPTIMISM = 'optimism',
+  ARBITRUM = 'arbitrum',
+  POLYGON = 'polygon',
+  BASE = 'base',
 }

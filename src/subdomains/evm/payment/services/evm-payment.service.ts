@@ -20,26 +20,27 @@ export class EvmPaymentService {
 
   async createPaymentRequest(
     walletPaymentParam: LightingWalletPaymentParamDto,
-    lightningWallet: LightningWalletEntity,
+    chfLightningWallet: LightningWalletEntity,
   ): Promise<EvmPaymentRequestDto> {
     await this.paymentRequestService.checkDuplicate(walletPaymentParam);
 
-    const amount = walletPaymentParam.amount;
-    if (!amount) throw new NotFoundException(`Lightning Wallet ${lightningWallet.id}: amount not found`);
+    const invoiceAmount = walletPaymentParam.amount;
+    if (!invoiceAmount)
+      throw new NotFoundException(`Lightning Wallet ${chfLightningWallet.id}: invoice amount not found`);
 
-    const pr = await this.getPaymentRequests(Number(amount));
-    const expiryDate = Util.secondsAfter(PaymentRequestService.MAX_TIMEOUT_SECONDS);
+    const pr = await this.getPaymentRequests(+invoiceAmount);
+    const expiryDate = Util.secondsAfter(Config.payment.timeout);
 
-    const accountAsset = await this.assetService.getChfAccountAssetOrThrow();
+    const invoiceAsset = await this.assetService.getChfAccountAssetOrThrow();
 
     await this.paymentRequestService.savePaymentRequest(
-      accountAsset,
-      Number(amount),
-      Number(amount),
+      invoiceAsset,
+      Number(invoiceAmount),
+      Number(invoiceAmount),
       JSON.stringify(pr),
       expiryDate,
       PaymentRequestMethod.EVM,
-      lightningWallet,
+      chfLightningWallet,
     );
 
     return { expiryDate, pr };
@@ -56,15 +57,15 @@ export class EvmPaymentService {
       const chainId = AlchemyNetworkMapper.getChainId(blockchain);
 
       if (chainId) {
-        pr.push({ blockchain, uri: this.createEvmURI(activeEvmTransferAsset.address, chainId, amount) });
+        pr.push({ blockchain, uri: this.createEvmUri(activeEvmTransferAsset.address, chainId, amount) });
       }
     }
 
     return pr;
   }
 
-  private createEvmURI(assetAddress: string, chainId: number, amount: number): string {
-    const paymentAddress = Config.evmPaymentAddress;
+  private createEvmUri(assetAddress: string, chainId: number, amount: number): string {
+    const paymentAddress = Config.payment.evmAddress;
     const decimals = 18;
 
     return `ethereum:${assetAddress}@${chainId}/transfer?address=${paymentAddress}&uint256=${EvmUtil.toWeiAmount(

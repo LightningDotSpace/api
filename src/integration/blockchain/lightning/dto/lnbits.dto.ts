@@ -142,3 +142,24 @@ export interface LnBitsLnurlwLinkDto {
   custom_url?: string;
   lnurl?: string;
 }
+
+export interface LnBitsPaymentWebhookDto {
+  checking_id: string;
+  pending: boolean;
+  amount: number;
+  fee: number;
+  memo: string;
+  time: number;
+  bolt11: string;
+  preimage: string;
+  payment_hash: string;
+  expiry: number;
+  extra: {
+    fiat_currency: string;
+    fiat_amount: number;
+    fiat_rate: number;
+  };
+  wallet_id: string;
+  webhook: string;
+  webhook_status: string;
+}

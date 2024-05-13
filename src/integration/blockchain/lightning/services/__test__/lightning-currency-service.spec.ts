@@ -20,7 +20,7 @@ describe('LightningCurrencyService', () => {
 
   beforeAll(async () => {
     const config = {
-      evmPaymentAddress: 'TestEVMPaymentAddress',
+      payment: { evmAddress: 'TestEVMPaymentAddress' },
     };
 
     assetService = createMock<AssetService>();

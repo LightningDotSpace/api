@@ -74,7 +74,13 @@
     "umaEncryptionPubKey": {
       "value": "xxx"
     },
-    "evmPaymentAddress": {
+    "paymentTimeout": {
+      "value": "60"
+    },
+    "paymentTimeoutDelay": {
+      "value": "10"
+    },
+    "paymentEvmAddress": {
       "value": "xxx"
     },
     "coingeckoApiKey": {

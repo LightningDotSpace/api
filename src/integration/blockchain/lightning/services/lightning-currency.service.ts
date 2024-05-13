@@ -133,8 +133,8 @@ export class LightningCurrencyService {
 
     let memo = `Pay this Lightning bill to transfer ${amount} ${currencyCode} to ${address}.`;
 
-    if (currencyCode === 'CHF') {
-      memo += ` Alternatively, send ${amount} ZCHF to ${Config.evmPaymentAddress} via Ethereum, Polygon, Arbitrum, Optimism or Base.`;
+    if (currencyCode === AssetService.CHF_ACCOUNT_ASSET_NAME) {
+      memo += ` Alternatively, send ${amount} ZCHF to ${Config.payment.evmAddress} via Ethereum, Polygon, Arbitrum, Optimism or Base.`;
     }
 
     walletPaymentParam.memo = memo;

@@ -13,8 +13,8 @@ export class UserTransactionService {
   constructor(private readonly userTransactionRepository: UserTransactionRepository) {}
 
   async saveUserTransactionEvmRelated(
-    paymentRequestEntity: PaymentRequestEntity,
     evmTransactionEntity: TransactionEvmEntity,
+    paymentRequestEntity: PaymentRequestEntity,
   ): Promise<UserTransactionEntity | undefined> {
     try {
       const userTransaction: UserTransactionDto = {

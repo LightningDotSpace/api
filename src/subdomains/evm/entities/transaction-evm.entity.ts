@@ -27,7 +27,7 @@ export class TransactionEvmEntity extends IEntity {
   errorMessage?: string;
 
   @OneToOne(() => UserTransactionEntity, (tx) => tx.evmTransaction, { nullable: true, eager: true })
-  userTransactions?: UserTransactionEntity[];
+  userTransaction: UserTransactionEntity;
 
   // --- ENTITY METHODS --- //
 

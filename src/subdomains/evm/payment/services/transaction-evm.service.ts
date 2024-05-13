@@ -3,6 +3,10 @@ import { Blockchain } from 'src/shared/enums/blockchain.enum';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { AlchemyWebhookActivityDto } from 'src/subdomains/alchemy/dto/alchemy-webhook.dto';
 import { AssetTransferEntity } from 'src/subdomains/master-data/asset/entities/asset-transfer.entity';
+import {
+  PaymentRequestEntity,
+  PaymentRequestMethod,
+} from 'src/subdomains/payment-request/entities/payment-request.entity';
 import { PaymentRequestService } from 'src/subdomains/payment-request/services/payment-request.service';
 import { UserTransactionService } from 'src/subdomains/user/application/services/user-transaction.service';
 import { TransactionEvmEntity, TransactionEvmState } from '../../entities/transaction-evm.entity';
@@ -42,8 +46,9 @@ export class TransactionEvmService {
 
   async syncUserPayment(transactionEvmEntity: TransactionEvmEntity, txId: string, blockchain: Blockchain) {
     try {
-      const paymentRequestEntity = await this.paymentRequestService.findPendingByAccountAmount(
+      const paymentRequestEntity = await this.paymentRequestService.findPending(
         transactionEvmEntity.amount,
+        PaymentRequestMethod.EVM,
       );
 
       if (!paymentRequestEntity) {
@@ -53,11 +58,9 @@ export class TransactionEvmService {
         return;
       }
 
-      paymentRequestEntity.transferAsset = transactionEvmEntity.asset;
-
       const userTransactionEntity = await this.userTransactionService.saveUserTransactionEvmRelated(
-        paymentRequestEntity,
         transactionEvmEntity,
+        paymentRequestEntity,
       );
 
       if (!userTransactionEntity) {
@@ -68,8 +71,10 @@ export class TransactionEvmService {
         return;
       }
 
-      await this.paymentRequestService.completePaymentRequest(paymentRequestEntity);
-      await this.completeTransactionEvm(transactionEvmEntity);
+      transactionEvmEntity.userTransaction = userTransactionEntity;
+      paymentRequestEntity.userTransaction = userTransactionEntity;
+
+      await this.setCompletion(transactionEvmEntity, paymentRequestEntity);
     } catch (e) {
       this.logger.error(
         `Sync user payment failed for transaction ${txId} on blockchain ${blockchain} with amount ${transactionEvmEntity.amount}`,
@@ -78,8 +83,12 @@ export class TransactionEvmService {
     }
   }
 
-  async completeTransactionEvm(entity: TransactionEvmEntity): Promise<void> {
-    await this.transactionEvmRepo.save(entity.complete());
+  private async setCompletion(
+    transactionEvmEntity: TransactionEvmEntity,
+    paymentRequestEntity: PaymentRequestEntity,
+  ): Promise<void> {
+    await this.transactionEvmRepo.save(transactionEvmEntity.complete());
+    await this.paymentRequestService.completePaymentRequest(paymentRequestEntity, transactionEvmEntity.asset);
   }
 
   async failTransactionEvm(entity: TransactionEvmEntity, errorMessage: string): Promise<void> {

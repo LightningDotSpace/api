@@ -2,8 +2,8 @@ import { IEntity } from 'src/shared/db/entity';
 import { Column, Entity } from 'typeorm';
 
 export enum AssetAccountStatus {
-  ACTIVE = 'Active',
-  INACTIVE = 'Inactive',
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
 }
 
 @Entity('asset_account')

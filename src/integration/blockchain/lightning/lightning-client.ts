@@ -401,7 +401,8 @@ export class LightningClient {
           amount: walletPaymentParam.amount,
           unit: walletPaymentParam.currencyCode,
           memo: walletPaymentParam.memo,
-          expiry: 60,
+          expiry: Config.payment.timeout,
+          webhook: `${Config.url}/lightning/payment-webhook`,
         },
         this.httpLnBitsConfig(adminKey),
       )

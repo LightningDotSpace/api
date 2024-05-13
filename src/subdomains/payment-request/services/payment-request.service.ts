@@ -1,4 +1,4 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Config, Process } from 'src/config/config';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
@@ -6,6 +6,7 @@ import { Lock } from 'src/shared/utils/lock';
 import { Util } from 'src/shared/utils/util';
 import { LightingWalletPaymentParamDto } from 'src/subdomains/lightning/dto/lightning-wallet.dto';
 import { AssetAccountEntity } from 'src/subdomains/master-data/asset/entities/asset-account.entity';
+import { AssetTransferEntity } from 'src/subdomains/master-data/asset/entities/asset-transfer.entity';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
 import { LightningWalletEntity } from '../../user/domain/entities/lightning-wallet.entity';
 import { PaymentRequestEntity, PaymentRequestMethod, PaymentRequestState } from '../entities/payment-request.entity';
@@ -14,8 +15,6 @@ import { PaymentRequestRepository } from '../repositories/payment-request.reposi
 @Injectable()
 export class PaymentRequestService {
   private readonly logger = new LightningLogger(PaymentRequestService);
-
-  static readonly MAX_TIMEOUT_SECONDS = 70;
 
   constructor(
     private readonly paymentRequestRepository: PaymentRequestRepository,
@@ -35,8 +34,9 @@ export class PaymentRequestService {
 
     for (const pendingPaymentRequestEntity of pendingPaymentRequestEntities) {
       const secondsDiff = Util.secondsDiff(pendingPaymentRequestEntity.expiryDate, currentDate);
+      const timeoutWithDelay = Config.payment.timeout + Config.payment.timeoutDelay;
 
-      if (secondsDiff > PaymentRequestService.MAX_TIMEOUT_SECONDS) {
+      if (secondsDiff > timeoutWithDelay) {
         await this.expirePaymentRequest(pendingPaymentRequestEntity);
       }
     }
@@ -44,13 +44,23 @@ export class PaymentRequestService {
 
   // --- FUNCTIONS --- //
 
-  async findPendingByAccountAmount(accountAmount: number): Promise<PaymentRequestEntity | undefined> {
-    const paymentRequests = await this.paymentRequestRepository.findPendingByAccountAmount(accountAmount);
+  async getPaymentRequest(id: number): Promise<PaymentRequestEntity> {
+    const paymentRequest = await this.paymentRequestRepository.findOneBy({ id });
+    if (!paymentRequest) throw new NotFoundException(`Payment request with id ${id} not found`);
+
+    return paymentRequest;
+  }
+
+  async findPending(
+    transferAmount: number,
+    paymentMethod: PaymentRequestMethod,
+  ): Promise<PaymentRequestEntity | undefined> {
+    const paymentRequests = await this.paymentRequestRepository.findPending(transferAmount, paymentMethod);
     if (!paymentRequests?.length) return;
 
     if (1 != paymentRequests.length) {
       for (const paymentRequest of paymentRequests) {
-        const errorMessage = `Payment request id ${paymentRequest.id}: ${paymentRequests.length} pending payment request entries with amount ${accountAmount} found`;
+        const errorMessage = `Payment request id ${paymentRequest.id}: ${paymentRequests.length} pending payment request entries with amount ${transferAmount} found`;
         await this.failPaymentRequest(paymentRequest, errorMessage);
       }
 
@@ -61,11 +71,9 @@ export class PaymentRequestService {
   }
 
   async checkDuplicate(walletPaymentParam: LightingWalletPaymentParamDto) {
-    const duplicates = await this.paymentRequestRepository
-      .createQueryBuilder()
-      .where('state = :state', { state: PaymentRequestState.PENDING })
-      .andWhere('transferAmount = :transferAmount', { transferAmount: Number(walletPaymentParam.amount) })
-      .getExists();
+    const duplicates = await this.paymentRequestRepository.exist({
+      where: { state: PaymentRequestState.PENDING, transferAmount: Number(walletPaymentParam.amount) },
+    });
 
     if (duplicates)
       throw new ServiceUnavailableException(
@@ -74,8 +82,8 @@ export class PaymentRequestService {
   }
 
   async savePaymentRequest(
-    accountAsset: AssetAccountEntity,
-    accountAmount: number,
+    invoiceAsset: AssetAccountEntity,
+    invoiceAmount: number,
     transferAmount: number,
     paymentRequest: string,
     expiryDate: Date,
@@ -85,8 +93,8 @@ export class PaymentRequestService {
     try {
       const newPaymentRequestEntity = this.paymentRequestRepository.create({
         state: PaymentRequestState.PENDING,
-        accountAsset,
-        accountAmount,
+        invoiceAsset,
+        invoiceAmount,
         transferAmount,
         paymentRequest,
         expiryDate,
@@ -100,8 +108,8 @@ export class PaymentRequestService {
     }
   }
 
-  async completePaymentRequest(entity: PaymentRequestEntity): Promise<void> {
-    await this.paymentRequestRepository.save(entity.complete());
+  async completePaymentRequest(entity: PaymentRequestEntity, asset: AssetTransferEntity): Promise<void> {
+    await this.paymentRequestRepository.save(entity.complete(asset));
   }
 
   async expirePaymentRequest(entity: PaymentRequestEntity): Promise<void> {

@@ -4,7 +4,11 @@ import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Util } from 'src/shared/utils/util';
 import { EvmPaymentService } from 'src/subdomains/evm/payment/services/evm-payment.service';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
-import { PaymentRequestDto } from 'src/subdomains/payment-request/dto/payment-request.dto';
+import {
+  EvmPaymentRequestDto,
+  LightningPaymentRequestDto,
+  PaymentRequestDto,
+} from 'src/subdomains/payment-request/dto/payment-request.dto';
 import { PaymentRequestMethod } from 'src/subdomains/payment-request/entities/payment-request.entity';
 import { WalletService } from 'src/subdomains/user/application/services/wallet.service';
 import { LightningWalletEntity } from 'src/subdomains/user/domain/entities/lightning-wallet.entity';
@@ -56,7 +60,10 @@ export class LightningForwardService {
     return this.getLightningWallet(address).then((lw) => lw.lnurlpId);
   }
 
-  private async getLightningWallet(address: string, assetName = 'BTC'): Promise<LightningWalletEntity> {
+  private async getLightningWallet(
+    address: string,
+    assetName = AssetService.BTC_ACCOUNT_ASSET_NAME,
+  ): Promise<LightningWalletEntity> {
     const wallet = await this.walletService.getByLnbitsAddress(address);
     if (!wallet) throw new NotFoundException('Wallet not found');
 
@@ -109,18 +116,38 @@ export class LightningForwardService {
 
     await this.lightningService.walletPaymentParamCheck(walletPaymentParam);
 
-    const lightningWalletAssetName =
-      walletPaymentParam.method === PaymentRequestMethod.LIGHTNING
-        ? AssetService.BTC_ACCOUNT_ASSET_NAME
-        : AssetService.CHF_ACCOUNT_ASSET_NAME;
-
-    const lightningWallet = await this.getLightningWallet(walletPaymentParam.address, lightningWalletAssetName);
-
     if (Util.equalsIgnoreCase(walletPaymentParam.method, PaymentRequestMethod.LIGHTNING)) {
-      return this.lightningService.createPaymentRequest(walletPaymentParam, lightningWallet);
+      return this.createLightningPaymentRequest(walletPaymentParam);
     }
 
-    return this.evmPaymentService.createPaymentRequest(walletPaymentParam, lightningWallet);
+    return this.createEvmPaymentRequest(walletPaymentParam);
+  }
+
+  private async createLightningPaymentRequest(
+    walletPaymentParam: LightingWalletPaymentParamDto,
+  ): Promise<LightningPaymentRequestDto> {
+    const btcLightningWallet = await this.getLightningWallet(
+      walletPaymentParam.address,
+      AssetService.BTC_ACCOUNT_ASSET_NAME,
+    );
+
+    const chfLightningWallet = await this.getLightningWallet(
+      walletPaymentParam.address,
+      AssetService.CHF_ACCOUNT_ASSET_NAME,
+    );
+
+    return this.lightningService.createPaymentRequest(walletPaymentParam, btcLightningWallet, chfLightningWallet);
+  }
+
+  private async createEvmPaymentRequest(
+    walletPaymentParam: LightingWalletPaymentParamDto,
+  ): Promise<EvmPaymentRequestDto> {
+    const chfLightningWallet = await this.getLightningWallet(
+      walletPaymentParam.address,
+      AssetService.CHF_ACCOUNT_ASSET_NAME,
+    );
+
+    return this.evmPaymentService.createPaymentRequest(walletPaymentParam, chfLightningWallet);
   }
 
   // --- LNURLw --- //

@@ -3,8 +3,8 @@ import { Blockchain } from 'src/shared/enums/blockchain.enum';
 import { Column, Entity, Index } from 'typeorm';
 
 export enum AssetTransferStatus {
-  ACTIVE = 'Active',
-  INACTIVE = 'Inactive',
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
 }
 
 @Entity('asset_transfer')
