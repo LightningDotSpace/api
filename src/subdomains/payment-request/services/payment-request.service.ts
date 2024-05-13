@@ -71,8 +71,14 @@ export class PaymentRequestService {
   }
 
   async checkDuplicate(walletPaymentParam: LightingWalletPaymentParamDto) {
+    const accountAsset = await this.assetService.getAccountAssetByNameOrThrow(walletPaymentParam.currencyCode ?? '');
+
     const duplicates = await this.paymentRequestRepository.exist({
-      where: { state: PaymentRequestState.PENDING, transferAmount: Number(walletPaymentParam.amount) },
+      where: {
+        state: PaymentRequestState.PENDING,
+        transferAmount: Number(walletPaymentParam.amount),
+        invoiceAsset: { id: accountAsset.id },
+      },
     });
 
     if (duplicates)
