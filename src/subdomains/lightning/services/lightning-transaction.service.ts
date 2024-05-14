@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Config, Process } from 'src/config/config';
-import { LnBitsPaymentWebhookDto } from 'src/integration/blockchain/lightning/dto/lnbits.dto';
 import {
   LndOnchainTransactionDto,
   LndTransactionDto,
@@ -14,9 +13,6 @@ import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Lock } from 'src/shared/utils/lock';
 import { QueueHandler } from 'src/shared/utils/queue-handler';
 import { Util } from 'src/shared/utils/util';
-import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
-import { PaymentRequestMethod } from 'src/subdomains/payment-request/entities/payment-request.entity';
-import { PaymentRequestService } from 'src/subdomains/payment-request/services/payment-request.service';
 import { LessThan } from 'typeorm';
 import { LightningClient } from '../../../integration/blockchain/lightning/lightning-client';
 import { LightningTransactionDtoMapper } from '../dto/lightning-transaction-dto.mapper';
@@ -41,12 +37,10 @@ export class LightningTransactionService {
   private readonly paymentTransactionMessageQueue: QueueHandler;
 
   constructor(
-    lightningService: LightningService,
+    readonly lightningService: LightningService,
     readonly lightningWebSocketService: LightningWebSocketService,
     private readonly transactionOnchainRepo: TransactionOnchainRepository,
     private readonly transactionLightningRepo: TransactionLightningRepository,
-    private readonly assetService: AssetService,
-    private readonly paymentRequestService: PaymentRequestService,
   ) {
     this.client = lightningService.getDefaultClient();
 
@@ -421,16 +415,5 @@ export class LightningTransactionService {
     }
 
     return this.transactionLightningRepo.save(dbTransactionLightningEntity);
-  }
-
-  async updatePaymentRequest(dto: LnBitsPaymentWebhookDto): Promise<void> {
-    const amount = LightningHelper.msatToBtc(dto.amount);
-
-    const paymentRequestEntity = await this.paymentRequestService.findPending(amount, PaymentRequestMethod.LIGHTNING);
-
-    if (dto.bolt11 === paymentRequestEntity?.paymentRequest) {
-      const transferAsset = await this.assetService.getSatTransferAssetOrThrow();
-      await this.paymentRequestService.completePaymentRequest(paymentRequestEntity, transferAsset);
-    }
   }
 }

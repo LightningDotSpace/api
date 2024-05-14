@@ -1,11 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Config, Process } from 'src/config/config';
+import { LnBitsPaymentWebhookDto } from 'src/integration/blockchain/lightning/dto/lnbits.dto';
 import { LightningClient } from 'src/integration/blockchain/lightning/lightning-client';
 import { LightningHelper } from 'src/integration/blockchain/lightning/lightning-helper';
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
+import { LnbitsWebHookService } from 'src/integration/blockchain/lightning/services/lnbits-webhook.service';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Lock } from 'src/shared/utils/lock';
+import { QueueHandler } from 'src/shared/utils/queue-handler';
 import { Util } from 'src/shared/utils/util';
 import { LightningTransactionService } from 'src/subdomains/lightning/services/lightning-transaction.service';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
@@ -32,8 +35,11 @@ export class LightningWalletService {
 
   private readonly client: LightningClient;
 
+  private readonly paymentWebhookMessageQueue: QueueHandler;
+
   constructor(
-    lightningService: LightningService,
+    readonly lightningService: LightningService,
+    readonly lnbitsWebHookService: LnbitsWebHookService,
     private readonly assetService: AssetService,
     private readonly lightningTransactionService: LightningTransactionService,
     private readonly userTransactionRepository: UserTransactionRepository,
@@ -41,6 +47,10 @@ export class LightningWalletService {
     private readonly walletRepository: WalletRepository,
   ) {
     this.client = lightningService.getDefaultClient();
+
+    this.paymentWebhookMessageQueue = new QueueHandler();
+
+    lnbitsWebHookService.getPaymentWebhookObservable().subscribe((dto) => this.processPaymentRequestMessageQueue(dto));
   }
 
   @Cron(CronExpression.EVERY_HOUR)
@@ -316,5 +326,40 @@ export class LightningWalletService {
     }
 
     return this.userTransactionRepository.save(dbUserTransactionEntity);
+  }
+
+  private processPaymentRequestMessageQueue(dto: LnBitsPaymentWebhookDto): void {
+    this.paymentWebhookMessageQueue
+      .handle<void>(async () => this.processPaymentRequest(dto))
+      .catch((e) => {
+        this.logger.error('Error while process new payment', e);
+      });
+  }
+
+  private async processPaymentRequest(dto: LnBitsPaymentWebhookDto): Promise<void> {
+    const lightningWallet = await this.lightingWalletRepository.getByWalletId(dto.wallet_id);
+
+    const lightningWalletInfo: LightningWalletInfoDto = {
+      lightningWalletId: lightningWallet.id,
+      lnbitsWalletId: lightningWallet.lnbitsWalletId,
+      adminKey: lightningWallet.adminKey,
+      accountAssetId: lightningWallet.asset.id,
+    };
+
+    const userTransactionEntities = await this.getUserTransactionEntities([lightningWalletInfo]);
+
+    const savedUserTransactionEntities = (
+      await Util.doInBatches(
+        userTransactionEntities,
+        async (batch: UserTransactionEntity[]) => Promise.all(batch.map((ref) => this.doUpdateUserTransaction(ref))),
+        100,
+      )
+    ).flat();
+
+    const uniqueLightningWalletEntityMap = new Map<string, LightningWalletEntity>(
+      savedUserTransactionEntities.map((ut) => [ut.lightningWallet.lnbitsWalletId, ut.lightningWallet]),
+    );
+
+    await this.doProcessUpdateLightningWalletBalances([...uniqueLightningWalletEntityMap.values()]);
   }
 }

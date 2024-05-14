@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { LnbitsWebhookModule } from 'src/integration/blockchain/lightning/lnbits-webhook.module';
 import { IntegrationModule } from 'src/integration/integration.module';
 import { SharedModule } from 'src/shared/shared.module';
 import { AuthService } from 'src/subdomains/user/application/services/auth.service';
@@ -36,6 +37,7 @@ import { WalletEntity } from './domain/entities/wallet.entity';
     SharedModule,
     IntegrationModule,
     AssetModule,
+    LnbitsWebhookModule,
     LightningTransactionModule,
   ],
   controllers: [UserController, AuthController, LightningWalletSynchronizeController],
