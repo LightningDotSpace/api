@@ -145,7 +145,10 @@ export class LightningService {
     btcLightningWallet: LightningWalletEntity,
     chfLightningWallet: LightningWalletEntity,
   ): Promise<LightningPaymentRequestDto> {
-    await this.paymentRequestService.checkDuplicate(walletPaymentParam);
+    await this.paymentRequestService.checkDuplicate(walletPaymentParam, [
+      PaymentRequestMethod.LIGHTNING,
+      PaymentRequestMethod.EVM,
+    ]);
 
     const invoiceAmount = walletPaymentParam.amount;
     if (!invoiceAmount)
@@ -192,7 +195,7 @@ export class LightningService {
     invoiceInfo: LndInvoiceInfoDto,
     chfLightningWallet: LightningWalletEntity,
   ) {
-    const invoiceAsset = await this.assetService.getChfAccountAssetOrThrow();
+    const invoiceAsset = await this.assetService.getBtcAccountAssetOrThrow();
 
     await this.paymentRequestService.savePaymentRequest(
       invoiceAsset,

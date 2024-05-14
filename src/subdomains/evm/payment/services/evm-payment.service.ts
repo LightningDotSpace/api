@@ -22,7 +22,7 @@ export class EvmPaymentService {
     walletPaymentParam: LightingWalletPaymentParamDto,
     chfLightningWallet: LightningWalletEntity,
   ): Promise<EvmPaymentRequestDto> {
-    await this.paymentRequestService.checkDuplicate(walletPaymentParam);
+    await this.paymentRequestService.checkDuplicate(walletPaymentParam, [PaymentRequestMethod.EVM]);
 
     const invoiceAmount = walletPaymentParam.amount;
     if (!invoiceAmount)

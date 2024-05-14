@@ -8,6 +8,7 @@ import { LightingWalletPaymentParamDto } from 'src/subdomains/lightning/dto/ligh
 import { AssetAccountEntity } from 'src/subdomains/master-data/asset/entities/asset-account.entity';
 import { AssetTransferEntity } from 'src/subdomains/master-data/asset/entities/asset-transfer.entity';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
+import { In, LessThan } from 'typeorm';
 import { LightningWalletEntity } from '../../user/domain/entities/lightning-wallet.entity';
 import { PaymentRequestEntity, PaymentRequestMethod, PaymentRequestState } from '../entities/payment-request.entity';
 import { PaymentRequestRepository } from '../repositories/payment-request.repository';
@@ -26,19 +27,15 @@ export class PaymentRequestService {
   async processOpenTransactions(): Promise<void> {
     if (Config.processDisabled(Process.UPDATE_PAYMENT_REQUEST)) return;
 
-    const pendingPaymentRequestEntities = await this.paymentRequestRepository.findBy({
+    const maxDate = Util.secondsBefore(Config.payment.timeoutDelay);
+
+    const expiredPaymentRequestEntities = await this.paymentRequestRepository.findBy({
       state: PaymentRequestState.PENDING,
+      expiryDate: LessThan(maxDate),
     });
 
-    const currentDate = new Date();
-
-    for (const pendingPaymentRequestEntity of pendingPaymentRequestEntities) {
-      const secondsDiff = Util.secondsDiff(pendingPaymentRequestEntity.expiryDate, currentDate);
-      const timeoutWithDelay = Config.payment.timeout + Config.payment.timeoutDelay;
-
-      if (secondsDiff > timeoutWithDelay) {
-        await this.expirePaymentRequest(pendingPaymentRequestEntity);
-      }
+    for (const expiredPaymentRequestEntity of expiredPaymentRequestEntities) {
+      await this.expirePaymentRequest(expiredPaymentRequestEntity);
     }
   }
 
@@ -70,14 +67,12 @@ export class PaymentRequestService {
     return paymentRequests[0];
   }
 
-  async checkDuplicate(walletPaymentParam: LightingWalletPaymentParamDto) {
-    const accountAsset = await this.assetService.getAccountAssetByNameOrThrow(walletPaymentParam.currencyCode ?? '');
-
+  async checkDuplicate(walletPaymentParam: LightingWalletPaymentParamDto, paymentMethods: PaymentRequestMethod[]) {
     const duplicates = await this.paymentRequestRepository.exist({
       where: {
         state: PaymentRequestState.PENDING,
-        transferAmount: Number(walletPaymentParam.amount),
-        invoiceAsset: { id: accountAsset.id },
+        invoiceAmount: Number(walletPaymentParam.amount),
+        paymentMethod: In(paymentMethods),
       },
     });
 

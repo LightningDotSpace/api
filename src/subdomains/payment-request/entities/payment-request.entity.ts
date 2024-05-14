@@ -38,7 +38,7 @@ export class PaymentRequestEntity extends IEntity {
   @Column({ length: 'MAX' })
   paymentRequest: string;
 
-  @Column()
+  @Column({ type: 'datetime2' })
   expiryDate: Date;
 
   @Column()
