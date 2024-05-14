@@ -62,14 +62,18 @@ export class LightningWalletService {
     let lightningWalletEntities = await lightningWalletIterator.next();
 
     while (lightningWalletEntities.length) {
-      await this.doProcessUpdateLightningWalletBalances(lightningWalletEntities);
+      await this.doUpdateLightningWalletBalances(lightningWalletEntities);
       lightningWalletEntities = await lightningWalletIterator.next();
     }
   }
 
-  private async doProcessUpdateLightningWalletBalances(
-    lightningWalletEntities: LightningWalletEntity[],
-  ): Promise<void> {
+  async updateLightningWalletBalanceById(lightningWalletId: number) {
+    const lightningWallet = await this.lightingWalletRepository.findOneBy({ id: lightningWalletId });
+
+    if (lightningWallet) await this.doUpdateLightningWalletBalances([lightningWallet]);
+  }
+
+  private async doUpdateLightningWalletBalances(lightningWalletEntities: LightningWalletEntity[]): Promise<void> {
     const btcWalletEntities = lightningWalletEntities.filter(
       (a) => a.asset.name === AssetService.BTC_ACCOUNT_ASSET_NAME,
     );
@@ -78,11 +82,11 @@ export class LightningWalletService {
       (a) => a.asset.name !== AssetService.BTC_ACCOUNT_ASSET_NAME,
     );
 
-    await this.doProcessUpdateBtcWalletBalances(btcWalletEntities);
-    await this.doProcessUpdateFiatWalletBalances(fiatWalletEntities);
+    await this.doUpdateBtcWalletBalances(btcWalletEntities);
+    await this.doUpdateFiatWalletBalances(fiatWalletEntities);
   }
 
-  private async doProcessUpdateBtcWalletBalances(btcWalletEntities: LightningWalletEntity[]): Promise<void> {
+  private async doUpdateBtcWalletBalances(btcWalletEntities: LightningWalletEntity[]): Promise<void> {
     for (const btcWalletEntity of btcWalletEntities) {
       try {
         const lnbitsWallet = await this.client.getLnBitsWallet(btcWalletEntity.adminKey);
@@ -104,7 +108,7 @@ export class LightningWalletService {
     }
   }
 
-  private async doProcessUpdateFiatWalletBalances(fiatWalletEntities: LightningWalletEntity[]): Promise<void> {
+  private async doUpdateFiatWalletBalances(fiatWalletEntities: LightningWalletEntity[]): Promise<void> {
     for (const fiatWalletEntity of fiatWalletEntities) {
       try {
         const userTransactionEntities = await this.userTransactionRepository.getByLightningWalletId(
@@ -207,7 +211,7 @@ export class LightningWalletService {
         savedUserTransactionEntities.map((ut) => [ut.lightningWallet.lnbitsWalletId, ut.lightningWallet]),
       );
 
-      await this.doProcessUpdateLightningWalletBalances([...uniqueLightningWalletEntityMap.values()]);
+      await this.doUpdateLightningWalletBalances([...uniqueLightningWalletEntityMap.values()]);
     }
 
     return savedUserTransactionEntities;
@@ -360,6 +364,6 @@ export class LightningWalletService {
       savedUserTransactionEntities.map((ut) => [ut.lightningWallet.lnbitsWalletId, ut.lightningWallet]),
     );
 
-    await this.doProcessUpdateLightningWalletBalances([...uniqueLightningWalletEntityMap.values()]);
+    await this.doUpdateLightningWalletBalances([...uniqueLightningWalletEntityMap.values()]);
   }
 }

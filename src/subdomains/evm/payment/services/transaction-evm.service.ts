@@ -8,6 +8,7 @@ import {
   PaymentRequestMethod,
 } from 'src/subdomains/payment-request/entities/payment-request.entity';
 import { PaymentRequestService } from 'src/subdomains/payment-request/services/payment-request.service';
+import { LightningWalletService } from 'src/subdomains/user/application/services/lightning-wallet.service';
 import { UserTransactionService } from 'src/subdomains/user/application/services/user-transaction.service';
 import { TransactionEvmEntity, TransactionEvmState } from '../../entities/transaction-evm.entity';
 import { EvmUtil } from '../../evm.util';
@@ -21,6 +22,7 @@ export class TransactionEvmService {
     private readonly transactionEvmRepo: TransactionEvmRepository,
     private readonly paymentRequestService: PaymentRequestService,
     private readonly userTransactionService: UserTransactionService,
+    private readonly lightningWalletService: LightningWalletService,
   ) {}
 
   async saveTransaction(
@@ -71,6 +73,8 @@ export class TransactionEvmService {
         return;
       }
 
+      await this.lightningWalletService.updateLightningWalletBalanceById(userTransactionEntity.lightningWallet.id);
+
       transactionEvmEntity.userTransaction = userTransactionEntity;
       paymentRequestEntity.userTransaction = userTransactionEntity;
 
@@ -91,7 +95,7 @@ export class TransactionEvmService {
     await this.paymentRequestService.completePaymentRequest(paymentRequestEntity, transactionEvmEntity.asset);
   }
 
-  async failTransactionEvm(entity: TransactionEvmEntity, errorMessage: string): Promise<void> {
+  private async failTransactionEvm(entity: TransactionEvmEntity, errorMessage: string): Promise<void> {
     this.logger.error(errorMessage);
     await this.transactionEvmRepo.save(entity.fail(errorMessage));
   }

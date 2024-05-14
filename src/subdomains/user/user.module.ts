@@ -54,6 +54,6 @@ import { WalletEntity } from './domain/entities/wallet.entity';
     LightningWalletService,
     UserTransactionService,
   ],
-  exports: [UserService, WalletProviderService, WalletService, UserTransactionService],
+  exports: [UserService, WalletProviderService, WalletService, LightningWalletService, UserTransactionService],
 })
 export class UserModule {}
