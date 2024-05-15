@@ -1,17 +1,12 @@
 import { Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Config, Process } from 'src/config/config';
-import { LnBitsPaymentWebhookDto } from 'src/integration/blockchain/lightning/dto/lnbits.dto';
-import { LightningHelper } from 'src/integration/blockchain/lightning/lightning-helper';
-import { LnbitsWebHookService } from 'src/integration/blockchain/lightning/services/lnbits-webhook.service';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Lock } from 'src/shared/utils/lock';
-import { QueueHandler } from 'src/shared/utils/queue-handler';
 import { Util } from 'src/shared/utils/util';
 import { LightingWalletPaymentParamDto } from 'src/subdomains/lightning/dto/lightning-wallet.dto';
 import { AssetAccountEntity } from 'src/subdomains/master-data/asset/entities/asset-account.entity';
 import { AssetTransferEntity } from 'src/subdomains/master-data/asset/entities/asset-transfer.entity';
-import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
 import { In, LessThan } from 'typeorm';
 import { LightningWalletEntity } from '../../user/domain/entities/lightning-wallet.entity';
 import { PaymentRequestEntity, PaymentRequestMethod, PaymentRequestState } from '../entities/payment-request.entity';
@@ -21,17 +16,7 @@ import { PaymentRequestRepository } from '../repositories/payment-request.reposi
 export class PaymentRequestService {
   private readonly logger = new LightningLogger(PaymentRequestService);
 
-  private readonly paymentWebhookMessageQueue: QueueHandler;
-
-  constructor(
-    readonly lnbitsWebHookService: LnbitsWebHookService,
-    private readonly paymentRequestRepository: PaymentRequestRepository,
-    private readonly assetService: AssetService,
-  ) {
-    this.paymentWebhookMessageQueue = new QueueHandler();
-
-    lnbitsWebHookService.getPaymentWebhookObservable().subscribe((dto) => this.processPaymentRequestMessageQueue(dto));
-  }
+  constructor(private readonly paymentRequestRepository: PaymentRequestRepository) {}
 
   @Cron(CronExpression.EVERY_10_SECONDS)
   @Lock()
@@ -131,24 +116,5 @@ export class PaymentRequestService {
   async failPaymentRequest(entity: PaymentRequestEntity, errorMessage: string): Promise<void> {
     this.logger.error(errorMessage);
     await this.paymentRequestRepository.save(entity.fail(errorMessage));
-  }
-
-  private processPaymentRequestMessageQueue(dto: LnBitsPaymentWebhookDto): void {
-    this.paymentWebhookMessageQueue
-      .handle<void>(async () => this.processPaymentRequest(dto))
-      .catch((e) => {
-        this.logger.error('Error while process new payment', e);
-      });
-  }
-
-  private async processPaymentRequest(dto: LnBitsPaymentWebhookDto): Promise<void> {
-    const amount = LightningHelper.msatToBtc(dto.amount);
-
-    const paymentRequestEntity = await this.findPending(amount, PaymentRequestMethod.LIGHTNING);
-
-    if (dto.bolt11 === paymentRequestEntity?.paymentRequest) {
-      const transferAsset = await this.assetService.getSatTransferAssetOrThrow();
-      await this.completePaymentRequest(paymentRequestEntity, transferAsset);
-    }
   }
 }

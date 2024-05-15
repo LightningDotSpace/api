@@ -12,6 +12,8 @@ import { QueueHandler } from 'src/shared/utils/queue-handler';
 import { Util } from 'src/shared/utils/util';
 import { LightningTransactionService } from 'src/subdomains/lightning/services/lightning-transaction.service';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
+import { PaymentRequestMethod } from 'src/subdomains/payment-request/entities/payment-request.entity';
+import { PaymentRequestService } from 'src/subdomains/payment-request/services/payment-request.service';
 import { UserTransactionRepository } from 'src/subdomains/user/application/repositories/user-transaction.repository';
 import {
   UserTransactionEntity,
@@ -42,6 +44,7 @@ export class LightningWalletService {
     readonly lnbitsWebHookService: LnbitsWebHookService,
     private readonly assetService: AssetService,
     private readonly lightningTransactionService: LightningTransactionService,
+    private readonly paymentRequestService: PaymentRequestService,
     private readonly userTransactionRepository: UserTransactionRepository,
     private readonly lightingWalletRepository: LightingWalletRepository,
     private readonly walletRepository: WalletRepository,
@@ -341,6 +344,25 @@ export class LightningWalletService {
   }
 
   private async processPaymentRequest(dto: LnBitsPaymentWebhookDto): Promise<void> {
+    const amount = LightningHelper.msatToBtc(dto.amount);
+
+    const paymentRequestEntity = await this.paymentRequestService.findPending(amount, PaymentRequestMethod.LIGHTNING);
+
+    if (dto.bolt11 === paymentRequestEntity?.paymentRequest) {
+      try {
+        await this.doProcessPaymentRequest(dto);
+
+        const transferAsset = await this.assetService.getSatTransferAssetOrThrow();
+        await this.paymentRequestService.completePaymentRequest(paymentRequestEntity, transferAsset);
+      } catch (e) {
+        const errorMessage = `Process payment request with txid ${dto.payment_hash} failed for lightning wallet ${dto.wallet_id}`;
+        this.logger.error(errorMessage, e);
+        await this.paymentRequestService.failPaymentRequest(paymentRequestEntity, errorMessage);
+      }
+    }
+  }
+
+  private async doProcessPaymentRequest(dto: LnBitsPaymentWebhookDto): Promise<void> {
     const lightningWallet = await this.lightingWalletRepository.getByWalletId(dto.wallet_id);
 
     const lightningWalletInfo: LightningWalletInfoDto = {
