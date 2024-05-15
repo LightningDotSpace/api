@@ -17,4 +17,8 @@ export class UserTransactionRepository extends BaseRepository<UserTransactionEnt
       .groupBy('lw.lnbitsWalletId')
       .getRawOne<{ maxCreationTimestamp: Date }>();
   }
+
+  async getByLightningWalletId(lightningWalletId: number): Promise<UserTransactionEntity[]> {
+    return this.findBy({ lightningWallet: { id: lightningWalletId } });
+  }
 }

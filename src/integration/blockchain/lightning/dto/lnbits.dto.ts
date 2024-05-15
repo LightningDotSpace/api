@@ -1,4 +1,5 @@
 import { Currency } from '@uma-sdk/core';
+import { PaymentRequestMethod } from 'src/subdomains/payment-request/entities/payment-request.entity';
 
 export interface LnbitsUsermanagerUserDto {
   id: string;
@@ -98,6 +99,7 @@ export interface LnBitsLnurlPayRequestDto {
   maxSendable: number;
   metadata: string;
   currencies: Currency[];
+  methods: PaymentRequestMethod[];
 }
 
 export interface LnBitsLnurlpInvoiceDto {
@@ -139,4 +141,25 @@ export interface LnBitsLnurlwLinkDto {
   webhook_body?: string;
   custom_url?: string;
   lnurl?: string;
+}
+
+export interface LnBitsPaymentWebhookDto {
+  checking_id: string;
+  pending: boolean;
+  amount: number;
+  fee: number;
+  memo: string;
+  time: number;
+  bolt11: string;
+  preimage: string;
+  payment_hash: string;
+  expiry: number;
+  extra: {
+    fiat_currency: string;
+    fiat_amount: number;
+    fiat_rate: number;
+  };
+  wallet_id: string;
+  webhook: string;
+  webhook_status: string;
 }

@@ -1,6 +1,6 @@
 import { LightningHelper } from 'src/integration/blockchain/lightning/lightning-helper';
-import { AssetDtoMapper } from 'src/subdomains/master-data/asset/dto/asset-dto.mapper';
-import { AssetStatus } from '../../../master-data/asset/entities/asset.entity';
+import { AssetDtoMapper } from 'src/subdomains/master-data/asset/dto/asset-account-dto.mapper';
+import { AssetAccountStatus } from '../../../master-data/asset/entities/asset-account.entity';
 import { WalletEntity } from '../../domain/entities/wallet.entity';
 import { WalletDto } from './wallet.dto';
 
@@ -14,7 +14,7 @@ export class WalletDtoMapper {
         addressOwnershipProof: wallet.addressOwnershipProof,
         wallets: wallet.lightningWallets.map((lw) => ({
           asset: AssetDtoMapper.entityToDto(lw.asset),
-          ...(lw.asset.status === AssetStatus.ACTIVE
+          ...(lw.asset.status === AssetAccountStatus.ACTIVE
             ? {
                 lndhubAdminUrl: LightningHelper.getLndhubUrl('admin', lw.adminKey),
                 lndhubInvoiceUrl: LightningHelper.getLndhubUrl('invoice', lw.invoiceKey),
