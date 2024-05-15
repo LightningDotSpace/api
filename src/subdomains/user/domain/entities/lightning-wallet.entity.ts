@@ -1,6 +1,6 @@
 import { IEntity } from 'src/shared/db/entity';
 import { Column, Entity, ManyToOne } from 'typeorm';
-import { AssetEntity } from '../../../master-data/asset/entities/asset.entity';
+import { AssetAccountEntity } from '../../../master-data/asset/entities/asset-account.entity';
 import { WalletEntity } from './wallet.entity';
 
 @Entity('lightning_wallet')
@@ -20,8 +20,8 @@ export class LightningWalletEntity extends IEntity {
   @Column({ type: 'float', default: 0 })
   balance: number;
 
-  @ManyToOne(() => AssetEntity, { nullable: false, eager: true })
-  asset: AssetEntity;
+  @ManyToOne(() => AssetAccountEntity, { nullable: false, eager: true })
+  asset: AssetAccountEntity;
 
   @ManyToOne(() => WalletEntity, { nullable: false })
   wallet: WalletEntity;

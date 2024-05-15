@@ -37,7 +37,7 @@ export class LightningTransactionService {
   private readonly paymentTransactionMessageQueue: QueueHandler;
 
   constructor(
-    lightningService: LightningService,
+    readonly lightningService: LightningService,
     readonly lightningWebSocketService: LightningWebSocketService,
     private readonly transactionOnchainRepo: TransactionOnchainRepository,
     private readonly transactionLightningRepo: TransactionLightningRepository,

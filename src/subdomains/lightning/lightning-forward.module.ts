@@ -1,17 +1,16 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { LightningModule } from 'src/integration/blockchain/lightning/lightning.module';
 import { UmaModule } from 'src/integration/blockchain/uma/uma.module';
-import { CoinGeckoService } from '../support/services/coingecko.service';
+import { EvmModule } from '../evm/evm.module';
 import { UserModule } from '../user/user.module';
 import { LightingLndhubForwardController } from './controllers/lightning-lndhub-forward.controller';
 import { LightingWellknownForwardController } from './controllers/lightning-wellknown-forward.controller';
-import { LightningCurrencyService } from './services/lightning-currency.service';
 import { LightningForwardService } from './services/lightning-forward.service';
 
 @Module({
-  imports: [LightningModule, forwardRef(() => UmaModule), UserModule],
+  imports: [LightningModule, forwardRef(() => UmaModule), UserModule, EvmModule],
   controllers: [LightingLndhubForwardController, LightingWellknownForwardController],
-  providers: [LightningForwardService, LightningCurrencyService, CoinGeckoService],
-  exports: [LightningForwardService, LightningCurrencyService],
+  providers: [LightningForwardService],
+  exports: [LightningForwardService],
 })
 export class LightningForwardModule {}

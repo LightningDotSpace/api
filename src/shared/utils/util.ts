@@ -161,6 +161,16 @@ export class Util {
     return Uint8Array.from(Buffer.from(value, encoding));
   }
 
+  // --- COMPARE --- //
+
+  static equalsIgnoreCase(left: string, right: string): boolean {
+    return left?.toLowerCase() === right?.toLowerCase();
+  }
+
+  static includesIgnoreCase(left: string[], right: string): boolean | undefined {
+    return left?.map((s) => s?.toLowerCase()).includes(right?.toLowerCase());
+  }
+
   // --- MISC --- //
 
   static async readFileFromDisk(fileName: string): Promise<string> {
@@ -271,8 +281,12 @@ export class Util {
     return hash.digest(encoding);
   }
 
-  static createRandomHash(size: number): string {
-    return Util.createHash(crypto.randomBytes(size), 'sha256', 'base64');
+  static createRandomHash(
+    size: number,
+    algo: CryptoAlgorithm = 'sha256',
+    encoding: crypto.BinaryToTextEncoding = 'base64',
+  ): string {
+    return Util.createHash(crypto.randomBytes(size), algo, encoding);
   }
 
   static createSign(data: BinaryLike, key: KeyLike, algo: CryptoAlgorithm): string {

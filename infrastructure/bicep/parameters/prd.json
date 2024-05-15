@@ -44,6 +44,27 @@
     "lightningLndAdminMacaroon": {
       "value": "xxx"
     },
+    "ethereumChainId": {
+      "value": "1"
+    },
+    "arbitrumChainId": {
+      "value": "42161"
+    },
+    "optimismChainId": {
+      "value": "10"
+    },
+    "polygonChainId": {
+      "value": "137"
+    },
+    "baseChainId": {
+      "value": "8453"
+    },
+    "alchemyApiKey": {
+      "value": "xxx"
+    },
+    "alchemyAuthToken": {
+      "value": "xxx"
+    },
     "umaSigningPrivKey": {
       "value": "xxx"
     },
@@ -53,7 +74,13 @@
     "umaEncryptionPubKey": {
       "value": "xxx"
     },
-    "evmPaymentAddress": {
+    "paymentTimeout": {
+      "value": "60"
+    },
+    "paymentTimeoutDelay": {
+      "value": "10"
+    },
+    "paymentEvmAddress": {
       "value": "xxx"
     },
     "coingeckoApiKey": {

@@ -7,8 +7,10 @@ export interface LndInfoDto {
 }
 
 export interface LndInvoiceInfoDto {
-  description?: string;
-  publicKey?: string;
+  description: string;
+  publicKey: string;
+  sats: number;
+  expiryDate: Date;
 }
 
 export interface LndWalletBalanceDto {

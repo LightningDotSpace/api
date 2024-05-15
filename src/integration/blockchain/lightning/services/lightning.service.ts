@@ -1,7 +1,16 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Currency } from '@uma-sdk/core';
 import { Config } from 'src/config/config';
+import { LightningCurrencyService } from 'src/integration/blockchain/lightning/services/lightning-currency.service';
 import { HttpService } from 'src/shared/services/http.service';
+import { LightingWalletPaymentParamDto } from 'src/subdomains/lightning/dto/lightning-wallet.dto';
+import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
+import { LightningPaymentRequestDto } from 'src/subdomains/payment-request/dto/payment-request.dto';
+import { PaymentRequestMethod } from 'src/subdomains/payment-request/entities/payment-request.entity';
+import { PaymentRequestService } from 'src/subdomains/payment-request/services/payment-request.service';
+import { LightningWalletEntity } from 'src/subdomains/user/domain/entities/lightning-wallet.entity';
 import { LnBitsUserDto } from '../dto/lnbits.dto';
+import { LndInvoiceInfoDto } from '../dto/lnd.dto';
 import { LightningClient, UserFilterData } from '../lightning-client';
 import { LightningHelper } from '../lightning-helper';
 
@@ -9,7 +18,12 @@ import { LightningHelper } from '../lightning-helper';
 export class LightningService {
   private readonly client: LightningClient;
 
-  constructor(private readonly http: HttpService) {
+  constructor(
+    private readonly http: HttpService,
+    private readonly assetService: AssetService,
+    private readonly lightningCurrencyService: LightningCurrencyService,
+    private readonly paymentRequestService: PaymentRequestService,
+  ) {
     this.client = new LightningClient(http);
   }
 
@@ -108,5 +122,89 @@ export class LightningService {
         await this.client.removeLnurlpLink(adminKey, lnurlpLink.id);
       }
     }
+  }
+
+  async getCurrencies(withMultiplier = false): Promise<Currency[]> {
+    return this.lightningCurrencyService.getCurrencies(withMultiplier);
+  }
+
+  async getPaymentMethods(): Promise<PaymentRequestMethod[]> {
+    return this.lightningCurrencyService.getPaymentMethods();
+  }
+
+  async getWalletPaymentParam(address: string, params: any): Promise<LightingWalletPaymentParamDto> {
+    return this.lightningCurrencyService.getWalletPaymentParam(address, params);
+  }
+
+  async walletPaymentParamCheck(walletPaymentParam: LightingWalletPaymentParamDto) {
+    return this.lightningCurrencyService.walletPaymentParamCheck(walletPaymentParam);
+  }
+
+  async createPaymentRequest(
+    walletPaymentParam: LightingWalletPaymentParamDto,
+    btcLightningWallet: LightningWalletEntity,
+    chfLightningWallet: LightningWalletEntity,
+  ): Promise<LightningPaymentRequestDto> {
+    await this.paymentRequestService.checkDuplicate(walletPaymentParam, [
+      PaymentRequestMethod.LIGHTNING,
+      PaymentRequestMethod.EVM,
+    ]);
+
+    const invoiceAmount = walletPaymentParam.amount;
+    if (!invoiceAmount)
+      throw new NotFoundException(`Lightning Wallet ${btcLightningWallet.id}: invoice amount not found`);
+
+    this.lightningCurrencyService.fillWalletPaymentMemo(walletPaymentParam);
+
+    const invoice = await this.client.getLnBitsWalletPayment(btcLightningWallet.adminKey, walletPaymentParam);
+    const pr = invoice.pr;
+
+    const invoiceInfo = LightningHelper.getInvoiceInfo(pr);
+
+    await this.saveLightningPaymentRequest(+invoiceAmount, pr, invoiceInfo, btcLightningWallet);
+
+    if (walletPaymentParam.currencyCode !== AssetService.BTC_ACCOUNT_ASSET_NAME) {
+      await this.saveEvmPaymentRequest(+invoiceAmount, pr, invoiceInfo, chfLightningWallet);
+    }
+
+    return { pr };
+  }
+
+  private async saveLightningPaymentRequest(
+    invoiceAmount: number,
+    pr: string,
+    invoiceInfo: LndInvoiceInfoDto,
+    btcLightningWallet: LightningWalletEntity,
+  ) {
+    const invoiceAsset = await this.assetService.getBtcAccountAssetOrThrow();
+
+    await this.paymentRequestService.savePaymentRequest(
+      invoiceAsset,
+      Number(invoiceAmount),
+      LightningHelper.satToBtc(invoiceInfo.sats),
+      pr,
+      invoiceInfo.expiryDate,
+      PaymentRequestMethod.LIGHTNING,
+      btcLightningWallet,
+    );
+  }
+
+  private async saveEvmPaymentRequest(
+    invoiceAmount: number,
+    pr: string,
+    invoiceInfo: LndInvoiceInfoDto,
+    chfLightningWallet: LightningWalletEntity,
+  ) {
+    const invoiceAsset = await this.assetService.getBtcAccountAssetOrThrow();
+
+    await this.paymentRequestService.savePaymentRequest(
+      invoiceAsset,
+      invoiceAmount,
+      invoiceAmount,
+      pr,
+      invoiceInfo.expiryDate,
+      PaymentRequestMethod.EVM,
+      chfLightningWallet,
+    );
   }
 }

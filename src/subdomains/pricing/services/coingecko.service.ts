@@ -2,7 +2,7 @@ import { Injectable, OnModuleInit, ServiceUnavailableException } from '@nestjs/c
 import { CoinGeckoClient } from 'coingecko-api-v3';
 import { GetConfig } from 'src/config/config';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
-import { Price } from '../dto/price.dto';
+import { Price } from '../../support/dto/price.dto';
 
 @Injectable()
 export class CoinGeckoService implements OnModuleInit {

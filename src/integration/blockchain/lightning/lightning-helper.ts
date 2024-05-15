@@ -57,11 +57,13 @@ export class LightningHelper {
     const decodedInvoice = bolt11Decode(invoice);
 
     const descriptionTag = decodedInvoice.tags.find((t) => t.tagName === 'description');
-    const description = descriptionTag?.data.toString();
+    const description = descriptionTag?.data.toString() ?? '';
 
-    const publicKey = decodedInvoice.payeeNodeKey;
+    const publicKey = decodedInvoice.payeeNodeKey ?? '';
+    const sats = decodedInvoice.satoshis ?? 0;
+    const expiryDate = decodedInvoice.timeExpireDate ? new Date(decodedInvoice.timeExpireDate * 1000) : new Date();
 
-    return { description: description, publicKey: publicKey };
+    return { description, publicKey, sats, expiryDate };
   }
 
   // --- CONVERT --- /

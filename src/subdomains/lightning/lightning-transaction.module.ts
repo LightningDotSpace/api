@@ -13,8 +13,8 @@ import { LightningTransactionService } from './services/lightning-transaction.se
 @Module({
   imports: [
     TypeOrmModule.forFeature([TransactionOnchainEntity, TransactionLightningEntity]),
-    LightningModule,
     SharedModule,
+    LightningModule,
   ],
   controllers: [LightingTransactionController, LightingTransactionSynchronizeController],
   providers: [LightningTransactionService, TransactionOnchainRepository, TransactionLightningRepository],

@@ -6,7 +6,7 @@ import { LightningTransactionService } from '../services/lightning-transaction.s
 @ApiTags('Transaction')
 @Controller('lightning')
 export class LightingTransactionController {
-  constructor(private lightningTransactionService: LightningTransactionService) {}
+  constructor(private readonly lightningTransactionService: LightningTransactionService) {}
 
   @Get('tx/:id')
   async getTransactionInfo(@Param('id') id: string): Promise<LightningTransactionDto[]> {
