@@ -20,6 +20,7 @@ import {
   UserTransactionType,
 } from 'src/subdomains/user/domain/entities/user-transaction.entity';
 import { LightningWalletEntity } from '../../domain/entities/lightning-wallet.entity';
+import { LightningWalletTotalBalanceDto } from '../dto/lightning-wallet.dto';
 import { UserTransactionDto } from '../dto/user-transaction.dto';
 import { LightingWalletRepository } from '../repositories/lightning-wallet.repository';
 import { WalletRepository } from '../repositories/wallet.repository';
@@ -387,5 +388,9 @@ export class LightningWalletService {
     );
 
     await this.doUpdateLightningWalletBalances([...uniqueLightningWalletEntityMap.values()]);
+  }
+
+  async getLightningWalletTotalBalances(): Promise<LightningWalletTotalBalanceDto[]> {
+    return this.lightingWalletRepository.getTotalBalances();
   }
 }

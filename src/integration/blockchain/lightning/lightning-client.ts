@@ -68,7 +68,7 @@ export class LightningClient {
   }
 
   async getLndConfirmedWalletBalance(): Promise<number> {
-    return this.getLndWalletBalance().then((b) => b.confirmed_balance);
+    return this.getLndWalletBalance().then((b) => Number(b.confirmed_balance));
   }
 
   private async getLndWalletBalance(): Promise<LndWalletBalanceDto> {
