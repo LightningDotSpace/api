@@ -99,7 +99,7 @@ export class LightningClient {
     return Util.sum(balances);
   }
 
-  private async getChannels(): Promise<LndChannelDto[]> {
+  async getChannels(): Promise<LndChannelDto[]> {
     return this.http
       .get<{ channels: LndChannelDto[] }>(`${Config.blockchain.lightning.lnd.apiUrl}/channels`, this.httpLndConfig())
       .then((r) => r.channels);
