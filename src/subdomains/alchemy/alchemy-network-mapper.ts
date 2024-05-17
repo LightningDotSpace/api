@@ -6,11 +6,11 @@ export class AlchemyNetworkMapper {
   private static blockchainConfig = GetConfig().blockchain;
 
   private static readonly blockchainToChainIdMap = new Map<Blockchain, number>([
-    [Blockchain.ETHEREUM, Number(this.blockchainConfig.ethereum.chainId)],
-    [Blockchain.ARBITRUM, Number(this.blockchainConfig.arbitrum.chainId)],
-    [Blockchain.OPTIMISM, Number(this.blockchainConfig.optimism.chainId)],
-    [Blockchain.POLYGON, Number(this.blockchainConfig.polygon.chainId)],
-    [Blockchain.BASE, Number(this.blockchainConfig.base.chainId)],
+    [Blockchain.ETHEREUM, this.blockchainConfig.ethereum.chainId],
+    [Blockchain.ARBITRUM, this.blockchainConfig.arbitrum.chainId],
+    [Blockchain.OPTIMISM, this.blockchainConfig.optimism.chainId],
+    [Blockchain.POLYGON, this.blockchainConfig.polygon.chainId],
+    [Blockchain.BASE, this.blockchainConfig.base.chainId],
   ]);
 
   private static readonly chainIdToNetworkMap = new Map<number, Network>([

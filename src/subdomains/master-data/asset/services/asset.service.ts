@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Blockchain } from 'src/shared/enums/blockchain.enum';
+import { Not } from 'typeorm';
 import { AssetAccountEntity, AssetAccountStatus } from '../entities/asset-account.entity';
 import { AssetTransferEntity, AssetTransferStatus } from '../entities/asset-transfer.entity';
 import { AssetAccountRepository } from '../repositories/asset-account.repository';
@@ -53,6 +54,13 @@ export class AssetService {
 
   async getZchfTransferAssetOrThrow(blockchain: Blockchain): Promise<AssetTransferEntity> {
     return this.getTransferAssetByNameOrThrow(AssetService.ZCHF_TRANSFER_ASSET_NAME, blockchain);
+  }
+
+  async getAllZchfTransferAssets(): Promise<AssetTransferEntity[]> {
+    return this.assetTransferRepo.findBy({
+      name: AssetService.ZCHF_TRANSFER_ASSET_NAME,
+      blockchain: Not(Blockchain.LIGHTNING),
+    });
   }
 
   async getActiveAccountAssets(params?: { name?: string; symbol?: string }): Promise<AssetAccountEntity[]> {

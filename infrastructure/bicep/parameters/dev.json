@@ -44,17 +44,32 @@
     "lightningLndAdminMacaroon": {
       "value": "xxx"
     },
+    "ethereumGatewayUrl": {
+      "value": "https://eth-goerli.g.alchemy.com/v2"
+    },
     "ethereumChainId": {
       "value": "5"
+    },
+    "arbitrumGatewayUrl": {
+      "value": "https://arb-goerli.g.alchemy.com/v2"
     },
     "arbitrumChainId": {
       "value": "421613"
     },
+    "optimismGatewayUrl": {
+      "value": "https://opt-goerli.g.alchemy.com/v2"
+    },
     "optimismChainId": {
       "value": "420"
     },
+    "polygonGatewayUrl": {
+      "value": "https://polygon-mumbai.g.alchemy.com/v2"
+    },
     "polygonChainId": {
       "value": "80001"
+    },
+    "baseGatewayUrl": {
+      "value": "https://base-goerli.g.alchemy.com/v2"
     },
     "baseChainId": {
       "value": "84531"

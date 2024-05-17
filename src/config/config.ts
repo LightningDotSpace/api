@@ -82,7 +82,7 @@ export class Configuration {
     timeout: +(process.env.PAYMENT_TIMEOUT ?? 60),
     timeoutDelay: +(process.env.PAYMENT_TIMEOUT_DELAY ?? 10),
 
-    evmAddress: process.env.PAYMENT_EVM_ADDRESS,
+    evmAddress: process.env.PAYMENT_EVM_ADDRESS ?? '',
   };
 
   blockchain = {
@@ -107,23 +107,33 @@ export class Configuration {
       certificate: process.env.LIGHTNING_API_CERTIFICATE?.split('<br>').join('\n'),
     },
     ethereum: {
-      chainId: process.env.ETHEREUM_CHAIN_ID,
+      gatewayUrl: process.env.ETHEREUM_GATEWAY_URL ?? '',
+      apiKey: process.env.ALCHEMY_API_KEY ?? '',
+      chainId: +(process.env.ETHEREUM_CHAIN_ID ?? -1),
       walletAddress: process.env.EVM_PAYMENT_ADDRESS ?? '',
     },
     arbitrum: {
-      chainId: process.env.ARBITRUM_CHAIN_ID,
+      gatewayUrl: process.env.ARBITRUM_GATEWAY_URL ?? '',
+      apiKey: process.env.ALCHEMY_API_KEY ?? '',
+      chainId: +(process.env.ARBITRUM_CHAIN_ID ?? -1),
       walletAddress: process.env.EVM_PAYMENT_ADDRESS ?? '',
     },
     optimism: {
-      chainId: process.env.OPTIMISM_CHAIN_ID,
+      gatewayUrl: process.env.OPTIMISM_GATEWAY_URL ?? '',
+      apiKey: process.env.ALCHEMY_API_KEY ?? '',
+      chainId: +(process.env.OPTIMISM_CHAIN_ID ?? -1),
       walletAddress: process.env.EVM_PAYMENT_ADDRESS ?? '',
     },
     polygon: {
-      chainId: process.env.POLYGON_CHAIN_ID,
+      gatewayUrl: process.env.POLYGON_GATEWAY_URL ?? '',
+      apiKey: process.env.ALCHEMY_API_KEY ?? '',
+      chainId: +(process.env.POLYGON_CHAIN_ID ?? -1),
       walletAddress: process.env.EVM_PAYMENT_ADDRESS ?? '',
     },
     base: {
-      chainId: process.env.BASE_CHAIN_ID,
+      gatewayUrl: process.env.BASE_GATEWAY_URL ?? '',
+      apiKey: process.env.ALCHEMY_API_KEY ?? '',
+      chainId: +(process.env.BASE_CHAIN_ID ?? -1),
       walletAddress: process.env.EVM_PAYMENT_ADDRESS ?? '',
     },
   };

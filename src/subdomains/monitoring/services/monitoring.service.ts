@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { Config, Process } from 'src/config/config';
 import { LightningClient } from 'src/integration/blockchain/lightning/lightning-client';
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
+import { EvmRegistryService } from 'src/integration/blockchain/shared/evm/registry/evm-registry.service';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Lock } from 'src/shared/utils/lock';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
@@ -20,7 +21,8 @@ export class MonitoringService {
     lightningService: LightningService,
     private readonly assetService: AssetService,
     private readonly lightningWalletService: LightningWalletService,
-    private monitoringBalanceRepository: MonitoringBalanceRepository,
+    private readonly evmRegistryService: EvmRegistryService,
+    private readonly monitoringBalanceRepository: MonitoringBalanceRepository,
   ) {
     this.client = lightningService.getDefaultClient();
   }
@@ -46,7 +48,7 @@ export class MonitoringService {
       const customerFiatBalances = customerBalances.filter((b) => b.assetId !== btcAccountAssetId);
 
       await this.processBtcBalance(onchainBalance, lightningBalance, customerBtcBalance);
-      await this.processFiatBalances(onchainBalance, lightningBalance, customerFiatBalances);
+      await this.processFiatBalances(customerFiatBalances);
     } catch (e) {
       this.logger.error('Error while process balances', e);
     }
@@ -67,23 +69,36 @@ export class MonitoringService {
     await this.monitoringBalanceRepository.saveIfBalanceDiff(btcMonitoringEntity);
   }
 
-  private async processFiatBalances(
-    onchainBalance: number,
-    lightningBalance: number,
-    customerFiatBalances: LightningWalletTotalBalanceDto[],
-  ) {
+  private async processFiatBalances(customerFiatBalances: LightningWalletTotalBalanceDto[]) {
+    const zchfBalance = await this.getZchfBalance();
+
     for (const customerFiatBalance of customerFiatBalances) {
       if (customerFiatBalance.totalBalance) {
         const fiatMonitoringEntity = this.monitoringBalanceRepository.create({
           asset: { id: customerFiatBalance.assetId },
-          onchainBalance: onchainBalance,
-          lightningBalance: lightningBalance,
+          onchainBalance: zchfBalance,
+          lightningBalance: 0,
           customerBalance: customerFiatBalance.totalBalance,
         });
 
         await this.monitoringBalanceRepository.saveIfBalanceDiff(fiatMonitoringEntity);
       }
     }
+  }
+
+  private async getZchfBalance(): Promise<number> {
+    let balance = 0;
+
+    const zchfTransferAssets = await this.assetService.getAllZchfTransferAssets();
+
+    for (const zchfTransferAsset of zchfTransferAssets) {
+      if (zchfTransferAsset.address) {
+        const evmClient = this.evmRegistryService.getClient(zchfTransferAsset.blockchain);
+        balance += await evmClient.getTokenBalance(zchfTransferAsset);
+      }
+    }
+
+    return balance;
   }
 
   private async getOnchainBalance(): Promise<number> {

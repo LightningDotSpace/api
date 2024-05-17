@@ -25,10 +25,15 @@ param lightningLnbitsAdminKey string
 @secure()
 param lightningLndAdminMacaroon string
 
+param ethereumGatewayUrl string
 param ethereumChainId string
+param arbitrumGatewayUrl string
 param arbitrumChainId string
+param optimismGatewayUrl string
 param optimismChainId string
+param polygonGatewayUrl string
 param polygonChainId string
+param baseGatewayUrl string
 param baseChainId string
 
 @secure()
@@ -333,20 +338,40 @@ resource apiAppService 'Microsoft.Web/sites@2018-11-01' = if (env != 'loc') {
           value: lightningLndAdminMacaroon
         }
         {
+          name: 'ETHEREUM_GATEWAY_URL'
+          value: ethereumGatewayUrl
+        }
+        {
           name: 'ETHEREUM_CHAIN_ID'
           value: ethereumChainId
+        }
+        {
+          name: 'ARBITRUM_GATEWAY_URL'
+          value: arbitrumGatewayUrl
         }
         {
           name: 'ARBITRUM_CHAIN_ID'
           value: arbitrumChainId
         }
         {
+          name: 'OPTIMISM_GATEWAY_URL'
+          value: optimismGatewayUrl
+        }
+        {
           name: 'OPTIMISM_CHAIN_ID'
           value: optimismChainId
         }
         {
+          name: 'POLYGON_GATEWAY_URL'
+          value: polygonGatewayUrl
+        }
+        {
           name: 'POLYGON_CHAIN_ID'
           value: polygonChainId
+        }
+        {
+          name: 'BASE_GATEWAY_URL'
+          value: baseGatewayUrl
         }
         {
           name: 'BASE_CHAIN_ID'
