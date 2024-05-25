@@ -1,0 +1,8 @@
+# Directories
+.git
+node_modules
+dist
+data
+
+# Files
+.env
