@@ -27,12 +27,35 @@ export interface LnBitsWalletDto {
   balance: number;
 }
 
+export interface LnBitsWalletBalanceDto {
+  wallet: string;
+  balance: number;
+}
+
+export interface LnBitsTotalBalanceDto {
+  balance: number;
+}
+
 export interface LnBitsWalletPaymentDto {
   payment_hash: string;
   payment_request: string;
   checking_id: string;
   lnurl_response: string;
 }
+
+export interface LnBitsTransactionExtraTagDto {
+  tag: string;
+  link: string;
+  extra: string;
+}
+
+export interface LnBitsTransactionExtraFiatDto {
+  fiat_currency: string;
+  fiat_amount: number;
+  fiat_rate: number;
+}
+
+export type LnBitsTransactionExtraDto = LnBitsTransactionExtraTagDto | LnBitsTransactionExtraFiatDto | undefined;
 
 export interface LnBitsTransactionDto {
   checking_id: string;
@@ -45,12 +68,18 @@ export interface LnBitsTransactionDto {
   preimage: string;
   payment_hash: string;
   expiry: number;
-  extra: {
-    tag: string;
-    link: string;
-    extra: string;
-  };
+  extra: LnBitsTransactionExtraDto;
   wallet_id: string;
+  webhook: string;
+  webhook_status: string;
+}
+
+export function isLnBitsTransactionExtraTag(extra: LnBitsTransactionExtraDto): extra is LnBitsTransactionExtraTagDto {
+  return (extra as LnBitsTransactionExtraTagDto).tag !== undefined;
+}
+
+export function isLnBitsTransactionExtraFiat(extra: LnBitsTransactionExtraDto): extra is LnBitsTransactionExtraFiatDto {
+  return (extra as LnBitsTransactionExtraFiatDto).fiat_currency !== undefined;
 }
 
 export interface LnBitsLnurlpLinkDto {
@@ -141,25 +170,4 @@ export interface LnBitsLnurlwLinkDto {
   webhook_body?: string;
   custom_url?: string;
   lnurl?: string;
-}
-
-export interface LnBitsPaymentWebhookDto {
-  checking_id: string;
-  pending: boolean;
-  amount: number;
-  fee: number;
-  memo: string;
-  time: number;
-  bolt11: string;
-  preimage: string;
-  payment_hash: string;
-  expiry: number;
-  extra: {
-    fiat_currency: string;
-    fiat_amount: number;
-    fiat_rate: number;
-  };
-  wallet_id: string;
-  webhook: string;
-  webhook_status: string;
 }

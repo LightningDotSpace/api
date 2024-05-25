@@ -9,7 +9,6 @@ export enum Process {
   UPDATE_WALLET_BALANCE = 'UpdateWalletBalance',
   UPDATE_LIGHTNING_USER_TRANSACTION = 'UpdateLightingUserTransaction',
   UPDATE_PAYMENT_REQUEST = 'UpdatePaymentRequest',
-  PROCESS_MONITORING = 'ProcessMonitoring',
 }
 
 export enum Environment {
@@ -105,6 +104,10 @@ export class Configuration {
         wsPaymentsUrl: process.env.LIGHTNING_LND_WS_PAYMENTS_URL ?? '',
       },
       certificate: process.env.LIGHTNING_API_CERTIFICATE?.split('<br>').join('\n'),
+      lnbitsapi: {
+        apiUrl: process.env.LIGHTNING_LNBITSAPI_API_URL ?? '',
+        certificate: process.env.LIGHTNING_LNBITSAPI_CERTIFICATE?.split('<br>').join('\n') ?? '',
+      },
     },
     ethereum: {
       gatewayUrl: process.env.ETHEREUM_GATEWAY_URL ?? '',

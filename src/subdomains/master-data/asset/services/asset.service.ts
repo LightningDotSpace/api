@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Blockchain } from 'src/shared/enums/blockchain.enum';
-import { Not } from 'typeorm';
+import { Equal, Not } from 'typeorm';
 import { AssetAccountEntity, AssetAccountStatus } from '../entities/asset-account.entity';
 import { AssetTransferEntity, AssetTransferStatus } from '../entities/asset-transfer.entity';
 import { AssetAccountRepository } from '../repositories/asset-account.repository';
@@ -20,14 +20,14 @@ export class AssetService {
   ) {}
 
   async getAccountAssetByIdOrThrow(id: number): Promise<AssetAccountEntity> {
-    const asset = await this.assetAccountRepo.findOneBy({ id });
+    const asset = await this.assetAccountRepo.findOneBy({ id: Equal(id) });
     if (!asset) throw new NotFoundException(`Asset with id ${id} not found`);
 
     return asset;
   }
 
   async getAccountAssetByNameOrThrow(name: string): Promise<AssetAccountEntity> {
-    const asset = await this.assetAccountRepo.findOneBy({ name });
+    const asset = await this.assetAccountRepo.findOneBy({ name: Equal(name) });
     if (!asset) throw new NotFoundException(`Asset with name ${name} not found`);
 
     return asset;
@@ -42,7 +42,7 @@ export class AssetService {
   }
 
   async getTransferAssetByNameOrThrow(name: string, blockchain: Blockchain): Promise<AssetTransferEntity> {
-    const asset = await this.assetTransferRepo.findOneBy({ name, blockchain });
+    const asset = await this.assetTransferRepo.findOneBy({ name: Equal(name), blockchain: Equal(blockchain) });
     if (!asset) throw new NotFoundException(`Asset with ${name} of blockchain ${blockchain} not found`);
 
     return asset;

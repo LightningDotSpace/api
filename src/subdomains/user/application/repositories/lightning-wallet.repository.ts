@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { BaseRepository } from 'src/shared/db/base.repository';
-import { EntityManager } from 'typeorm';
+import { EntityManager, Equal } from 'typeorm';
 import { LightningWalletEntity } from '../../domain/entities/lightning-wallet.entity';
 import { LightningWalletTotalBalanceDto } from '../dto/lightning-wallet.dto';
 
@@ -11,7 +11,7 @@ export class LightingWalletRepository extends BaseRepository<LightningWalletEnti
   }
 
   async getByWalletId(lnbitsWalletId: string): Promise<LightningWalletEntity> {
-    const lightningWallet = await this.findOneBy({ lnbitsWalletId: lnbitsWalletId });
+    const lightningWallet = await this.findOneBy({ lnbitsWalletId: Equal(lnbitsWalletId) });
     if (!lightningWallet) throw new NotFoundException(`Lnbits Wallet not found by id ${lnbitsWalletId}`);
 
     return lightningWallet;

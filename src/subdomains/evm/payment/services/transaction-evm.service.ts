@@ -73,7 +73,7 @@ export class TransactionEvmService {
         return;
       }
 
-      await this.lightningWalletService.updateLightningWalletBalanceById(userTransactionEntity.lightningWallet.id);
+      await this.lightningWalletService.updateLightningWalletBalances();
 
       transactionEvmEntity.userTransaction = userTransactionEntity;
       paymentRequestEntity.userTransaction = userTransactionEntity;

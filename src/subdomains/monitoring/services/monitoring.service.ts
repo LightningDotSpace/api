@@ -1,15 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { Config, Process } from 'src/config/config';
 import { LndChannelDto } from 'src/integration/blockchain/lightning/dto/lnd.dto';
 import { LightningClient } from 'src/integration/blockchain/lightning/lightning-client';
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
 import { EvmRegistryService } from 'src/integration/blockchain/shared/evm/registry/evm-registry.service';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
-import { Lock } from 'src/shared/utils/lock';
+import { QueueHandler } from 'src/shared/utils/queue-handler';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
 import { LightningWalletTotalBalanceDto } from 'src/subdomains/user/application/dto/lightning-wallet.dto';
-import { LightningWalletService } from 'src/subdomains/user/application/services/lightning-wallet.service';
 import { MonitoringBalanceRepository } from '../repositories/monitoring-balance.repository';
 import { MonitoringRepository } from '../repositories/monitoring.repository';
 
@@ -19,26 +16,35 @@ export class MonitoringService {
 
   private readonly client: LightningClient;
 
+  private readonly processQueue: QueueHandler;
+
   constructor(
     lightningService: LightningService,
     private readonly assetService: AssetService,
-    private readonly lightningWalletService: LightningWalletService,
     private readonly evmRegistryService: EvmRegistryService,
     private readonly monitoringRepository: MonitoringRepository,
     private readonly monitoringBalanceRepository: MonitoringBalanceRepository,
   ) {
     this.client = lightningService.getDefaultClient();
+
+    this.processQueue = new QueueHandler();
   }
 
-  @Cron(CronExpression.EVERY_5_SECONDS)
-  @Lock()
-  async processBalances(): Promise<void> {
-    if (Config.processDisabled(Process.PROCESS_MONITORING)) return;
+  async processMonitoring(customerBalances: LightningWalletTotalBalanceDto[]): Promise<void> {
+    this.processQueue
+      .handle<void>(async () => {
+        await this.processBalances(customerBalances);
+        await this.processChannels();
+      })
+      .catch((e) => {
+        this.logger.error('Error while processing new balances and channels', e);
+      });
+  }
 
+  private async processBalances(customerBalances: LightningWalletTotalBalanceDto[]): Promise<void> {
     try {
       const onchainBalance = await this.getOnchainBalance();
       const lightningBalance = await this.getLightningBalance();
-      const customerBalances = await this.getCustomerBalance();
 
       const btcAccountAsset = await this.assetService.getBtcAccountAssetOrThrow();
       const btcAccountAssetId = btcAccountAsset.id;
@@ -57,11 +63,7 @@ export class MonitoringService {
     }
   }
 
-  @Cron(CronExpression.EVERY_5_SECONDS)
-  @Lock()
-  async processChannels(): Promise<void> {
-    if (Config.processDisabled(Process.PROCESS_MONITORING)) return;
-
+  private async processChannels(): Promise<void> {
     try {
       const channels = await this.getChannels();
 
@@ -136,9 +138,5 @@ export class MonitoringService {
 
   private async getChannels(): Promise<LndChannelDto[]> {
     return this.client.getChannels();
-  }
-
-  private async getCustomerBalance(): Promise<LightningWalletTotalBalanceDto[]> {
-    return this.lightningWalletService.getLightningWalletTotalBalances();
   }
 }

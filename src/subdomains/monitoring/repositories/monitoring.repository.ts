@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BaseRepository } from 'src/shared/db/base.repository';
-import { EntityManager } from 'typeorm';
+import { EntityManager, Equal } from 'typeorm';
 import { MonitoringEntity } from '../entities/monitoring.entity';
 
 @Injectable()
@@ -10,7 +10,7 @@ export class MonitoringRepository extends BaseRepository<MonitoringEntity> {
   }
 
   async saveIfValueDiff(entity: MonitoringEntity): Promise<MonitoringEntity> {
-    const existEntity = await this.findOneBy({ type: entity.type, name: entity.name });
+    const existEntity = await this.findOneBy({ type: Equal(entity.type), name: Equal(entity.name) });
     if (!existEntity) return this.save(entity);
 
     if (existEntity.value === entity.value) return existEntity;

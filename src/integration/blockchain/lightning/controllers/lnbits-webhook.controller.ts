@@ -1,6 +1,8 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Headers, Post } from '@nestjs/common';
 import { ApiExcludeEndpoint, ApiTags } from '@nestjs/swagger';
-import { LnBitsPaymentWebhookDto } from '../dto/lnbits.dto';
+import { Config } from 'src/config/config';
+import { Util } from 'src/shared/utils/util';
+import { LnBitsTransactionDto } from '../dto/lnbits.dto';
 import { LnbitsWebHookService } from '../services/lnbits-webhook.service';
 
 @ApiTags('LNbits')
@@ -8,9 +10,24 @@ import { LnbitsWebHookService } from '../services/lnbits-webhook.service';
 export class LnbitsWebhookController {
   constructor(private readonly lightningWebHookService: LnbitsWebHookService) {}
 
-  @Post('payment-webhook')
+  @Post('transaction-webhook')
   @ApiExcludeEndpoint()
-  async lnbitsWebhook(@Body() dto: LnBitsPaymentWebhookDto): Promise<void> {
-    this.lightningWebHookService.processPayment(dto);
+  async transactionWebhook(
+    @Headers('LDS-LnbitsApi-Signature') lnbitsApiSignature: string,
+    @Body() transactions: LnBitsTransactionDto[],
+  ): Promise<void> {
+    try {
+      const isValid = Util.verifySign(
+        JSON.stringify(transactions),
+        Config.blockchain.lightning.lnbitsapi.certificate,
+        lnbitsApiSignature,
+      );
+
+      if (isValid) {
+        this.lightningWebHookService.processTransactions(transactions);
+      }
+    } catch (e) {
+      throw new BadRequestException();
+    }
   }
 }

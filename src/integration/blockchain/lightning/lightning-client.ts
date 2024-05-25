@@ -14,8 +14,10 @@ import {
   LnBitsLnurlpLinkRemoveDto,
   LnBitsLnurlwInvoiceDto,
   LnBitsLnurlwLinkDto,
+  LnBitsTotalBalanceDto,
   LnBitsTransactionDto,
   LnBitsUsermanagerWalletDto,
+  LnBitsWalletBalanceDto,
   LnBitsWalletDto,
   LnBitsWalletPaymentDto,
   LnbitsUsermanagerUserDto,
@@ -402,7 +404,6 @@ export class LightningClient {
           unit: walletPaymentParam.currencyCode,
           memo: walletPaymentParam.memo,
           expiry: Config.payment.timeout,
-          webhook: `${Config.url}/lnbits/payment-webhook`,
         },
         this.httpLnBitsConfig(adminKey),
       )
@@ -415,6 +416,21 @@ export class LightningClient {
       pr: payment.payment_request,
       routes: [],
     };
+  }
+
+  // --- LNbitsAPI --- //
+  async getLnbitsApiBalance(): Promise<LnBitsWalletBalanceDto[]> {
+    return this.http.get<LnBitsWalletBalanceDto[]>(
+      `${Config.blockchain.lightning.lnbitsapi.apiUrl}/balance`,
+      this.httpLnbitsApiConfig(),
+    );
+  }
+
+  async getLnbitsApiTotalBalance(): Promise<LnBitsTotalBalanceDto> {
+    return this.http.get<LnBitsTotalBalanceDto>(
+      `${Config.blockchain.lightning.lnbitsapi.apiUrl}/totalbalance`,
+      this.httpLnbitsApiConfig(),
+    );
   }
 
   // --- LNDHUB --- //
@@ -495,6 +511,17 @@ export class LightningClient {
       }),
 
       headers: { 'Grpc-Metadata-macaroon': Config.blockchain.lightning.lnd.adminMacaroon },
+      params: params,
+    };
+  }
+
+  private httpLnbitsApiConfig(params?: any): HttpRequestConfig {
+    return {
+      httpsAgent: new Agent({
+        ca: Config.blockchain.lightning.lnbitsapi.certificate,
+      }),
+
+      headers: {},
       params: params,
     };
   }

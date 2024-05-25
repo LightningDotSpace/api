@@ -13,9 +13,7 @@ export class MonitoringBalanceRepository extends BaseRepository<MonitoringBalanc
     const maxEntity = await this.maxEntity(entity.asset.id);
     if (!maxEntity) return this.save(entity);
 
-    const entityCheckSum = entity.onchainBalance + entity.lightningBalance + entity.customerBalance;
-    const maxEntityCheckSum = maxEntity.onchainBalance + maxEntity.lightningBalance + maxEntity.customerBalance;
-    if (entityCheckSum === maxEntityCheckSum) return maxEntity;
+    if (entity.checksum() === maxEntity.checksum()) return maxEntity;
 
     return this.save(entity);
   }

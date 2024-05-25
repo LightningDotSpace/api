@@ -15,4 +15,10 @@ export class MonitoringBalanceEntity extends IEntity {
 
   @Column({ type: 'float' })
   customerBalance: number;
+
+  // --- ENTITY METHODS --- //
+
+  checksum(): number {
+    return this.onchainBalance + this.lightningBalance + this.customerBalance;
+  }
 }

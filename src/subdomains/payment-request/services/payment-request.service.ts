@@ -7,7 +7,7 @@ import { Util } from 'src/shared/utils/util';
 import { LightingWalletPaymentParamDto } from 'src/subdomains/lightning/dto/lightning-wallet.dto';
 import { AssetAccountEntity } from 'src/subdomains/master-data/asset/entities/asset-account.entity';
 import { AssetTransferEntity } from 'src/subdomains/master-data/asset/entities/asset-transfer.entity';
-import { In, LessThan } from 'typeorm';
+import { Equal, In, LessThan } from 'typeorm';
 import { LightningWalletEntity } from '../../user/domain/entities/lightning-wallet.entity';
 import { PaymentRequestEntity, PaymentRequestMethod, PaymentRequestState } from '../entities/payment-request.entity';
 import { PaymentRequestRepository } from '../repositories/payment-request.repository';
@@ -38,7 +38,7 @@ export class PaymentRequestService {
   // --- FUNCTIONS --- //
 
   async getPaymentRequest(id: number): Promise<PaymentRequestEntity> {
-    const paymentRequest = await this.paymentRequestRepository.findOneBy({ id });
+    const paymentRequest = await this.paymentRequestRepository.findOneBy({ id: Equal(id) });
     if (!paymentRequest) throw new NotFoundException(`Payment request with id ${id} not found`);
 
     return paymentRequest;

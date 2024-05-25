@@ -24,6 +24,8 @@ param lightningLnbitsAdminUser string
 param lightningLnbitsAdminKey string
 @secure()
 param lightningLndAdminMacaroon string
+@secure()
+param lightningLnbitsApiCertificate string
 
 param ethereumGatewayUrl string
 param ethereumChainId string
@@ -74,6 +76,7 @@ var appInsightsName = 'appi-${compName}-${apiName}-${env}'
 
 var thunderHubPort = '443'
 var lnBitsPort = '5000'
+var lnBitsApiPort = '5001'
 
 var btcNodeProps = [
   {
@@ -334,8 +337,16 @@ resource apiAppService 'Microsoft.Web/sites@2018-11-01' = if (env != 'loc') {
           value: 'https://${btcNodes[0].outputs.ip}:8080/v1'
         }
         {
+          name: 'LIGHTNING_LNBITSAPI_API_URL'
+          value: 'https://${btcNodes[0].outputs.ip}:${lnBitsApiPort}/api/v1'
+        }
+        {
           name: 'LIGHTNING_LND_ADMIN_MACAROON'
           value: lightningLndAdminMacaroon
+        }
+        {
+          name: 'LIGHTNING_LNBITSAPI_CERTIFICATE'
+          value: lightningLnbitsApiCertificate
         }
         {
           name: 'ETHEREUM_GATEWAY_URL'
