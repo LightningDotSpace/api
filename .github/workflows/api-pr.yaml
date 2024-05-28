@@ -5,8 +5,9 @@ on:
     branches:
       - main
       - develop
-    paths-ignore:
-      - 'infrastructure/lnbitsapi/**'
+    paths:
+      - '**'
+      - '!infrastructure/lnbitsapi/**'
   workflow_dispatch:
 
 env:
