@@ -2,11 +2,11 @@ name: API PR CI
 
 on:
   pull_request:
-    paths:
-      - 'infrastructure/lnbitsapi/**'
     branches:
       - main
       - develop
+    paths:
+      - 'infrastructure/lnbitsapi/**'
   workflow_dispatch:
 
 env:
