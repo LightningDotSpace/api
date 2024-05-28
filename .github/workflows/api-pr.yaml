@@ -2,6 +2,8 @@ name: API PR CI
 
 on:
   pull_request:
+    paths-ignore:
+      - 'infrastructure/lnbitsapi/**'
     branches:
       - main
       - develop

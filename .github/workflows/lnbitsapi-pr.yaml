@@ -2,6 +2,8 @@ name: API PR CI
 
 on:
   pull_request:
+    paths:
+      - 'infrastructure/lnbitsapi/**'
     branches:
       - main
       - develop
@@ -15,6 +17,9 @@ jobs:
     name: Build and test
     if: github.head_ref != 'develop'
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./infrastructure/lnbitsapi
     steps:
       - name: Checkout
         uses: actions/checkout@v3
