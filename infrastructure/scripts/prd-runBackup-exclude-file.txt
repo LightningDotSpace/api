@@ -1,0 +1,3 @@
+./volumes/bitcoin/blocks
+./volumes/bitcoin/chainstate
+./volumes/bitcoin/indexes

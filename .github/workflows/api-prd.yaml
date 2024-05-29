@@ -3,6 +3,8 @@ name: API PRD CI/CD
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'infrastructure/lnbitsapi/**'
   workflow_dispatch:
 
 env:
