@@ -1,7 +1,7 @@
 import BigNumber from 'bignumber.js';
 import { TransformFnParams } from 'class-transformer';
 import * as crypto from 'crypto';
-import { BinaryLike, KeyLike, createHash, createSign, createVerify } from 'crypto';
+import { BinaryLike, KeyLike, createHash, createHmac, createSign, createVerify } from 'crypto';
 import { readFile } from 'fs';
 
 export type KeyType<T, U> = {
@@ -287,6 +287,17 @@ export class Util {
     encoding: crypto.BinaryToTextEncoding = 'base64',
   ): string {
     return Util.createHash(crypto.randomBytes(size), algo, encoding);
+  }
+
+  static createHmac(
+    key: BinaryLike,
+    data: BinaryLike,
+    algo: CryptoAlgorithm = 'sha256',
+    encoding: crypto.BinaryToTextEncoding = 'hex',
+  ): string {
+    const hmac = createHmac(algo, key);
+    hmac.update(data);
+    return hmac.digest(encoding);
   }
 
   static createSign(

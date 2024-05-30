@@ -74,7 +74,7 @@ export class LightningWalletService {
     }
 
     const customerBalances = await this.lightingWalletRepository.getTotalBalances();
-    await this.monitoringService.processMonitoring(customerBalances);
+    await this.monitoringService.processBalanceMonitoring(customerBalances);
   }
 
   async syncLightningUserTransactions(
