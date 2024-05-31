@@ -1,19 +1,21 @@
-import { Injectable } from '@nestjs/common';
-import { AddressActivityWebhook, Alchemy, GetAllWebhooksResponse, Network, WebhookType } from 'alchemy-sdk';
+import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { AddressActivityWebhook, Alchemy, Network, Webhook, WebhookType } from 'alchemy-sdk';
 import { Observable, Subject, filter } from 'rxjs';
 import { Config, GetConfig } from 'src/config/config';
 import { Blockchain } from 'src/shared/enums/blockchain.enum';
-import { MonitoringService } from 'src/subdomains/monitoring/services/monitoring.service';
+import { Util } from 'src/shared/utils/util';
 import { AlchemyNetworkMapper } from '../alchemy-network-mapper';
 import { AlchemyWebhookDto } from '../dto/alchemy-webhook.dto';
 
 @Injectable()
-export class AlchemyWebhookService {
+export class AlchemyWebhookService implements OnModuleInit {
   private alchemy: Alchemy;
 
-  private addressWebhookSubject: Subject<AlchemyWebhookDto>;
+  private webhookCache: Map<string, string>;
 
-  constructor(private readonly monitoringService: MonitoringService) {
+  private frankencoinPaymentWebhookSubject: Subject<AlchemyWebhookDto>;
+
+  constructor() {
     const config = GetConfig();
 
     const alchemySettings = {
@@ -23,44 +25,90 @@ export class AlchemyWebhookService {
 
     this.alchemy = new Alchemy(alchemySettings);
 
-    this.addressWebhookSubject = new Subject<AlchemyWebhookDto>();
+    this.webhookCache = new Map();
+
+    this.frankencoinPaymentWebhookSubject = new Subject<AlchemyWebhookDto>();
   }
 
-  getAddressWebhookObservable(network: Network): Observable<AlchemyWebhookDto> {
-    return this.addressWebhookSubject.asObservable().pipe(filter((data) => network === Network[data.event.network]));
+  async onModuleInit() {
+    const allWebhooks = await this.getAllWebhooks();
+    allWebhooks.forEach((w) => this.webhookCache.set(w.id, w.signingKey));
   }
 
-  processAddressWebhook(dto: AlchemyWebhookDto): void {
-    this.addressWebhookSubject.next(dto);
+  isValidWebhookSignature(alchemySignature: string, dto: AlchemyWebhookDto): boolean {
+    const signingKey = this.webhookCache.get(dto.webhookId);
+    if (!signingKey) return false;
+
+    const checkSignature = Util.createHmac(signingKey, JSON.stringify(dto));
+    return alchemySignature === checkSignature;
   }
 
-  async getAllWebhooks(): Promise<GetAllWebhooksResponse> {
-    const allWebhooks = await this.alchemy.notify.getAllWebhooks();
+  getFrankencoinPaymentWebhookObservable(network: Network): Observable<AlchemyWebhookDto> {
+    return this.frankencoinPaymentWebhookSubject
+      .asObservable()
+      .pipe(filter((data) => network === Network[data.event.network]));
+  }
 
-    return allWebhooks;
+  processFrankencoinPaymentWebhook(dto: AlchemyWebhookDto): void {
+    this.frankencoinPaymentWebhookSubject.next(dto);
+  }
+
+  async createFrankencoinPaymentWebhooks(): Promise<AddressActivityWebhook[]> {
+    const result: AddressActivityWebhook[] = [];
+
+    const url = `${Config.url}/alchemy/frankencoin-payment-webhook`;
+    const addresses = [Config.payment.evmAddress];
+
+    const blockchains = [
+      Blockchain.ETHEREUM,
+      Blockchain.ARBITRUM,
+      Blockchain.OPTIMISM,
+      Blockchain.POLYGON,
+      Blockchain.BASE,
+    ];
+
+    for (const blockchain of blockchains) {
+      result.push(await this.createAddressWebhook(blockchain, url, addresses));
+    }
+
+    return result;
   }
 
   async createFrankencoinMonitoringWebhook(): Promise<AddressActivityWebhook> {
-    const network = AlchemyNetworkMapper.toAlchemyNetworkByBlockchain(Blockchain.ETHEREUM);
     const url = `${Config.url}/monitoring/frankencoin-monitoring-webhook`;
+    const addresses = [Config.blockchain.frankencoin.contractAddress.equity];
 
-    const allWebhooks = await this.alchemy.notify.getAllWebhooks();
+    return this.createAddressWebhook(Blockchain.ETHEREUM, url, addresses);
+  }
 
-    const filteredWebhooks = allWebhooks.webhooks.filter((wh) => wh.network === network && wh.url === url);
+  private async createAddressWebhook(
+    blockchain: Blockchain,
+    webhookUrl: string,
+    addresses: string[],
+  ): Promise<AddressActivityWebhook> {
+    const network = AlchemyNetworkMapper.toAlchemyNetworkByBlockchain(blockchain);
+    if (!network) throw new NotFoundException(`Network not found by blockchain ${blockchain}`);
+
+    const allWebhooks = await this.getAllWebhooks();
+    const filteredWebhooks = allWebhooks.filter((wh) => wh.network === network && wh.url === webhookUrl);
 
     for (const webhookToBeDeleted of filteredWebhooks) {
       const webhookId = webhookToBeDeleted.id;
-      await this.monitoringService.deleteWebhookInfo(webhookId);
+      this.webhookCache.delete(webhookId);
       await this.alchemy.notify.deleteWebhook(webhookId);
     }
 
-    const newWebhook = await this.alchemy.notify.createWebhook(url, WebhookType.ADDRESS_ACTIVITY, {
-      addresses: [Config.blockchain.frankencoin.contractAddress.equity],
-      network: network,
+    const newWebhook = await this.alchemy.notify.createWebhook(webhookUrl, WebhookType.ADDRESS_ACTIVITY, {
+      addresses,
+      network,
     });
 
-    await this.monitoringService.saveWebhookInfo(newWebhook.id, newWebhook.signingKey);
+    this.webhookCache.set(newWebhook.id, newWebhook.signingKey);
 
     return newWebhook;
+  }
+
+  private async getAllWebhooks(): Promise<Webhook[]> {
+    return this.alchemy.notify.getAllWebhooks().then((r) => r.webhooks);
   }
 }

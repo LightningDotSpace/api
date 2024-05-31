@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { MonitoringModule } from '../monitoring/monitoring.module';
-import { AlchemyController } from './controllers/alchemy.controller';
+import { SharedModule } from 'src/shared/shared.module';
+import { AlchemyWebhookController } from './controllers/alchemy-webhook.controller';
 import { AlchemyWebhookService } from './services/alchemy-webhook.service';
 
 @Module({
-  imports: [MonitoringModule],
-  controllers: [AlchemyController],
+  imports: [SharedModule],
+  controllers: [AlchemyWebhookController],
   providers: [AlchemyWebhookService],
   exports: [AlchemyWebhookService],
 })

@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { BlockchainModule } from 'src/integration/blockchain/blockchain.module';
 import { FrankencoinModule } from 'src/integration/blockchain/frankencoin/frankencoin.module';
 import { EvmRegistryModule } from 'src/integration/blockchain/shared/evm/registry/evm-registry.module';
+import { AlchemyWebhookModule } from '../alchemy/alchemy-webhook.module';
 import { AssetModule } from '../master-data/asset/asset.module';
 import { MonitoringController } from './controller/monitoring.controller';
 import { MonitoringBalanceEntity } from './entities/monitoring-balance.entity';
@@ -18,6 +19,7 @@ import { MonitoringService } from './services/monitoring.service';
     BlockchainModule,
     EvmRegistryModule,
     FrankencoinModule,
+    AlchemyWebhookModule,
   ],
   controllers: [MonitoringController],
   providers: [MonitoringRepository, MonitoringBalanceRepository, MonitoringService],

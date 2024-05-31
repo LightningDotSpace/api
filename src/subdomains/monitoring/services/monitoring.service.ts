@@ -6,7 +6,6 @@ import { LightningService } from 'src/integration/blockchain/lightning/services/
 import { EvmRegistryService } from 'src/integration/blockchain/shared/evm/registry/evm-registry.service';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { QueueHandler } from 'src/shared/utils/queue-handler';
-import { AlchemyWebhookDto } from 'src/subdomains/alchemy/dto/alchemy-webhook.dto';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
 import { LightningWalletTotalBalanceDto } from 'src/subdomains/user/application/dto/lightning-wallet.dto';
 import { MonitoringFrankencoinDto } from '../dto/monitoring-frankencoin.dto';
@@ -150,7 +149,7 @@ export class MonitoringService {
 
   // --- Frankencoin --- //
 
-  async processFrankencoinMonitoring(_dto: AlchemyWebhookDto): Promise<void> {
+  async processFrankencoinMonitoring(): Promise<void> {
     this.processFrankencoinQueue
       .handle<void>(async () => {
         await this.processFrankencoin();
@@ -196,31 +195,5 @@ export class MonitoringService {
       fpsMarketCap: Number(fpsMarketCapEntity?.value ?? 0),
       totalValueLocked: Number(totalValueLockedEntity?.value ?? 0),
     };
-  }
-
-  async saveWebhookInfo(webhookId: string, webhookSigningKey: string) {
-    const monitoringEntity = this.monitoringRepository.create({
-      type: 'alchemywebhookinfo',
-      name: webhookId,
-      value: webhookSigningKey,
-    });
-
-    await this.monitoringRepository.saveIfValueDiff(monitoringEntity);
-  }
-
-  async deleteWebhookInfo(webhookId: string) {
-    const monitoringEntity = this.monitoringRepository.create({
-      type: 'alchemywebhookinfo',
-      name: webhookId,
-    });
-
-    await this.monitoringRepository.delete(monitoringEntity);
-  }
-
-  async getWebhookSigningKey(webhookId: string): Promise<string | undefined> {
-    const monitoringEntity = await this.monitoringRepository.findOneBy({ type: 'alchemywebhookinfo', name: webhookId });
-    if (!monitoringEntity) return;
-
-    return monitoringEntity.value;
   }
 }
