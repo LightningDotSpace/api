@@ -44,3 +44,12 @@ jobs:
       - name: Run linter
         run: |
           npm run lint
+
+      - name: Execute remove SSH commands on DEV
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEV_HOST }}
+          username: ${{ secrets.DEV_USERNAME }}
+          password: ${{ secrets.DEV_PASSWORD }}
+          port: ${{ secrets.DEV_PORT }}
+          script: pwd
