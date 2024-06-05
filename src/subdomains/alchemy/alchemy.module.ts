@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
-import { AlchemyController } from './controllers/alchemy.controller';
-import { AlchemyWebhookService } from './services/alchemy-webhook.service';
+import { AlchemyService } from './services/alchemy.service';
 
 @Module({
   imports: [],
-  controllers: [AlchemyController],
-  providers: [AlchemyWebhookService],
-  exports: [AlchemyWebhookService],
+  controllers: [],
+  providers: [AlchemyService],
+  exports: [AlchemyService],
 })
 export class AlchemyModule {}

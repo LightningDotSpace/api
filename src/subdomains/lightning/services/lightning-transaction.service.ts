@@ -13,7 +13,7 @@ import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Lock } from 'src/shared/utils/lock';
 import { QueueHandler } from 'src/shared/utils/queue-handler';
 import { Util } from 'src/shared/utils/util';
-import { LessThan } from 'typeorm';
+import { Equal, LessThan } from 'typeorm';
 import { LightningClient } from '../../../integration/blockchain/lightning/lightning-client';
 import { LightningTransactionDtoMapper } from '../dto/lightning-transaction-dto.mapper';
 import { LightningTransactionDto } from '../dto/lightning-transaction.dts';
@@ -275,12 +275,14 @@ export class LightningTransactionService {
     return allTransactions;
   }
 
-  private handleOnchainTransactionMessage(onchainTransaction: LndOnchainTransactionDto): void {
-    this.onchainTransactionMessageQueue
-      .handle<void>(async () => this.updateOnchainTransaction(onchainTransaction))
-      .catch((e) => {
-        this.logger.error('Error while updating onchain transaction', e);
-      });
+  private handleOnchainTransactionMessage(onchainTransaction?: LndOnchainTransactionDto): void {
+    if (onchainTransaction) {
+      this.onchainTransactionMessageQueue
+        .handle<void>(async () => this.updateOnchainTransaction(onchainTransaction))
+        .catch((e) => {
+          this.logger.error('Error while updating onchain transaction', e);
+        });
+    }
   }
 
   private async updateOnchainTransaction(onchainTransaction: LndOnchainTransactionDto): Promise<void> {
@@ -307,7 +309,7 @@ export class LightningTransactionService {
     updateOnchainTransactionEntity: TransactionOnchainEntity,
   ): Promise<TransactionOnchainEntity> {
     let dbOnchainTransactionEntity = await this.transactionOnchainRepo.findOneBy({
-      transaction: updateOnchainTransactionEntity.transaction,
+      transaction: Equal(updateOnchainTransactionEntity.transaction),
     });
 
     if (!dbOnchainTransactionEntity) {
@@ -319,24 +321,28 @@ export class LightningTransactionService {
     return this.transactionOnchainRepo.save(dbOnchainTransactionEntity);
   }
 
-  private handleInvoiceTransactionMessage(invoice: LndTransactionDto): void {
-    this.invoiceTransactionMessageQueue
-      .handle<void>(async () => this.updateInvoice(invoice))
-      .catch((e) => {
-        this.logger.error('Error while updating invoice', e);
-      });
+  private handleInvoiceTransactionMessage(invoice?: LndTransactionDto): void {
+    if (invoice) {
+      this.invoiceTransactionMessageQueue
+        .handle<void>(async () => this.updateInvoice(invoice))
+        .catch((e) => {
+          this.logger.error('Error while updating invoice', e);
+        });
+    }
   }
 
   private async updateInvoice(lndTransaction: LndTransactionDto): Promise<void> {
     return this.updateLightningTransaction(TransactionLightningType.INVOICE, lndTransaction);
   }
 
-  private handlePaymentTransactionMessage(payment: LndTransactionDto): void {
-    this.paymentTransactionMessageQueue
-      .handle<void>(async () => this.updatePayment(payment))
-      .catch((e) => {
-        this.logger.error('Error while updating payment', e);
-      });
+  private handlePaymentTransactionMessage(payment?: LndTransactionDto): void {
+    if (payment) {
+      this.paymentTransactionMessageQueue
+        .handle<void>(async () => this.updatePayment(payment))
+        .catch((e) => {
+          this.logger.error('Error while updating payment', e);
+        });
+    }
   }
 
   private async updatePayment(lndTransaction: LndTransactionDto): Promise<void> {
@@ -404,8 +410,8 @@ export class LightningTransactionService {
     updateTransactionLightningEntity: TransactionLightningEntity,
   ): Promise<TransactionLightningEntity> {
     let dbTransactionLightningEntity = await this.transactionLightningRepo.findOneBy({
-      type: updateTransactionLightningEntity.type,
-      transaction: updateTransactionLightningEntity.transaction,
+      type: Equal(updateTransactionLightningEntity.type),
+      transaction: Equal(updateTransactionLightningEntity.transaction),
     });
 
     if (!dbTransactionLightningEntity) {

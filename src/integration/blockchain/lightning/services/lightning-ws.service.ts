@@ -1,18 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { Observable, map } from 'rxjs';
 import { Configuration, GetConfig } from 'src/config/config';
+import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { LndOnchainTransactionDto, LndTransactionDto } from '../dto/lnd.dto';
 import { LightningWebSocketClient } from '../lightning-ws-client';
 
 @Injectable()
 export class LightningWebSocketService {
+  private readonly logger = new LightningLogger(LightningWebSocketService);
+
   private onchainWebSocketClient: LightningWebSocketClient<any>;
   private invoiceWebSocketClient: LightningWebSocketClient<any>;
   private paymentWebSocketClient: LightningWebSocketClient<any>;
 
-  public onChainTransactions: Observable<LndOnchainTransactionDto>;
-  public invoiceTransactions: Observable<LndTransactionDto>;
-  public paymentTransactions: Observable<LndTransactionDto>;
+  public onChainTransactions: Observable<LndOnchainTransactionDto | undefined>;
+  public invoiceTransactions: Observable<LndTransactionDto | undefined>;
+  public paymentTransactions: Observable<LndTransactionDto | undefined>;
 
   constructor() {
     const config = GetConfig();
@@ -68,41 +71,59 @@ export class LightningWebSocketService {
   }
 
   // --- Message Handling --- //
-  private mapOnchainMessage({ result }: any): LndOnchainTransactionDto {
-    return {
-      tx_hash: result.tx_hash,
-      amount: result.amount,
-      block_height: result.block_height,
-      time_stamp: result.time_stamp,
-      total_fees: result.total_fees,
-    };
+  private mapOnchainMessage(onchainMessage: any): LndOnchainTransactionDto | undefined {
+    const result = onchainMessage.result;
+
+    if (result) {
+      return {
+        tx_hash: result.tx_hash,
+        amount: result.amount,
+        block_height: result.block_height,
+        time_stamp: result.time_stamp,
+        total_fees: result.total_fees,
+      };
+    }
+
+    this.logger.error(`Result not available in onchain message: ${onchainMessage}`);
   }
 
-  private mapInvoiceMessage({ result }: any): LndTransactionDto {
-    return {
-      state: result.state,
-      transaction: Buffer.from(result.r_hash, 'base64').toString('hex'),
-      secret: Buffer.from(result.r_preimage, 'base64').toString('hex'),
-      amount: Number(result.value),
-      fee: 0,
-      creationTimestamp: new Date(Number(result.creation_date) * 1000),
-      expiresTimestamp: new Date((Number(result.creation_date) + Number(result.expiry)) * 1000),
-      confirmedTimestamp: '0' === result.settle_date ? undefined : new Date(Number(result.settle_date) * 1000),
-      description: result.memo,
-      paymentRequest: result.payment_request,
-    };
+  private mapInvoiceMessage(invoiceMessage: any): LndTransactionDto | undefined {
+    const result = invoiceMessage.result;
+
+    if (result) {
+      return {
+        state: result.state,
+        transaction: Buffer.from(result.r_hash, 'base64').toString('hex'),
+        secret: Buffer.from(result.r_preimage, 'base64').toString('hex'),
+        amount: Number(result.value),
+        fee: 0,
+        creationTimestamp: new Date(Number(result.creation_date) * 1000),
+        expiresTimestamp: new Date((Number(result.creation_date) + Number(result.expiry)) * 1000),
+        confirmedTimestamp: '0' === result.settle_date ? undefined : new Date(Number(result.settle_date) * 1000),
+        description: result.memo,
+        paymentRequest: result.payment_request,
+      };
+    }
+
+    this.logger.error(`Result not available in invoice message: ${invoiceMessage}`);
   }
 
-  private mapPaymentMessage({ result }: any): LndTransactionDto {
-    return {
-      state: result.status,
-      transaction: result.payment_hash,
-      secret: result.payment_preimage,
-      amount: -Number(result.value_sat),
-      fee: -Number(result.fee_sat),
-      creationTimestamp: new Date(Number(result.creation_time_ns) / 1000000),
-      reason: result.failure_reason,
-      paymentRequest: result.payment_request,
-    };
+  private mapPaymentMessage(paymentMessage: any): LndTransactionDto | undefined {
+    const result = paymentMessage.result;
+
+    if (result) {
+      return {
+        state: result.status,
+        transaction: result.payment_hash,
+        secret: result.payment_preimage,
+        amount: -Number(result.value_sat),
+        fee: -Number(result.fee_sat),
+        creationTimestamp: new Date(Number(result.creation_time_ns) / 1000000),
+        reason: result.failure_reason,
+        paymentRequest: result.payment_request,
+      };
+    }
+
+    this.logger.error(`Result not available in payment message: ${paymentMessage}`);
   }
 }

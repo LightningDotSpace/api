@@ -6,6 +6,7 @@ import { SharedModule } from 'src/shared/shared.module';
 import { AuthService } from 'src/subdomains/user/application/services/auth.service';
 import { LightningTransactionModule } from '../lightning/lightning-transaction.module';
 import { AssetModule } from '../master-data/asset/asset.module';
+import { MonitoringModule } from '../monitoring/monitoring.module';
 import { PaymentRequestModule } from '../payment-request/payment-request.module';
 import { AuthController } from './api/controllers/auth.controller';
 import { UserController } from './api/controllers/user.controller';
@@ -37,6 +38,7 @@ import { WalletEntity } from './domain/entities/wallet.entity';
     ]),
     SharedModule,
     IntegrationModule,
+    MonitoringModule,
     AssetModule,
     LnbitsWebhookModule,
     LightningTransactionModule,

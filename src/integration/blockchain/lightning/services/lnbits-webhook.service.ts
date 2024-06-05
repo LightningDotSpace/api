@@ -1,20 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { Observable, Subject } from 'rxjs';
-import { LnBitsPaymentWebhookDto } from '../dto/lnbits.dto';
+import { LnBitsTransactionDto } from '../dto/lnbits.dto';
 
 @Injectable()
 export class LnbitsWebHookService {
-  private paymentWebhookSubject: Subject<LnBitsPaymentWebhookDto>;
+  private transactionWebhookSubject: Subject<LnBitsTransactionDto[]>;
 
   constructor() {
-    this.paymentWebhookSubject = new Subject<LnBitsPaymentWebhookDto>();
+    this.transactionWebhookSubject = new Subject<LnBitsTransactionDto[]>();
   }
 
-  getPaymentWebhookObservable(): Observable<LnBitsPaymentWebhookDto> {
-    return this.paymentWebhookSubject.asObservable();
+  getTransactionWebhookObservable(): Observable<LnBitsTransactionDto[]> {
+    return this.transactionWebhookSubject.asObservable();
   }
 
-  processPayment(dto: LnBitsPaymentWebhookDto): void {
-    this.paymentWebhookSubject.next(dto);
+  processTransactions(transactions: LnBitsTransactionDto[]): void {
+    this.transactionWebhookSubject.next(transactions);
   }
 }

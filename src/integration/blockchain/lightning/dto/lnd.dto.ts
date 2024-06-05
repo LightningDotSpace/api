@@ -29,7 +29,10 @@ export interface LndChannelBalanceDto {
 
 export interface LndChannelDto {
   active: boolean;
+  remote_pubkey: string;
+  capacity: string;
   local_balance: string;
+  remote_balance: string;
   commit_fee: string;
   local_chan_reserve_sat: string;
 }
