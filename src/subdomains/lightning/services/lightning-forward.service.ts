@@ -51,6 +51,20 @@ export class LightningForwardService {
     });
   }
 
+  // --- Boltcards --- //
+  async boltcardsRequest(req: Request, body: any, params: any): Promise<any> {
+    const urlpart = this.getBoltcardsUrlPart(req);
+    if (!urlpart) return null;
+
+    return this.client.boltcardsRequest(req.path, {
+      method: req.method,
+      headers: req.headers,
+      urlpart: urlpart,
+      body: body,
+      params: params,
+    });
+  }
+
   // --- Wellknown --- //
   async wellknownForward(address: string): Promise<LnBitsLnurlPayRequestDto> {
     return this.lnurlpForward(address);
@@ -166,5 +180,9 @@ export class LightningForwardService {
   // --- UTILITIES --- //
   private getLastUrlPart(req: Request): string | undefined {
     return req.path.split('/').at(-1);
+  }
+
+  private getBoltcardsUrlPart(req: Request): string | undefined {
+    return req.path.split('/').slice(3).join('/');
   }
 }
