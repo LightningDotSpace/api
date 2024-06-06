@@ -95,6 +95,7 @@ export class Configuration {
         lnurlwApiUrl: process.env.LIGHTNING_LNBITS_LNURLW_API_URL ?? '',
         lndhubUrl: process.env.LIGHTNING_LNBITS_LNDHUB_URL ?? '',
         usermanagerApiUrl: process.env.LIGHTNING_LNBITS_USERMANAGER_API_URL ?? '',
+        boltcardsApiUrl: process.env.LIGHTNING_LNBITS_BOLTCARDS_API_URL ?? '',
       },
       lnd: {
         apiUrl: process.env.LIGHTNING_LND_API_URL ?? '',

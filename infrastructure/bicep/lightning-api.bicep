@@ -338,6 +338,10 @@ resource apiAppService 'Microsoft.Web/sites@2018-11-01' = if (env != 'loc') {
           value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/usermanager/api/v1'
         }
         {
+          name: 'LIGHTNING_LNBITS_BOLTCARDS_API_URL'
+          value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/boltcards/api/v1'
+        }
+        {
           name: 'LIGHTNING_LND_API_URL'
           value: 'https://${btcNodes[0].outputs.ip}:8080/v1'
         }

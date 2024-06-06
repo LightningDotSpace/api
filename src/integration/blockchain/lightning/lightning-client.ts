@@ -41,10 +41,19 @@ export interface UserFilterData {
   userId?: string;
   username?: string;
 }
+
 export interface LndhubParameterData {
   method: string;
   headers: IncomingHttpHeaders;
   lastUrlpart: string;
+  body?: any;
+  params?: any;
+}
+
+export interface BoltcardsParameterData {
+  method: string;
+  headers: IncomingHttpHeaders;
+  urlpart: string;
   body?: any;
   params?: any;
 }
@@ -448,6 +457,26 @@ export class LightningClient {
       }),
       headers: {
         Authorization: paramData.headers.authorization,
+      },
+      params: paramData.params,
+    };
+  }
+
+  // --- BOLTCARDS --- //
+  async boltcardsRequest(apiMethod: string, paramData: BoltcardsParameterData): Promise<any> {
+    return this.http.request<any>(this.httpLnBitsBoltcardsConfig(paramData)).catch((e) => this.throwHttpException(e));
+  }
+
+  private httpLnBitsBoltcardsConfig(paramData: BoltcardsParameterData): HttpRequestConfig {
+    return {
+      url: `${Config.blockchain.lightning.lnbits.boltcardsApiUrl}/${paramData.urlpart}`,
+      method: paramData.method,
+      data: paramData.body,
+      httpsAgent: new Agent({
+        ca: Config.blockchain.lightning.certificate,
+      }),
+      headers: {
+        'x-api-key': paramData.headers['x-api-key'],
       },
       params: paramData.params,
     };
