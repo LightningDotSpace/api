@@ -26,6 +26,7 @@ param lightningLnbitsAdminKey string
 param lightningLndAdminMacaroon string
 @secure()
 param lightningLnbitsApiCertificate string
+param lightningLnbitsExtensions string
 
 param ethereumGatewayUrl string
 param ethereumChainId string
@@ -318,6 +319,10 @@ resource apiAppService 'Microsoft.Web/sites@2018-11-01' = if (env != 'loc') {
           value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/api/v1'
         }
         {
+          name: 'LIGHTNING_LNBITS_EXTENSION_MANAGEMENT_API_URL'
+          value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/api/v1/extension'
+        }
+        {
           name: 'LIGHTNING_LNBITS_LNURLP_API_URL'
           value: 'https://${btcNodes[0].outputs.ip}:${lnBitsPort}/lnurlp/api/v1'
         }
@@ -356,6 +361,10 @@ resource apiAppService 'Microsoft.Web/sites@2018-11-01' = if (env != 'loc') {
         {
           name: 'LIGHTNING_LNBITSAPI_CERTIFICATE'
           value: lightningLnbitsApiCertificate
+        }
+        {
+          name: 'LIGHTNING_LNBITS_EXTENSIONS'
+          value: lightningLnbitsExtensions
         }
         {
           name: 'ETHEREUM_GATEWAY_URL'

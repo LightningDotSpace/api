@@ -89,7 +89,9 @@ export class Configuration {
       lnbits: {
         adminUserId: process.env.LIGHTNING_LNBITS_ADMIN_USER_ID ?? '',
         adminKey: process.env.LIGHTNING_LNBITS_ADMIN_KEY ?? '',
+        extensions: process.env.LIGHTNING_LNBITS_EXTENSIONS?.split(',') ?? [],
         apiUrl: process.env.LIGHTNING_LNBITS_API_URL ?? '',
+        extensionManagementApiUrl: process.env.LIGHTNING_LNBITS_EXTENSION_MANAGEMENT_API_URL ?? '',
         lnurlpApiUrl: process.env.LIGHTNING_LNBITS_LNURLP_API_URL ?? '',
         lnurlpUrl: process.env.LIGHTNING_LNBITS_LNURLP_URL ?? '',
         lnurlwApiUrl: process.env.LIGHTNING_LNBITS_LNURLW_API_URL ?? '',

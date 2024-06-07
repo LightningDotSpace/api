@@ -47,6 +47,9 @@
     "lightningLnbitsApiCertificate": {
       "value": "xxx"
     },
+    "lightningLnbitsExtensions": {
+      "value": "xxx"
+    },
     "ethereumGatewayUrl": {
       "value": "https://eth-goerli.g.alchemy.com/v2"
     },
