@@ -61,7 +61,7 @@ export class LightningWalletService {
   async processUpdateLightningWalletBalances(): Promise<void> {
     if (Config.processDisabled(Process.UPDATE_WALLET_BALANCE)) return;
 
-    const lightningWalletIterator = this.lightingWalletRepository.getIterator(1000);
+    const lightningWalletIterator = this.lightingWalletRepository.getIterator(1000, ['asset']);
     let lightningWalletEntities = await lightningWalletIterator.next();
 
     while (lightningWalletEntities.length) {

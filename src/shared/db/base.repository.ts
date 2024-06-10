@@ -1,5 +1,6 @@
 import { ObjectLiteral, Repository } from 'typeorm';
 import { Util } from '../utils/util';
+import { RepositoryRawIterator } from './repository-raw.iterator';
 import { RepositoryIterator } from './repository.iterator';
 
 export abstract class BaseRepository<T extends ObjectLiteral> extends Repository<T> {
@@ -13,11 +14,15 @@ export abstract class BaseRepository<T extends ObjectLiteral> extends Repository
     });
   }
 
-  getIterator(numberOfEntries: number): RepositoryIterator<T> {
-    return new RepositoryIterator<T>(this, numberOfEntries);
+  getIterator(numberOfEntries: number, joins?: string[]): RepositoryIterator<T> {
+    return new RepositoryIterator<T>(this, numberOfEntries, joins);
   }
 
-  getRawIterator<U extends ObjectLiteral>(numberOfEntries: number, selection: string): RepositoryIterator<U> {
-    return new RepositoryIterator<U>(this, numberOfEntries, selection);
+  getRawIterator<U extends ObjectLiteral>(
+    numberOfEntries: number,
+    selection: string,
+    joins?: string[],
+  ): RepositoryRawIterator<U> {
+    return new RepositoryRawIterator<U>(this, numberOfEntries, selection, joins);
   }
 }
