@@ -36,9 +36,15 @@ export class LightningService {
     if (users.length) throw new ConflictException(`User ${address} already exists`);
 
     const walletname = 'BTC';
-
     const user = await this.client.createUser(address, walletname);
-    if (!user.wallets) throw new NotFoundException('Wallet not found');
+    if (!user.wallets) throw new NotFoundException(`User ${address}: Wallet not found`);
+
+    const wallet = user.wallets[0];
+
+    const lnbitsExtensions = Config.blockchain.lightning.lnbits.extensions;
+    const enabledExtensions = await this.client.enableLnbitsExtensions(user.id, wallet.adminkey, lnbitsExtensions);
+    if (!enabledExtensions.includes('lnurlp'))
+      throw new NotFoundException(`Wallet ${wallet.id}: LNURLp extension not enabled`);
 
     const lnbitsAddress = LightningHelper.createLnbitsAddress(address);
 
@@ -48,7 +54,6 @@ export class LightningService {
     const signMessage = await this.getSignMessage(LightningHelper.getLightningAddressAsLnurl(lnbitsAddress));
     const lnbitsAddressSignature = await this.client.signMessage(signMessage);
 
-    const wallet = user.wallets[0];
     const lnurlp = await this.client.createLnurlpLink(wallet.adminkey, btcLnurlpDescription, 1, 100000000);
 
     const lnbitsUser: LnBitsUserDto = {

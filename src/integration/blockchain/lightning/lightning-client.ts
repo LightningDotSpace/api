@@ -272,6 +272,30 @@ export class LightningClient {
     );
   }
 
+  async enableLnbitsExtensions(userId: string, adminKey: string, lnbitsExtensions: string[]): Promise<string[]> {
+    const enabledExtensions: string[] = [];
+
+    for (const lnbitsExtension of lnbitsExtensions) {
+      const isEnabled = await this.enableLnbitsExtension(userId, adminKey, lnbitsExtension);
+
+      if (isEnabled) {
+        enabledExtensions.push(lnbitsExtension);
+      }
+    }
+
+    return enabledExtensions;
+  }
+
+  private async enableLnbitsExtension(userId: string, adminKey: string, extensionId: string): Promise<boolean> {
+    return this.http
+      .put<{ success: boolean }>(
+        `${Config.blockchain.lightning.lnbits.extensionManagementApiUrl}/${extensionId}/enable?usr=${userId}`,
+        {},
+        this.httpLnBitsConfig(adminKey),
+      )
+      .then((r) => r.success);
+  }
+
   async getUsers(userFilter?: UserFilterData): Promise<LnbitsUsermanagerUserDto[]> {
     const params = {};
 
