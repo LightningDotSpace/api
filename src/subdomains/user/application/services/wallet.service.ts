@@ -52,7 +52,7 @@ export class WalletService {
         lnbitsUserId: lnbitsUser.id,
         lnbitsAddress: lnbitsUser.address,
         addressOwnershipProof: lnbitsUser.addressSignature,
-        walletProvider: await this.walletProviderService.getByNameOrThrow(signUp.wallet),
+        walletProvider: await this.walletProviderService.getByNameOrThrow(signUp.wallet ?? 'DFX Bitcoin'),
         user: await this.userService.create(),
         lightningWallets: await this.createLightningWallets(lnbitsUser),
       });
