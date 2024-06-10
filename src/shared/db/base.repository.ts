@@ -18,11 +18,7 @@ export abstract class BaseRepository<T extends ObjectLiteral> extends Repository
     return new RepositoryIterator<T>(this, numberOfEntries, joins);
   }
 
-  getRawIterator<U extends ObjectLiteral>(
-    numberOfEntries: number,
-    selection: string,
-    joins?: string[],
-  ): RepositoryRawIterator<U> {
-    return new RepositoryRawIterator<U>(this, numberOfEntries, selection, joins);
+  getRawIterator<U extends ObjectLiteral>(numberOfEntries: number, selection: string): RepositoryRawIterator<U> {
+    return new RepositoryRawIterator<U>(this, numberOfEntries, selection);
   }
 }

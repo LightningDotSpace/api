@@ -5,28 +5,21 @@ export class RepositoryRawIterator<T extends ObjectLiteral> {
   private numberOfEntries: number;
   private offset: number;
   private selection: string;
-  private joins: string[];
 
-  constructor(private repository: BaseRepository<any>, numberOfEntries: number, selection: string, joins?: string[]) {
+  constructor(private repository: BaseRepository<any>, numberOfEntries: number, selection?: string) {
     this.numberOfEntries = numberOfEntries;
     this.offset = 0;
-    this.selection = selection;
-    this.joins = joins ?? [];
+    this.selection = selection ?? '*';
   }
 
   async next(): Promise<T[]> {
-    const query = this.repository
-      .createQueryBuilder('entity')
+    const entities = await this.repository
+      .createQueryBuilder()
       .select(this.selection)
-      .orderBy({ 'entity.id': 'ASC' })
+      .orderBy({ id: 'ASC' })
       .skip(this.offset)
-      .take(this.numberOfEntries);
-
-    for (const join of this.joins) {
-      query.innerJoinAndSelect(`entity.${join}`, join);
-    }
-
-    const entities = await query.getRawMany<T>();
+      .take(this.numberOfEntries)
+      .getRawMany<T>();
 
     this.offset += this.numberOfEntries;
 
