@@ -4,22 +4,26 @@ import { BaseRepository } from './base.repository';
 export class RepositoryIterator<T extends ObjectLiteral> {
   private numberOfEntries: number;
   private offset: number;
-  private selection: string;
+  private joins: string[];
 
-  constructor(private repository: BaseRepository<any>, numberOfEntries: number, selection?: string) {
+  constructor(private repository: BaseRepository<T>, numberOfEntries: number, joins?: string[]) {
     this.numberOfEntries = numberOfEntries;
     this.offset = 0;
-    this.selection = selection ?? '*';
+    this.joins = joins ?? [];
   }
 
   async next(): Promise<T[]> {
-    const entities = await this.repository
-      .createQueryBuilder()
-      .select(this.selection)
-      .orderBy({ id: 'ASC' })
+    const query = this.repository
+      .createQueryBuilder('entity')
+      .orderBy({ 'entity.id': 'ASC' })
       .skip(this.offset)
-      .take(this.numberOfEntries)
-      .getRawMany<T>();
+      .take(this.numberOfEntries);
+
+    for (const join of this.joins) {
+      query.innerJoinAndSelect(`entity.${join}`, join);
+    }
+
+    const entities = await query.getMany();
 
     this.offset += this.numberOfEntries;
 
