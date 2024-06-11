@@ -20,14 +20,6 @@ export class AlchemyWebhookController {
     return this.alchemyWebhookService.createFrankencoinPaymentWebhooks();
   }
 
-  @Post('create-frankencoin-monitoring-webhook')
-  @ApiBearerAuth()
-  @ApiExcludeEndpoint()
-  @UseGuards(AuthGuard(), new RoleGuard(WalletRole.ADMIN))
-  async createFrankencoinMonitoringWebhook(): Promise<AddressActivityWebhook> {
-    return this.alchemyWebhookService.createFrankencoinMonitoringWebhook();
-  }
-
   @Post('frankencoin-payment-webhook')
   @ApiExcludeEndpoint()
   async addressWebhook(

@@ -39,11 +39,6 @@ param polygonChainId string
 param baseGatewayUrl string
 param baseChainId string
 
-param frankencoinGatewayUrl string
-param frankencoinTvlUrl string
-param frankencoinZchfContractAddress string
-param frankencoinEquityContractAddress string
-
 @secure()
 param alchemyApiKey string
 @secure()
@@ -405,22 +400,6 @@ resource apiAppService 'Microsoft.Web/sites@2018-11-01' = if (env != 'loc') {
         {
           name: 'BASE_CHAIN_ID'
           value: baseChainId
-        }
-        {
-          name: 'FRANKENCOIN_GATEWAY_URL'
-          value: frankencoinGatewayUrl
-        }
-        {
-          name: 'FRANKENCOIN_TVL_URL'
-          value: frankencoinTvlUrl
-        }
-        {
-          name: 'FRANKENCOIN_ZCHF_CONTRACT_ADDRESS'
-          value: frankencoinZchfContractAddress
-        }
-        {
-          name: 'FRANKENCOIN_EQUITY_CONTRACT_ADDRESS'
-          value: frankencoinEquityContractAddress
         }
         {
           name: 'ALCHEMY_API_KEY'
