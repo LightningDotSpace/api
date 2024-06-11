@@ -74,13 +74,6 @@ export class AlchemyWebhookService implements OnModuleInit {
     return result;
   }
 
-  async createFrankencoinMonitoringWebhook(): Promise<AddressActivityWebhook> {
-    const url = `${Config.url}/monitoring/frankencoin-monitoring-webhook`;
-    const addresses = [Config.blockchain.frankencoin.contractAddress.equity];
-
-    return this.createAddressWebhook(Blockchain.ETHEREUM, url, addresses);
-  }
-
   private async createAddressWebhook(
     blockchain: Blockchain,
     webhookUrl: string,

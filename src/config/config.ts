@@ -142,15 +142,6 @@ export class Configuration {
       chainId: +(process.env.BASE_CHAIN_ID ?? -1),
       walletAddress: process.env.EVM_PAYMENT_ADDRESS ?? '',
     },
-    frankencoin: {
-      gatewayUrl: process.env.FRANKENCOIN_GATEWAY_URL ?? '',
-      apiKey: process.env.ALCHEMY_API_KEY ?? '',
-      tvlUrl: process.env.FRANKENCOIN_TVL_URL ?? '',
-      contractAddress: {
-        zchf: process.env.FRANKENCOIN_ZCHF_CONTRACT_ADDRESS ?? '',
-        equity: process.env.FRANKENCOIN_EQUITY_CONTRACT_ADDRESS ?? '',
-      },
-    },
   };
 
   alchemy = {
