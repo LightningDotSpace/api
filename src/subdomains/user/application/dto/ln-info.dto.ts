@@ -9,6 +9,11 @@ export class LnWalletDto {
   asset: AssetAccountDto;
 
   @ApiPropertyOptional({
+    description: 'Lightning LNbits Wallet Id',
+  })
+  lnbitsWalletId?: string;
+
+  @ApiPropertyOptional({
     description: 'Lightning LndHUB admin URL',
   })
   lndhubAdminUrl?: string;

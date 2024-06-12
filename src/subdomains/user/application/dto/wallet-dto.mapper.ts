@@ -16,6 +16,7 @@ export class WalletDtoMapper {
           asset: AssetDtoMapper.entityToDto(lw.asset),
           ...(lw.asset.status === AssetAccountStatus.ACTIVE
             ? {
+                lnbitsWalletId: lw.lnbitsWalletId,
                 lndhubAdminUrl: LightningHelper.getLndhubUrl('admin', lw.adminKey),
                 lndhubInvoiceUrl: LightningHelper.getLndhubUrl('invoice', lw.invoiceKey),
               }
