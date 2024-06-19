@@ -90,4 +90,17 @@ export class LightningHelper {
   static msatToBtc(msatAmount: number): number {
     return Util.round(LightningHelper.satToBtc(LightningHelper.msatToSat(msatAmount)), 12);
   }
+
+  // Boltcards
+  static createBoltcardLnurlwBase(externalId: string): string {
+    return `lnurlw://${Config.baseUrl}/v1/boltcards/scan/${externalId}`;
+  }
+
+  static createBoltcardLnurlwCallback(hitId: string): string {
+    return `https://${Config.baseUrl}/v1/boltcards/lnurl/cb/${hitId}`;
+  }
+
+  static createBoltcardPayLink(hitId: string): string {
+    return `lnurlp://${Config.baseUrl}/v1/boltcards/lnurlp/${hitId}`;
+  }
 }

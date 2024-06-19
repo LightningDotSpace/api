@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Post, Put, Query, Req } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
+import { BoltCardAuthDto, BoltcardScanDto } from 'src/integration/blockchain/lightning/dto/boltcards.dto';
 import { LightningForwardService } from '../services/lightning-forward.service';
 
 @ApiTags('Boltcards')
@@ -9,8 +10,8 @@ export class LightingBoltcardsForwardController {
   constructor(private forwardService: LightningForwardService) {}
 
   @Get('scan/:external_id')
-  async scan(@Req() req: Request, @Body() body: any, @Query() params: any): Promise<any> {
-    return this.forwardService.boltcardsRequest(req, body, params);
+  async scan(@Req() req: Request, @Body() body: any, @Query() params: any): Promise<BoltcardScanDto> {
+    return this.forwardService.boltcardsScanForward(req, body, params);
   }
 
   @Get('lnurl/cb/:hit_id')
@@ -19,8 +20,8 @@ export class LightingBoltcardsForwardController {
   }
 
   @Get('auth')
-  async auth(@Req() req: Request, @Body() body: any, @Query() params: any): Promise<any> {
-    return this.forwardService.boltcardsRequest(req, body, params);
+  async auth(@Req() req: Request, @Body() body: any, @Query() params: any): Promise<BoltCardAuthDto> {
+    return this.forwardService.boltcardsAuthForward(req, body, params);
   }
 
   @Get('lnurlp/:hit_id')
