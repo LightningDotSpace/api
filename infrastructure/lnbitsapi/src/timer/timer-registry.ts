@@ -14,7 +14,7 @@ class TimerRegistryService {
 
   constructor() {
     this.timerRegistry = new Map();
-    this.logger.info('TimerRegistry initialized');
+    this.logger.verbose('TimerRegistry initialized');
   }
 
   register(timer: Timer): string {
@@ -31,12 +31,12 @@ class TimerRegistryService {
 
   startTimers(): void {
     this.timerRegistry.forEach((t) => t.start());
-    this.logger.info('Timers started');
+    this.logger.verbose('Timers started');
   }
 
   stopTimers(): void {
     this.timerRegistry.forEach((t) => t.stop());
-    this.logger.info('Timers stopped');
+    this.logger.verbose('Timers stopped');
   }
 }
 

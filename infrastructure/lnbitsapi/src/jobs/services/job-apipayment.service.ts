@@ -16,13 +16,13 @@ export class JobApiPaymentService {
   }
 
   async checkApiPaymentChange(): Promise<void> {
-    this.logger.info('checkApiPaymentChange()');
+    this.logger.verbose(`checkApiPaymentChange(): waitingTimer is running? ${this.waitingTimer.isRunning()}`);
     if (this.waitingTimer.isRunning()) return;
 
     const maxTimeDBEntry = await this.getMaxTimeFromDB();
     const maxTimeFileEntry = this.getMaxTimeFromFile();
 
-    this.logger.info(`${maxTimeDBEntry} : ${maxTimeFileEntry}`);
+    this.logger.verbose(`maxTime: ${maxTimeDBEntry} : ${maxTimeFileEntry}`);
 
     if (maxTimeDBEntry > maxTimeFileEntry) {
       await this.doPaymentChange(maxTimeDBEntry, maxTimeFileEntry);
@@ -30,6 +30,7 @@ export class JobApiPaymentService {
   }
 
   private async doPaymentChange(maxTimeDBEntry: number, maxTimeFileEntry: number): Promise<void> {
+    this.logger.verbose('doPaymentChange()');
     const apiPayments = await this.getApiPayments(maxTimeFileEntry);
     const webhookSuccess = await this.triggerWebhook(apiPayments);
 
@@ -46,7 +47,6 @@ export class JobApiPaymentService {
 
   private getMaxTimeFromFile(): number {
     const filename = Config.apiPaymentJson;
-    this.logger.info(`getMaxTimeFromFile: ${filename}`);
 
     try {
       if (existsSync(filename)) {
@@ -69,7 +69,7 @@ export class JobApiPaymentService {
 
   private async triggerWebhook(transactions: LnBitsTransactionDto[]): Promise<boolean> {
     const result = await HttpClient.triggerWebhook(transactions);
-    this.logger.info(`triggerWebhook: ${result}`);
+    this.logger.verbose(`triggerWebhook: ${result}`);
 
     if (result) {
       this.waitingTimer.stop();
@@ -82,7 +82,7 @@ export class JobApiPaymentService {
 
   private saveMaxTimeToFile(maxTime: number) {
     const filename = Config.apiPaymentJson;
-    this.logger.info(`saveMaxTimeToFile: ${filename}`);
+    this.logger.verbose(`saveMaxTimeToFile: ${filename}`);
 
     writeFileSync(filename, JSON.stringify({ maxTime }), 'utf-8');
   }

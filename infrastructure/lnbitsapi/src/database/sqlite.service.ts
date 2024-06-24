@@ -6,7 +6,7 @@ class SqliteService {
   private readonly logger = new LnbitsApiLogger(SqliteService);
 
   constructor() {
-    this.logger.info('SqliteService initialized');
+    this.logger.verbose('SqliteService initialized');
   }
 
   async selectOne<T>(filename: string, sqlSelect: string): Promise<T | undefined> {
@@ -32,7 +32,6 @@ class SqliteService {
   }
 
   private async open(filename: string): Promise<Database> {
-    this.logger.info(`DB ${filename} open`);
     return open({
       filename: filename,
       driver: sqlite3.Database,
@@ -41,7 +40,6 @@ class SqliteService {
   }
 
   private async close(db?: Database): Promise<void> {
-    this.logger.info(`DB ${db?.config.filename} close`);
     if (db) await db.close();
   }
 }

@@ -1,3 +1,4 @@
+import * as AppInsights from 'applicationinsights';
 import * as bodyParser from 'body-parser';
 import express, { NextFunction, Request, Response } from 'express';
 import * as https from 'https';
@@ -9,6 +10,12 @@ import { LnbitsApiLogger } from './shared/lnbitsapi-logger';
 import { TimerRegistry } from './timer/timer-registry';
 
 // --- LOGGER --- //
+if (process.env.APPINSIGHTS_INSTRUMENTATIONKEY) {
+  AppInsights.setup(process.env.APPINSIGHTS_INSTRUMENTATIONKEY).setAutoDependencyCorrelation(true);
+  AppInsights.defaultClient.context.tags[AppInsights.defaultClient.context.keys.cloudRole] = 'lnbits-api';
+  AppInsights.start();
+}
+
 const logger = new LnbitsApiLogger('Server');
 
 // --- JOBS --- //

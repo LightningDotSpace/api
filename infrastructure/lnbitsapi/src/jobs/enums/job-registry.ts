@@ -10,13 +10,13 @@ class JobRegistryService {
 
   constructor() {
     this.jobRegistry = new Map();
-    this.logger.info('JobRegistry initialized');
+    this.logger.verbose('JobRegistry initialized');
   }
 
   setup() {
     const jobApiPayment = new JobApiPayment();
     const uniqueJobId = this.register(jobApiPayment);
-    this.logger.info(`JobApiPayment registered with id ${uniqueJobId}`);
+    this.logger.verbose(`JobApiPayment registered with id ${uniqueJobId}`);
   }
 
   register(job: CronJob): string {
@@ -33,12 +33,12 @@ class JobRegistryService {
 
   startJobs(): void {
     this.jobRegistry.forEach((j) => j.start());
-    this.logger.info('Jobs started');
+    this.logger.verbose('Jobs started');
   }
 
   stopJobs(): void {
     this.jobRegistry.forEach((j) => j.stop());
-    this.logger.info('Jobs stopped');
+    this.logger.verbose('Jobs stopped');
   }
 }
 

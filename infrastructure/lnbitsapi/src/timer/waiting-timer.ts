@@ -15,12 +15,12 @@ export class WaitingTimer implements Timer {
 
   start() {
     if (this.timeoutHandler === null) {
-      this.logger.info('start()');
+      this.logger.verbose('start()');
 
       this.waitingCounter++;
       this.waitingTime = this.waitingCounter * 60 * 1000;
 
-      this.logger.info(`waitingCounter = ${this.waitingCounter} / waitingTime = ${this.waitingTime}`);
+      this.logger.verbose(`waitingCounter = ${this.waitingCounter} / waitingTime = ${this.waitingTime}`);
 
       this.timeoutHandler = setTimeout(() => {
         this.resetWaitingTime();
@@ -30,7 +30,7 @@ export class WaitingTimer implements Timer {
   }
 
   stop() {
-    this.logger.info('stop()');
+    this.logger.verbose('stop()');
 
     if (this.timeoutHandler) {
       clearTimeout(this.timeoutHandler);
@@ -46,12 +46,12 @@ export class WaitingTimer implements Timer {
   }
 
   private resetWaitingCounter() {
-    this.logger.info('resetWaitingCounter()');
+    this.logger.verbose('resetWaitingCounter()');
     this.waitingCounter = 0;
   }
 
   private resetWaitingTime() {
-    this.logger.info('resetWaitingTime()');
+    this.logger.verbose('resetWaitingTime()');
     this.waitingTime = 0;
   }
 }

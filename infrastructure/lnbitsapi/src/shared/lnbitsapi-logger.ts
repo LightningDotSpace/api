@@ -21,6 +21,7 @@ export class LnbitsApiLogger {
       name: this.context ?? '',
       type: 'pretty',
       hideLogPositionForProduction: true,
+      stylePrettyLogs: false,
     });
   }
 
@@ -49,7 +50,7 @@ export class LnbitsApiLogger {
   }
 
   critical(message: string, error?: unknown) {
-    //this.trace(SeverityLevel.Critical, message, error);
+    this.trace(SeverityLevel.Critical, message, error);
     this.logger.error(this.format(message, error));
   }
 
@@ -59,17 +60,16 @@ export class LnbitsApiLogger {
   }
 
   warn(message: string, error?: unknown) {
-    //this.trace(SeverityLevel.Warning, message, error);
+    this.trace(SeverityLevel.Warning, message, error);
     this.logger.warn(this.format(message, error));
   }
 
   info(message: string, error?: unknown) {
-    //this.trace(SeverityLevel.Information, message, error);
+    this.trace(SeverityLevel.Information, message, error);
     this.logger.info(this.format(message, error));
   }
 
   verbose(message: string, error?: unknown) {
-    //this.trace(SeverityLevel.Verbose, message, error);
     this.logger.trace(this.format(message, error));
   }
 

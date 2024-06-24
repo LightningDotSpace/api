@@ -28,7 +28,7 @@ export class BalanceService {
 
     const adminUserBalances = allBalances.filter((b) => walletIds.includes(b.wallet));
 
-    this.logger.info(`${JSON.stringify(adminUserBalances)}`);
+    this.logger.verbose(`${JSON.stringify(adminUserBalances)}`);
     const totalBalance = Util.sum(adminUserBalances.map((b) => b.balance));
 
     return { balance: totalBalance };
