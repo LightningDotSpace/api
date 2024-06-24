@@ -103,4 +103,14 @@ export class LightningHelper {
   static createBoltcardPayLink(hitId: string): string {
     return `lnurlp://${Config.baseUrl}/v1/boltcards/lnurlp/${hitId}`;
   }
+
+  static createBoltcardPayCallback(hitId: string): string {
+    return `https://${Config.baseUrl}/v1/boltcards/lnurlp/cb/${hitId}`;
+  }
+
+  static getBoltcardDefaultDescription(hitId): string {
+    const url = `https://${Config.baseUrl}/v1/boltcards/lnurlp/${hitId}`;
+    const lnurlEncode = this.encodeLnurl(url);
+    return `Pay Card (refund address lnurl://${lnurlEncode})`;
+  }
 }

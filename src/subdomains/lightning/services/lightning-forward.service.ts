@@ -1,6 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Request } from 'express';
-import { BoltCardAuthDto, BoltcardScanDto } from 'src/integration/blockchain/lightning/dto/boltcards.dto';
+import {
+  BoltCardAuthDto,
+  BoltcardLnurlPayDto,
+  BoltcardScanDto,
+} from 'src/integration/blockchain/lightning/dto/boltcards.dto';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Util } from 'src/shared/utils/util';
 import { EvmPaymentService } from 'src/subdomains/evm/payment/services/evm-payment.service';
@@ -80,7 +84,15 @@ export class LightningForwardService {
     const hitId = scan.callback.split('/').at(-1) as string;
     scan.callback = LightningHelper.createBoltcardLnurlwCallback(hitId);
     scan.payLink = LightningHelper.createBoltcardPayLink(hitId);
+    scan.defaultDescription = LightningHelper.getBoltcardDefaultDescription(hitId);
     return scan;
+  }
+
+  async boltcardLnurlpForward(req: Request, body: any, params: any, hitId: string): Promise<BoltcardLnurlPayDto> {
+    const payRequest: BoltcardLnurlPayDto = await this.boltcardsRequest(req, body, params);
+    if (!payRequest) throw new NotFoundException('Pay request not found');
+    payRequest.callback = LightningHelper.createBoltcardPayCallback(hitId);
+    return payRequest;
   }
 
   // --- Wellknown --- //
