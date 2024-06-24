@@ -21,13 +21,14 @@ services:
       bitcoind -conf=/home/bitcoin/.bitcoin/bitcoin.conf
 
   lnd:
-    image: lightninglabs/lnd:v0.17.0-beta
+    image: lightninglabs/lnd:v0.17.3-beta
     restart: always
     volumes:
       - ./volumes/lightning:/root/.lnd
       - ./volumes/lightning/lnd.conf:/root/.lnd/lnd.conf
     ports:
       - '8080:8080'
+      - '9735:9735'
     healthcheck:
       test: 'curl --fail --insecure --header "Grpc-Metadata-macaroon: $MACAROON" https://localhost:8080/v1/getinfo || exit 1'
       start_period: 120s
@@ -41,7 +42,7 @@ services:
       lnd --configfile=/root/.lnd/lnd.conf --bitcoin.mainnet
 
   tapd:
-    image: polarlightning/tapd:0.3.0-alpha
+    image: polarlightning/tapd:0.3.2-alpha
     restart: always
     volumes:
       - ./volumes/lightning:/home/tap/.lnd
@@ -49,14 +50,15 @@ services:
       - ./volumes/taproot/tapd.conf:/home/tap/tapd.conf
     ports:
       - '8089:8089'
+      - '6060:6060'
     depends_on:
       lnd:
         condition: service_healthy
     command: >
-      tapd --configfile=/home/tap/tapd.conf
+      tapd --configfile=/home/tap/tapd.conf --profile=localhost:6060
 
   lnbits:
-    image: lnbitsdocker/lnbits-legend:0.10.10
+    image: lnbitsdocker/lnbits-legend:0.11.3
     restart: always
     volumes:
       - ./volumes/lightning:/app/.lnd
@@ -76,8 +78,21 @@ services:
     command: >
       poetry run lnbits --ssl-keyfile /app/.lnd/tls.key --ssl-certfile /app/.lnd/tls.cert
 
+  lnbitsapi:
+    image: dfxswiss/lnbitsapi:main
+    restart: always
+    volumes:
+      - ./volumes/lnbitsapi/data:/home/node/data
+      - ./volumes/lnbits/data:/home/node/data/sqlite3
+      - ./volumes/lnbitsapi/.env:/home/node/.env
+    ports:
+      - '5001:5001'
+    depends_on:
+      lnbits:
+        condition: service_healthy
+
   thunderhub:
-    image: apotdevin/thunderhub:v0.13.23
+    image: apotdevin/thunderhub:v0.13.30
     restart: always
     volumes:
       - ./volumes/lightning:/app/.lnd
@@ -90,7 +105,7 @@ services:
         condition: service_healthy
 
   nginx:
-    image: nginx:1.25.1-perl
+    image: nginx:1.25.3-perl
     restart: always
     volumes:
       - ./volumes/lightning:/app/.lnd

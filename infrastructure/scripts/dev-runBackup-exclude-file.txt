@@ -1,0 +1,3 @@
+./volumes/bitcoin/testnet3/blocks
+./volumes/bitcoin/testnet3/chainstate
+./volumes/bitcoin/testnet3/indexes

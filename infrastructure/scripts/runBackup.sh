@@ -1,13 +1,20 @@
 #!/bin/bash
 
 timestamp=`date +%Y%m%d%H%M%S`
+backup_dir=./backup/${timestamp}
 
-/usr/bin/cp ./docker-compose.sh ./backup/${timestamp}-docker-compose.sh
-/usr/bin/cp ./docker-compose.yml ./backup/${timestamp}-docker-compose.yml
+echo "Backup to ${backup_dir} ..."
 
-/usr/bin/zip -r ./backup/${timestamp}-bitcoin.zip ./volumes/bitcoin/bitcoin.conf ./volumes/bitcoin/wallets
-/usr/bin/zip -r ./backup/${timestamp}-lightning.zip ./volumes/lightning
-/usr/bin/zip -r ./backup/${timestamp}-taproot.zip ./volumes/taproot
-/usr/bin/zip -r ./backup/${timestamp}-lnbits.zip ./volumes/lnbits
-/usr/bin/zip -r ./backup/${timestamp}-thunderhub.zip ./volumes/thunderhub
-/usr/bin/zip -r ./backup/${timestamp}-nginx.zip ./volumes/nginx
+/usr/bin/mkdir ${backup_dir}
+
+/usr/bin/cp ./runBackup.sh ${backup_dir}
+/usr/bin/cp ./docker-compose.sh ${backup_dir}
+/usr/bin/cp ./docker-compose.yml ${backup_dir}
+
+/usr/bin/tar --exclude-from="runBackup-exclude-file.txt" -cpzvf ${backup_dir}/bitcoin.tgz ./volumes/bitcoin
+/usr/bin/tar --exclude-from="runBackup-exclude-file.txt" -cpzvf ${backup_dir}/lightning.tgz ./volumes/lightning
+/usr/bin/tar --exclude-from="runBackup-exclude-file.txt" -cpzvf ${backup_dir}/taproot.tgz ./volumes/taproot
+/usr/bin/tar --exclude-from="runBackup-exclude-file.txt" -cpzvf ${backup_dir}/lnbits.tgz ./volumes/lnbits
+/usr/bin/tar --exclude-from="runBackup-exclude-file.txt" -cpzvf ${backup_dir}/lnbitsapi.tgz ./volumes/lnbitsapi
+/usr/bin/tar --exclude-from="runBackup-exclude-file.txt" -cpzvf ${backup_dir}/thunderhub.tgz ./volumes/thunderhub
+/usr/bin/tar --exclude-from="runBackup-exclude-file.txt" -cpzvf ${backup_dir}/nginx.tgz ./volumes/nginx
