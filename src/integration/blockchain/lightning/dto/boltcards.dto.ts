@@ -20,3 +20,11 @@ export interface BoltcardScanDto {
   defaultDescription: string;
   payLink: string;
 }
+
+export interface BoltcardLnurlPayDto {
+  tag: string;
+  callback: string;
+  metadata: string;
+  minSendable: number;
+  maxSendable: number;
+}

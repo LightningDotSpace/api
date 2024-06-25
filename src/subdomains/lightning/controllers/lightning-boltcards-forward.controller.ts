@@ -1,7 +1,11 @@
-import { Body, Controller, Delete, Get, Post, Put, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
-import { BoltCardAuthDto, BoltcardScanDto } from 'src/integration/blockchain/lightning/dto/boltcards.dto';
+import {
+  BoltCardAuthDto,
+  BoltcardLnurlPayDto,
+  BoltcardScanDto,
+} from 'src/integration/blockchain/lightning/dto/boltcards.dto';
 import { LightningForwardService } from '../services/lightning-forward.service';
 
 @ApiTags('Boltcards')
@@ -25,8 +29,13 @@ export class LightingBoltcardsForwardController {
   }
 
   @Get('lnurlp/:hit_id')
-  async lnurlp(@Req() req: Request, @Body() body: any, @Query() params: any): Promise<any> {
-    return this.forwardService.boltcardsRequest(req, body, params);
+  async lnurlp(
+    @Req() req: Request,
+    @Body() body: any,
+    @Query() params: any,
+    @Param('hit_id') hitId: string,
+  ): Promise<BoltcardLnurlPayDto> {
+    return this.forwardService.boltcardLnurlpForward(req, body, params, hitId);
   }
 
   @Get('lnurlp/cb/:hit_id')
