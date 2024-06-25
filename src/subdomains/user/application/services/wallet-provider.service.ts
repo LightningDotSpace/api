@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Equal } from 'typeorm';
 import { WalletProviderEntity } from '../../domain/entities/wallet-provider.entity';
 import { WalletProviderRepository } from '../repositories/wallet-provider.repository';
 
@@ -7,7 +8,7 @@ export class WalletProviderService {
   constructor(private repo: WalletProviderRepository) {}
 
   async getByName(name: string): Promise<WalletProviderEntity | null> {
-    return this.repo.findOneBy({ name });
+    return this.repo.findOneBy({ name: Equal(name) });
   }
 
   async getByNameOrThrow(name: string): Promise<WalletProviderEntity> {

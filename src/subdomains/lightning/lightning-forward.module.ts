@@ -3,13 +3,18 @@ import { LightningModule } from 'src/integration/blockchain/lightning/lightning.
 import { UmaModule } from 'src/integration/blockchain/uma/uma.module';
 import { EvmModule } from '../evm/evm.module';
 import { UserModule } from '../user/user.module';
+import { LightingBoltcardsForwardController } from './controllers/lightning-boltcards-forward.controller';
 import { LightingLndhubForwardController } from './controllers/lightning-lndhub-forward.controller';
 import { LightingWellknownForwardController } from './controllers/lightning-wellknown-forward.controller';
 import { LightningForwardService } from './services/lightning-forward.service';
 
 @Module({
   imports: [LightningModule, forwardRef(() => UmaModule), UserModule, EvmModule],
-  controllers: [LightingLndhubForwardController, LightingWellknownForwardController],
+  controllers: [
+    LightingLndhubForwardController,
+    LightingBoltcardsForwardController,
+    LightingWellknownForwardController,
+  ],
   providers: [LightningForwardService],
   exports: [LightningForwardService],
 })

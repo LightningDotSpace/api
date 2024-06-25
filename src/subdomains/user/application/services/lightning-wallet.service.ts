@@ -1,17 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { Config, Process } from 'src/config/config';
-import { LnBitsPaymentWebhookDto } from 'src/integration/blockchain/lightning/dto/lnbits.dto';
+import {
+  LnBitsTransactionDto,
+  LnBitsTransactionExtraDto,
+  isLnBitsTransactionExtraTag,
+} from 'src/integration/blockchain/lightning/dto/lnbits.dto';
 import { LightningClient } from 'src/integration/blockchain/lightning/lightning-client';
 import { LightningHelper } from 'src/integration/blockchain/lightning/lightning-helper';
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
 import { LnbitsWebHookService } from 'src/integration/blockchain/lightning/services/lnbits-webhook.service';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
-import { Lock } from 'src/shared/utils/lock';
 import { QueueHandler } from 'src/shared/utils/queue-handler';
 import { Util } from 'src/shared/utils/util';
 import { LightningTransactionService } from 'src/subdomains/lightning/services/lightning-transaction.service';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
+import { MonitoringService } from 'src/subdomains/monitoring/services/monitoring.service';
 import { PaymentRequestMethod } from 'src/subdomains/payment-request/entities/payment-request.entity';
 import { PaymentRequestService } from 'src/subdomains/payment-request/services/payment-request.service';
 import { UserTransactionRepository } from 'src/subdomains/user/application/repositories/user-transaction.repository';
@@ -42,6 +44,7 @@ export class LightningWalletService {
   constructor(
     readonly lightningService: LightningService,
     readonly lnbitsWebHookService: LnbitsWebHookService,
+    private readonly monitoringService: MonitoringService,
     private readonly assetService: AssetService,
     private readonly lightningTransactionService: LightningTransactionService,
     private readonly paymentRequestService: PaymentRequestService,
@@ -53,110 +56,25 @@ export class LightningWalletService {
 
     this.paymentWebhookMessageQueue = new QueueHandler();
 
-    lnbitsWebHookService.getPaymentWebhookObservable().subscribe((dto) => this.processPaymentRequestMessageQueue(dto));
+    lnbitsWebHookService
+      .getTransactionWebhookObservable()
+      .subscribe((transactions) => this.processTransactionRequestMessageQueue(transactions));
   }
 
-  @Cron(CronExpression.EVERY_HOUR)
-  @Lock()
-  async processUpdateLightningWalletBalances(): Promise<void> {
-    if (Config.processDisabled(Process.UPDATE_WALLET_BALANCE)) return;
+  async updateLightningWalletBalances(): Promise<void> {
+    const userTransactionBalances = await this.userTransactionRepository.getBalances();
 
-    const lightningWalletIterator = this.lightingWalletRepository.getIterator(1000, ['asset']);
-    let lightningWalletEntities = await lightningWalletIterator.next();
-
-    while (lightningWalletEntities.length) {
-      await this.doUpdateLightningWalletBalances(lightningWalletEntities);
-      lightningWalletEntities = await lightningWalletIterator.next();
+    for (const userTransactionBalance of userTransactionBalances) {
+      await this.lightingWalletRepository.update(
+        { id: userTransactionBalance.lightningWalletId },
+        {
+          balance: userTransactionBalance.balance,
+        },
+      );
     }
-  }
 
-  async updateLightningWalletBalanceById(lightningWalletId: number) {
-    const lightningWallet = await this.lightingWalletRepository.findOneBy({ id: lightningWalletId });
-
-    if (lightningWallet) await this.doUpdateLightningWalletBalances([lightningWallet]);
-  }
-
-  private async doUpdateLightningWalletBalances(lightningWalletEntities: LightningWalletEntity[]): Promise<void> {
-    const btcWalletEntities = lightningWalletEntities.filter(
-      (a) => a.asset.name === AssetService.BTC_ACCOUNT_ASSET_NAME,
-    );
-
-    const fiatWalletEntities = lightningWalletEntities.filter(
-      (a) => a.asset.name !== AssetService.BTC_ACCOUNT_ASSET_NAME,
-    );
-
-    await this.doUpdateBtcWalletBalances(btcWalletEntities);
-    await this.doUpdateFiatWalletBalances(fiatWalletEntities);
-  }
-
-  private async doUpdateBtcWalletBalances(btcWalletEntities: LightningWalletEntity[]): Promise<void> {
-    for (const btcWalletEntity of btcWalletEntities) {
-      try {
-        const lnbitsWallet = await this.client.getLnBitsWallet(btcWalletEntity.adminKey);
-
-        const lightningWalletEntityBalance = btcWalletEntity.balance;
-        const lnbitsWalletBalance = LightningHelper.btcToSat(lnbitsWallet.balance);
-
-        if (lightningWalletEntityBalance !== lnbitsWalletBalance) {
-          await this.lightingWalletRepository.update(btcWalletEntity.id, {
-            balance: lnbitsWalletBalance,
-          });
-        }
-      } catch (e) {
-        this.logger.error(
-          `Error while updating wallet balance: ${btcWalletEntity.id} / ${btcWalletEntity.lnbitsWalletId}`,
-          e,
-        );
-      }
-    }
-  }
-
-  private async doUpdateFiatWalletBalances(fiatWalletEntities: LightningWalletEntity[]): Promise<void> {
-    for (const fiatWalletEntity of fiatWalletEntities) {
-      try {
-        const userTransactionEntities = await this.userTransactionRepository.getByLightningWalletId(
-          fiatWalletEntity.id,
-        );
-
-        const fiatWalletEntityBalance = fiatWalletEntity.balance;
-        const fiatWalletBalance = Util.sum(userTransactionEntities.map((t) => t.amount));
-
-        if (fiatWalletEntityBalance !== fiatWalletBalance) {
-          await this.lightingWalletRepository.update(fiatWalletEntity.id, {
-            balance: fiatWalletBalance,
-          });
-        }
-      } catch (e) {
-        this.logger.error(
-          `Error while updating wallet balance: ${fiatWalletEntity.id} / ${fiatWalletEntity.lnbitsWalletId}`,
-          e,
-        );
-      }
-    }
-  }
-
-  @Cron(CronExpression.EVERY_5_MINUTES)
-  @Lock()
-  async processSyncRecentTransactions(): Promise<void> {
-    if (Config.processDisabled(Process.UPDATE_LIGHTNING_USER_TRANSACTION)) return;
-
-    await this.syncLightningUserTransactions(undefined, undefined, undefined, true);
-  }
-
-  @Cron(CronExpression.EVERY_DAY_AT_4AM)
-  @Lock()
-  async processSyncAllTransactions(): Promise<void> {
-    if (Config.processDisabled(Process.SYNC_LIGHTNING_USER_TRANSACTIONS)) return;
-
-    const startDate = Util.daysBefore(7);
-    const endDate = new Date('2099-12-31T23:59:59.999Z');
-    const withBalance = false;
-
-    const startTime = Date.now();
-    const entities = await this.syncLightningUserTransactions(startDate, endDate, undefined, withBalance);
-    const runTime = (Date.now() - startTime) / 1000;
-
-    this.logger.info(`syncLightningUserTransactions: runtime=${runTime} sec., entries=${entities.length}`);
+    const customerBalances = await this.lightingWalletRepository.getTotalBalances();
+    await this.monitoringService.processBalanceMonitoring(customerBalances);
   }
 
   async syncLightningUserTransactions(
@@ -210,11 +128,7 @@ export class LightningWalletService {
     ).flat();
 
     if (withBalance) {
-      const uniqueLightningWalletEntityMap = new Map<string, LightningWalletEntity>(
-        savedUserTransactionEntities.map((ut) => [ut.lightningWallet.lnbitsWalletId, ut.lightningWallet]),
-      );
-
-      await this.doUpdateLightningWalletBalances([...uniqueLightningWalletEntityMap.values()]);
+      await this.updateLightningWalletBalances();
     }
 
     return savedUserTransactionEntities;
@@ -259,8 +173,6 @@ export class LightningWalletService {
     endDate: Date,
     withBalance = false,
   ): Promise<UserTransactionEntity[]> {
-    const userTransactionEntities: UserTransactionEntity[] = [];
-
     const lightningWalletEntity = await this.lightingWalletRepository.getByWalletId(lightningWalletInfo.lnbitsWalletId);
 
     const allUserWalletTransactions = await this.client.getUserWalletTransactions(lightningWalletInfo.lnbitsWalletId);
@@ -268,10 +180,26 @@ export class LightningWalletService {
       (t) => t.time * 1000 >= startDate.getTime() && t.time * 1000 <= endDate.getTime(),
     );
 
-    for (const updateUserWalletTransaction of updateUserWalletTransactions) {
+    return this.doCreateLightningUserTransactionEntities(
+      lightningWalletEntity,
+      updateUserWalletTransactions,
+      withBalance,
+    );
+  }
+
+  private async doCreateLightningUserTransactionEntities(
+    lightningWalletEntity: LightningWalletEntity,
+    userTransactions: LnBitsTransactionDto[],
+    withBalance = false,
+  ) {
+    const userTransactionEntities: UserTransactionEntity[] = [];
+
+    for (const updateUserWalletTransaction of userTransactions) {
       const lightningTransactionEntity = await this.lightningTransactionService.getLightningTransactionByTransaction(
         updateUserWalletTransaction.payment_hash,
       );
+
+      const tagOrFiat = this.getExtraTagOrFiat(updateUserWalletTransaction.extra);
 
       const userTransaction: UserTransactionDto = {
         type: updateUserWalletTransaction.checking_id.startsWith('internal')
@@ -281,7 +209,7 @@ export class LightningWalletService {
         fee: LightningHelper.msatToSat(updateUserWalletTransaction.fee),
         creationTimestamp: new Date(updateUserWalletTransaction.time * 1000),
         expiresTimestamp: new Date(updateUserWalletTransaction.expiry * 1000),
-        tag: updateUserWalletTransaction.extra.tag,
+        tag: tagOrFiat,
       };
 
       userTransactionEntities.push(
@@ -292,13 +220,19 @@ export class LightningWalletService {
     }
 
     if (withBalance && userTransactionEntities.length > 0) {
-      const lnbitsWallet = await this.client.getLnBitsWallet(lightningWalletInfo.adminKey);
+      const lnbitsWallet = await this.client.getLnBitsWallet(lightningWalletEntity.adminKey);
       userTransactionEntities[userTransactionEntities.length - 1].balance = LightningHelper.btcToSat(
         lnbitsWallet.balance,
       );
     }
 
     return userTransactionEntities;
+  }
+
+  private getExtraTagOrFiat(extra?: LnBitsTransactionExtraDto): string | undefined {
+    if (!extra) return;
+
+    return isLnBitsTransactionExtraTag(extra) ? extra.tag : extra.fiat_currency;
   }
 
   private async createEvmUserTransactionEntities(
@@ -335,57 +269,51 @@ export class LightningWalletService {
     return this.userTransactionRepository.save(dbUserTransactionEntity);
   }
 
-  private processPaymentRequestMessageQueue(dto: LnBitsPaymentWebhookDto): void {
+  private processTransactionRequestMessageQueue(transactions: LnBitsTransactionDto[]): void {
     this.paymentWebhookMessageQueue
-      .handle<void>(async () => this.processPaymentRequest(dto))
+      .handle<void>(async () => this.processTransactionRequest(transactions))
       .catch((e) => {
-        this.logger.error('Error while process new payment', e);
+        this.logger.error('Error while processing new transactions', e);
       });
   }
 
-  private async processPaymentRequest(dto: LnBitsPaymentWebhookDto): Promise<void> {
-    const amount = LightningHelper.msatToBtc(dto.amount);
+  private async processTransactionRequest(transactions: LnBitsTransactionDto[]): Promise<void> {
+    for (const transaction of transactions) {
+      await this.doProcessTransaction(transaction);
+      await this.doProcessPayment(transaction);
+    }
+
+    await this.updateLightningWalletBalances();
+  }
+
+  private async doProcessTransaction(transaction: LnBitsTransactionDto): Promise<void> {
+    const lightningWalletEntity = await this.lightingWalletRepository.getByWalletId(transaction.wallet_id);
+
+    const userTransactionEntities = await this.doCreateLightningUserTransactionEntities(
+      lightningWalletEntity,
+      [transaction],
+      true,
+    );
+
+    for (const userTransactionEntity of userTransactionEntities) {
+      await this.doUpdateUserTransaction(userTransactionEntity);
+    }
+  }
+
+  private async doProcessPayment(transaction: LnBitsTransactionDto): Promise<void> {
+    const amount = LightningHelper.msatToBtc(transaction.amount);
 
     const paymentRequestEntity = await this.paymentRequestService.findPending(amount, PaymentRequestMethod.LIGHTNING);
 
-    if (dto.bolt11 === paymentRequestEntity?.paymentRequest) {
+    if (transaction.bolt11 === paymentRequestEntity?.paymentRequest) {
       try {
-        await this.doProcessPaymentRequest(dto);
-
         const transferAsset = await this.assetService.getSatTransferAssetOrThrow();
         await this.paymentRequestService.completePaymentRequest(paymentRequestEntity, transferAsset);
       } catch (e) {
-        const errorMessage = `Process payment request with txid ${dto.payment_hash} failed for lightning wallet ${dto.wallet_id}`;
+        const errorMessage = `Process payment request with txid ${transaction.payment_hash} failed for lightning wallet ${transaction.wallet_id}`;
         this.logger.error(errorMessage, e);
         await this.paymentRequestService.failPaymentRequest(paymentRequestEntity, errorMessage);
       }
     }
-  }
-
-  private async doProcessPaymentRequest(dto: LnBitsPaymentWebhookDto): Promise<void> {
-    const lightningWallet = await this.lightingWalletRepository.getByWalletId(dto.wallet_id);
-
-    const lightningWalletInfo: LightningWalletInfoDto = {
-      lightningWalletId: lightningWallet.id,
-      lnbitsWalletId: lightningWallet.lnbitsWalletId,
-      adminKey: lightningWallet.adminKey,
-      accountAssetId: lightningWallet.asset.id,
-    };
-
-    const userTransactionEntities = await this.getUserTransactionEntities([lightningWalletInfo]);
-
-    const savedUserTransactionEntities = (
-      await Util.doInBatches(
-        userTransactionEntities,
-        async (batch: UserTransactionEntity[]) => Promise.all(batch.map((ref) => this.doUpdateUserTransaction(ref))),
-        100,
-      )
-    ).flat();
-
-    const uniqueLightningWalletEntityMap = new Map<string, LightningWalletEntity>(
-      savedUserTransactionEntities.map((ut) => [ut.lightningWallet.lnbitsWalletId, ut.lightningWallet]),
-    );
-
-    await this.doUpdateLightningWalletBalances([...uniqueLightningWalletEntityMap.values()]);
   }
 }

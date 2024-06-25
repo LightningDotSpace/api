@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AlchemyModule } from '../alchemy/alchemy.module';
+import { AlchemyWebhookModule } from '../alchemy/alchemy-webhook.module';
 import { AssetModule } from '../master-data/asset/asset.module';
 import { PaymentRequestModule } from '../payment-request/payment-request.module';
 import { UserModule } from '../user/user.module';
@@ -20,7 +20,7 @@ import { TransactionEvmRepository } from './repositories/transaction-evm.reposit
     TypeOrmModule.forFeature([TransactionEvmEntity]),
     UserModule,
     AssetModule,
-    AlchemyModule,
+    AlchemyWebhookModule,
     PaymentRequestModule,
   ],
   controllers: [],

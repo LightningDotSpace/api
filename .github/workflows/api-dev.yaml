@@ -3,6 +3,8 @@ name: API DEV CI/CD
 on:
   push:
     branches: [develop]
+    paths-ignore:
+      - 'infrastructure/lnbitsapi/**'
   workflow_dispatch:
 
 env:

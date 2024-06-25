@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BaseRepository } from 'src/shared/db/base.repository';
-import { EntityManager } from 'typeorm';
+import { EntityManager, Equal } from 'typeorm';
 import { UserTransactionEntity } from '../../domain/entities/user-transaction.entity';
 
 @Injectable()
@@ -19,6 +19,14 @@ export class UserTransactionRepository extends BaseRepository<UserTransactionEnt
   }
 
   async getByLightningWalletId(lightningWalletId: number): Promise<UserTransactionEntity[]> {
-    return this.findBy({ lightningWallet: { id: lightningWalletId } });
+    return this.findBy({ lightningWallet: { id: Equal(lightningWalletId) } });
+  }
+
+  async getBalances(): Promise<{ lightningWalletId: number; balance: number }[]> {
+    return this.createQueryBuilder()
+      .select('lightningWalletId')
+      .addSelect('sum(amount - abs(fee)) as balance')
+      .groupBy('lightningWalletId')
+      .getRawMany<{ lightningWalletId: number; balance: number }>();
   }
 }

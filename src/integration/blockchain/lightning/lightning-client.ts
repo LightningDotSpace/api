@@ -14,8 +14,10 @@ import {
   LnBitsLnurlpLinkRemoveDto,
   LnBitsLnurlwInvoiceDto,
   LnBitsLnurlwLinkDto,
+  LnBitsTotalBalanceDto,
   LnBitsTransactionDto,
   LnBitsUsermanagerWalletDto,
+  LnBitsWalletBalanceDto,
   LnBitsWalletDto,
   LnBitsWalletPaymentDto,
   LnbitsUsermanagerUserDto,
@@ -39,10 +41,19 @@ export interface UserFilterData {
   userId?: string;
   username?: string;
 }
+
 export interface LndhubParameterData {
   method: string;
   headers: IncomingHttpHeaders;
   lastUrlpart: string;
+  body?: any;
+  params?: any;
+}
+
+export interface BoltcardsParameterData {
+  method: string;
+  headers: IncomingHttpHeaders;
+  urlpart: string;
   body?: any;
   params?: any;
 }
@@ -68,7 +79,7 @@ export class LightningClient {
   }
 
   async getLndConfirmedWalletBalance(): Promise<number> {
-    return this.getLndWalletBalance().then((b) => b.confirmed_balance);
+    return this.getLndWalletBalance().then((b) => Number(b.confirmed_balance));
   }
 
   private async getLndWalletBalance(): Promise<LndWalletBalanceDto> {
@@ -99,7 +110,7 @@ export class LightningClient {
     return Util.sum(balances);
   }
 
-  private async getChannels(): Promise<LndChannelDto[]> {
+  async getChannels(): Promise<LndChannelDto[]> {
     return this.http
       .get<{ channels: LndChannelDto[] }>(`${Config.blockchain.lightning.lnd.apiUrl}/channels`, this.httpLndConfig())
       .then((r) => r.channels);
@@ -426,7 +437,6 @@ export class LightningClient {
           unit: walletPaymentParam.currencyCode,
           memo: walletPaymentParam.memo,
           expiry: Config.payment.timeout,
-          webhook: `${Config.url}/lnbits/payment-webhook`,
         },
         this.httpLnBitsConfig(adminKey),
       )
@@ -439,6 +449,21 @@ export class LightningClient {
       pr: payment.payment_request,
       routes: [],
     };
+  }
+
+  // --- LNbitsAPI --- //
+  async getLnbitsApiBalance(): Promise<LnBitsWalletBalanceDto[]> {
+    return this.http.get<LnBitsWalletBalanceDto[]>(
+      `${Config.blockchain.lightning.lnbitsapi.apiUrl}/balance`,
+      this.httpLnbitsApiConfig(),
+    );
+  }
+
+  async getLnbitsApiTotalBalance(): Promise<LnBitsTotalBalanceDto> {
+    return this.http.get<LnBitsTotalBalanceDto>(
+      `${Config.blockchain.lightning.lnbitsapi.apiUrl}/totalbalance`,
+      this.httpLnbitsApiConfig(),
+    );
   }
 
   // --- LNDHUB --- //
@@ -456,6 +481,26 @@ export class LightningClient {
       }),
       headers: {
         Authorization: paramData.headers.authorization,
+      },
+      params: paramData.params,
+    };
+  }
+
+  // --- BOLTCARDS --- //
+  async boltcardsRequest(apiMethod: string, paramData: BoltcardsParameterData): Promise<any> {
+    return this.http.request<any>(this.httpLnBitsBoltcardsConfig(paramData)).catch((e) => this.throwHttpException(e));
+  }
+
+  private httpLnBitsBoltcardsConfig(paramData: BoltcardsParameterData): HttpRequestConfig {
+    return {
+      url: `${Config.blockchain.lightning.lnbits.boltcardsApiUrl}/${paramData.urlpart}`,
+      method: paramData.method,
+      data: paramData.body,
+      httpsAgent: new Agent({
+        ca: Config.blockchain.lightning.certificate,
+      }),
+      headers: {
+        'x-api-key': paramData.headers['x-api-key'],
       },
       params: paramData.params,
     };
@@ -519,6 +564,17 @@ export class LightningClient {
       }),
 
       headers: { 'Grpc-Metadata-macaroon': Config.blockchain.lightning.lnd.adminMacaroon },
+      params: params,
+    };
+  }
+
+  private httpLnbitsApiConfig(params?: any): HttpRequestConfig {
+    return {
+      httpsAgent: new Agent({
+        ca: Config.blockchain.lightning.lnbitsapi.certificate,
+      }),
+
+      headers: {},
       params: params,
     };
   }

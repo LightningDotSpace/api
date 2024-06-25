@@ -31,8 +31,8 @@ export abstract class EvmPaymentStrategy extends RegisterStrategy implements OnM
     if (!network) throw new Error(`Cannot detect network by blockchain ${this.blockchain}`);
 
     this.alchemyWebhookService
-      .getAddressWebhookObservable(network)
-      .subscribe((dto) => this.processAddressWebhookMessageQueue(dto));
+      .getFrankencoinPaymentWebhookObservable(network)
+      .subscribe((dto) => this.processPaymentWebhookMessageQueue(dto));
   }
 
   onModuleDestroy() {
@@ -45,15 +45,15 @@ export abstract class EvmPaymentStrategy extends RegisterStrategy implements OnM
 
   // --- WEBHOOKS --- //
 
-  protected processAddressWebhookMessageQueue(dto: AlchemyWebhookDto): void {
+  protected processPaymentWebhookMessageQueue(dto: AlchemyWebhookDto): void {
     this.addressWebhookMessageQueue
-      .handle<void>(async () => this.processWebhookTransactions(dto))
+      .handle<void>(async () => this.processPaymentWebhookTransactions(dto))
       .catch((e) => {
         this.logger.error('Error while process new zchf payment', e);
       });
   }
 
-  private async processWebhookTransactions(webhookDto: AlchemyWebhookDto): Promise<void> {
+  private async processPaymentWebhookTransactions(webhookDto: AlchemyWebhookDto): Promise<void> {
     const zchfAsset = await this.assetService.getZchfTransferAssetOrThrow(this.blockchain);
 
     if (!zchfAsset.address)

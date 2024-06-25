@@ -6,6 +6,7 @@ import {
 } from 'src/integration/blockchain/lightning/dto/lnbits.dto';
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
+import { Equal } from 'typeorm';
 import { LightningWalletEntity } from '../../domain/entities/lightning-wallet.entity';
 import { WalletEntity } from '../../domain/entities/wallet.entity';
 import { SignUpDto } from '../dto/sign-up.dto';
@@ -24,7 +25,7 @@ export class WalletService {
   ) {}
 
   async get(id: number): Promise<WalletEntity | null> {
-    return this.walletRepo.findOneBy({ id });
+    return this.walletRepo.findOneBy({ id: Equal(id) });
   }
 
   async getOrThrow(id: number): Promise<WalletEntity> {
@@ -35,11 +36,11 @@ export class WalletService {
   }
 
   async getByAddress(address: string): Promise<WalletEntity | null> {
-    return this.walletRepo.findOneBy({ address });
+    return this.walletRepo.findOneBy({ address: Equal(address) });
   }
 
   async getByLnbitsAddress(lnbitsAddress: string): Promise<WalletEntity | null> {
-    return this.walletRepo.findOneBy({ lnbitsAddress });
+    return this.walletRepo.findOneBy({ lnbitsAddress: Equal(lnbitsAddress) });
   }
 
   async create(signUp: SignUpDto): Promise<WalletEntity> {

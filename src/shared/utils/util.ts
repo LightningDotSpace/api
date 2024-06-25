@@ -1,7 +1,7 @@
 import BigNumber from 'bignumber.js';
 import { TransformFnParams } from 'class-transformer';
 import * as crypto from 'crypto';
-import { BinaryLike, createHash, createSign, KeyLike } from 'crypto';
+import { BinaryLike, KeyLike, createHash, createHmac, createSign, createVerify } from 'crypto';
 import { readFile } from 'fs';
 
 export type KeyType<T, U> = {
@@ -289,10 +289,38 @@ export class Util {
     return Util.createHash(crypto.randomBytes(size), algo, encoding);
   }
 
-  static createSign(data: BinaryLike, key: KeyLike, algo: CryptoAlgorithm): string {
+  static createHmac(
+    key: BinaryLike,
+    data: BinaryLike,
+    algo: CryptoAlgorithm = 'sha256',
+    encoding: crypto.BinaryToTextEncoding = 'hex',
+  ): string {
+    const hmac = createHmac(algo, key);
+    hmac.update(data);
+    return hmac.digest(encoding);
+  }
+
+  static createSign(
+    data: BinaryLike,
+    key: KeyLike,
+    algo: CryptoAlgorithm = 'sha256',
+    encoding: crypto.BinaryToTextEncoding = 'base64',
+  ): string {
     const sign = createSign(algo);
     sign.update(data);
-    return sign.sign(key, 'base64');
+    return sign.sign(key, encoding);
+  }
+
+  static verifySign(
+    data: BinaryLike,
+    key: KeyLike,
+    signature: string,
+    algo: CryptoAlgorithm = 'sha256',
+    encoding: crypto.BinaryToTextEncoding = 'base64',
+  ): boolean {
+    const verify = createVerify(algo);
+    verify.update(data);
+    return verify.verify(key, signature, encoding);
   }
 
   static async retry<T>(action: () => Promise<T>, tryCount = 3, delay = 0): Promise<T> {

@@ -9,6 +9,7 @@ mkdir bitcoin
 mkdir lightning
 mkdir taproot
 mkdir lnbits
+mkdir lnbitsapi
 mkdir thunderhub
 mkdir nginx
 
