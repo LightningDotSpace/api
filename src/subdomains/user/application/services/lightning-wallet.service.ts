@@ -258,6 +258,7 @@ export class LightningWalletService {
     let dbUserTransactionEntity = await this.userTransactionRepository.findOneBy({
       lightningWallet: { id: updateUserTransactionEntity.lightningWallet.id },
       lightningTransaction: { id: updateUserTransactionEntity.lightningTransaction?.id },
+      type: updateUserTransactionEntity.type,
     });
 
     if (!dbUserTransactionEntity) {
@@ -278,6 +279,8 @@ export class LightningWalletService {
   }
 
   private async processTransactionRequest(transactions: LnBitsTransactionDto[]): Promise<void> {
+    this.logger.info(JSON.stringify(transactions));
+
     for (const transaction of transactions) {
       await this.doProcessTransaction(transaction);
       await this.doProcessPayment(transaction);
