@@ -15,6 +15,7 @@ export enum TransactionLightningState {
   IN_FLIGHT = 'inflight',
   SUCCEEDED = 'succeeded',
   FAILED = 'failed',
+  INITIATED = 'initiated',
 
   // Invoice:
   // https://lightning.engineering/api-docs/api/lnd/lightning/list-invoices#lnrpcinvoiceinvoicestate
