@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { LndChannelDto } from 'src/integration/blockchain/lightning/dto/lnd.dto';
 import { LightningClient } from 'src/integration/blockchain/lightning/lightning-client';
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
@@ -6,7 +6,9 @@ import { EvmRegistryService } from 'src/integration/blockchain/shared/evm/regist
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { QueueHandler } from 'src/shared/utils/queue-handler';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
+import { CoinGeckoService } from 'src/subdomains/pricing/services/coingecko.service';
 import { LightningWalletTotalBalanceDto } from 'src/subdomains/user/application/dto/lightning-wallet.dto';
+import { MonitoringBalanceEntity } from '../entities/monitoring-balance.entity';
 import { MonitoringBalanceRepository } from '../repositories/monitoring-balance.repository';
 import { MonitoringRepository } from '../repositories/monitoring.repository';
 
@@ -20,6 +22,7 @@ export class MonitoringService {
 
   constructor(
     lightningService: LightningService,
+    private readonly coinGeckoService: CoinGeckoService,
     private readonly assetService: AssetService,
     private readonly evmRegistryService: EvmRegistryService,
     private readonly monitoringRepository: MonitoringRepository,
@@ -88,12 +91,15 @@ export class MonitoringService {
     lightningBalance: number,
     customerBtcBalance: LightningWalletTotalBalanceDto,
   ) {
-    const btcMonitoringEntity = this.monitoringBalanceRepository.create({
-      asset: { id: customerBtcBalance.assetId },
-      onchainBalance: onchainBalance,
-      lightningBalance: lightningBalance,
-      customerBalance: customerBtcBalance.totalBalance,
-    });
+    const chfPrice = await this.coinGeckoService.getPrice('BTC', 'CHF');
+    if (!chfPrice.isValid) throw new InternalServerErrorException(`Invalid price from BTC to CHF`);
+
+    const btcMonitoringEntity = MonitoringBalanceEntity.createAsBtcEntity(
+      onchainBalance,
+      lightningBalance,
+      customerBtcBalance,
+      chfPrice,
+    );
 
     await this.monitoringBalanceRepository.saveIfBalanceDiff(btcMonitoringEntity);
   }
@@ -103,12 +109,7 @@ export class MonitoringService {
 
     for (const customerFiatBalance of customerFiatBalances) {
       if (customerFiatBalance.totalBalance) {
-        const fiatMonitoringEntity = this.monitoringBalanceRepository.create({
-          asset: { id: customerFiatBalance.assetId },
-          onchainBalance: zchfBalance,
-          lightningBalance: 0,
-          customerBalance: customerFiatBalance.totalBalance,
-        });
+        const fiatMonitoringEntity = MonitoringBalanceEntity.createAsChfEntity(zchfBalance, customerFiatBalance);
 
         await this.monitoringBalanceRepository.saveIfBalanceDiff(fiatMonitoringEntity);
       }
