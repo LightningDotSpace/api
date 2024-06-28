@@ -258,6 +258,7 @@ export class LightningWalletService {
     let dbUserTransactionEntity = await this.userTransactionRepository.findOneBy({
       lightningWallet: { id: updateUserTransactionEntity.lightningWallet.id },
       lightningTransaction: { id: updateUserTransactionEntity.lightningTransaction?.id },
+      type: updateUserTransactionEntity.type,
     });
 
     if (!dbUserTransactionEntity) {
