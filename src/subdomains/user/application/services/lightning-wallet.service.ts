@@ -279,8 +279,6 @@ export class LightningWalletService {
   }
 
   private async processTransactionRequest(transactions: LnBitsTransactionDto[]): Promise<void> {
-    this.logger.info(JSON.stringify(transactions));
-
     for (const transaction of transactions) {
       await this.doProcessTransaction(transaction);
       await this.doProcessPayment(transaction);
