@@ -3,11 +3,11 @@ import * as bodyParser from 'body-parser';
 import express, { NextFunction, Request, Response } from 'express';
 import * as https from 'https';
 import { HttpException, HttpStatus } from './http/exceptions/http.exception';
-import { JobRegistry } from './jobs/enums/job-registry';
+import { JobRegistry } from './jobs/job-registry.service';
 import { RouteController } from './routes/route.controller';
 import { Config } from './shared/config';
 import { LnbitsApiLogger } from './shared/lnbitsapi-logger';
-import { TimerRegistry } from './timer/timer-registry';
+import { WaitingTimerRegistry } from './timer/waiting-timer-registry.service';
 
 // --- LOGGER --- //
 if (process.env.APPINSIGHTS_INSTRUMENTATIONKEY) {
@@ -62,7 +62,7 @@ process.on('SIGQUIT', () => shutdown('SIGQUIT'));
 function shutdown(signal: NodeJS.Signals) {
   logger.info(`${signal} signal received: closing HTTPS server`);
 
-  TimerRegistry.stopTimers();
+  WaitingTimerRegistry.stopTimers();
   JobRegistry.stopJobs();
 
   server.close(() => {

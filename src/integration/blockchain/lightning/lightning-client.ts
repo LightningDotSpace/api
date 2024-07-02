@@ -6,6 +6,7 @@ import { HttpRequestConfig, HttpService } from 'src/shared/services/http.service
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Util } from 'src/shared/utils/util';
 import { LightingWalletPaymentParamDto } from 'src/subdomains/lightning/dto/lightning-wallet.dto';
+import { BoltcardInfoDto } from './dto/boltcards.dto';
 import {
   LnBitsLnurlPayRequestDto,
   LnBitsLnurlWithdrawRequestDto,
@@ -504,6 +505,13 @@ export class LightningClient {
       },
       params: paramData.params,
     };
+  }
+
+  async getBoltcards(adminKey: string): Promise<BoltcardInfoDto[]> {
+    return this.http.get<BoltcardInfoDto[]>(
+      `${Config.blockchain.lightning.lnbits.boltcardsApiUrl}/cards?all_wallets=false&api-key=${adminKey}`,
+      this.httpLnBitsConfig(adminKey),
+    );
   }
 
   // --- LNURLp REWRITE --- //

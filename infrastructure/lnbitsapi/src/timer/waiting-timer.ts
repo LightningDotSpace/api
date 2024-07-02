@@ -1,7 +1,7 @@
 import { LnbitsApiLogger } from '../shared/lnbitsapi-logger';
-import { Timer, TimerRegistry } from './timer-registry';
+import { WaitingTimerRegistry } from './waiting-timer-registry.service';
 
-export class WaitingTimer implements Timer {
+export abstract class WaitingTimer {
   private readonly logger = new LnbitsApiLogger(WaitingTimer);
 
   private timeoutHandler: NodeJS.Timeout | null = null;
@@ -10,15 +10,17 @@ export class WaitingTimer implements Timer {
   private waitingTime = 0;
 
   constructor() {
-    TimerRegistry.register(this);
+    WaitingTimerRegistry.register(this);
   }
+
+  abstract waitingInterval: number;
 
   start() {
     if (this.timeoutHandler === null) {
       this.logger.verbose('start()');
 
       this.waitingCounter++;
-      this.waitingTime = this.waitingCounter * 60 * 1000;
+      this.waitingTime = this.waitingCounter * this.waitingInterval;
 
       this.logger.verbose(`waitingCounter = ${this.waitingCounter} / waitingTime = ${this.waitingTime}`);
 

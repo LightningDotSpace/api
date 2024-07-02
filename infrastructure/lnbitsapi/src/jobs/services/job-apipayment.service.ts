@@ -1,18 +1,18 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { LnBitsTransactionDto } from 'src/http/dto/lnbits-transaction.dto';
 import { DBService } from '../../database/sqlite.service';
+import { LnBitsTransactionDto } from '../../http/dto/lnbits-transaction.dto';
 import { HttpClient } from '../../http/http-client';
 import { Config } from '../../shared/config';
 import { LnbitsApiLogger } from '../../shared/lnbitsapi-logger';
-import { WaitingTimer } from '../../timer/waiting-timer';
+import { JobApipaymentWaitingTimer } from '../timer/job-apipayment.timer';
 
 export class JobApiPaymentService {
   private readonly logger = new LnbitsApiLogger(JobApiPaymentService);
 
-  private waitingTimer: WaitingTimer;
+  private waitingTimer: JobApipaymentWaitingTimer;
 
   constructor() {
-    this.waitingTimer = new WaitingTimer();
+    this.waitingTimer = new JobApipaymentWaitingTimer();
   }
 
   async checkApiPaymentChange(): Promise<void> {
@@ -31,8 +31,9 @@ export class JobApiPaymentService {
 
   private async doPaymentChange(maxTimeDBEntry: number, maxTimeFileEntry: number): Promise<void> {
     this.logger.verbose('doPaymentChange()');
+
     const apiPayments = await this.getApiPayments(maxTimeFileEntry);
-    const webhookSuccess = await this.triggerWebhook(apiPayments);
+    const webhookSuccess = await this.triggerTransactionWebhook(apiPayments);
 
     if (webhookSuccess) this.saveMaxTimeToFile(maxTimeDBEntry);
   }
@@ -67,15 +68,11 @@ export class JobApiPaymentService {
     );
   }
 
-  private async triggerWebhook(transactions: LnBitsTransactionDto[]): Promise<boolean> {
-    const result = await HttpClient.triggerWebhook(transactions);
-    this.logger.verbose(`triggerWebhook: ${result}`);
+  private async triggerTransactionWebhook(transactions: LnBitsTransactionDto[]): Promise<boolean> {
+    const result = await HttpClient.triggerTransactionsWebhook(transactions);
+    this.logger.verbose(`triggerTransactionWebhook: ${result}`);
 
-    if (result) {
-      this.waitingTimer.stop();
-    } else {
-      this.waitingTimer.start();
-    }
+    result ? this.waitingTimer.stop() : this.waitingTimer.start();
 
     return result;
   }

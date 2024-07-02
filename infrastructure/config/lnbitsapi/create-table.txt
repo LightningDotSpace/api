@@ -1,0 +1,11 @@
+New LNbits DB: boltcards_compare.sqlite3
+
+CREATE TABLE boltcard_cards_actual (
+  id TEXT PRIMARY KEY UNIQUE,
+  hash TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE boltcard_cards_compare (
+  id TEXT PRIMARY KEY UNIQUE,
+  hash TEXT NOT NULL UNIQUE
+);

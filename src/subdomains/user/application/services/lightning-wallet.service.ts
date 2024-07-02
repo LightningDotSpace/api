@@ -61,6 +61,10 @@ export class LightningWalletService {
       .subscribe((transactions) => this.processTransactionRequestMessageQueue(transactions));
   }
 
+  async getLightningWallet(walletId: string): Promise<LightningWalletEntity> {
+    return this.lightingWalletRepository.getByWalletId(walletId);
+  }
+
   async updateLightningWalletBalances(): Promise<void> {
     const userTransactionBalances = await this.userTransactionRepository.getBalances();
 
@@ -173,7 +177,7 @@ export class LightningWalletService {
     endDate: Date,
     withBalance = false,
   ): Promise<UserTransactionEntity[]> {
-    const lightningWalletEntity = await this.lightingWalletRepository.getByWalletId(lightningWalletInfo.lnbitsWalletId);
+    const lightningWalletEntity = await this.getLightningWallet(lightningWalletInfo.lnbitsWalletId);
 
     const allUserWalletTransactions = await this.client.getUserWalletTransactions(lightningWalletInfo.lnbitsWalletId);
     const updateUserWalletTransactions = allUserWalletTransactions.filter(
@@ -288,7 +292,7 @@ export class LightningWalletService {
   }
 
   private async doProcessTransaction(transaction: LnBitsTransactionDto): Promise<void> {
-    const lightningWalletEntity = await this.lightingWalletRepository.getByWalletId(transaction.wallet_id);
+    const lightningWalletEntity = await this.getLightningWallet(transaction.wallet_id);
 
     const userTransactionEntities = await this.doCreateLightningUserTransactionEntities(
       lightningWalletEntity,
