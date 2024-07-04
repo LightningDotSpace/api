@@ -1,4 +1,4 @@
-import { Database, Statement, open } from 'sqlite';
+import { Database, open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import { LnbitsApiLogger } from '../shared/lnbitsapi-logger';
 
@@ -40,10 +40,6 @@ class SqliteService {
     } finally {
       await this.close(db);
     }
-  }
-
-  async createStatement(db: Database, sql: string): Promise<Statement> {
-    return db.prepare(sql);
   }
 
   async openRO(filename: string): Promise<Database> {

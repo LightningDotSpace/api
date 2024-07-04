@@ -1,86 +1,97 @@
-import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { DBService } from '../../database/sqlite.service';
+import { LNbitsApiPaymentCompareDto } from 'src/http/dto/lnbits-compare.dto';
 import { LnBitsTransactionDto } from '../../http/dto/lnbits-transaction.dto';
-import { HttpClient } from '../../http/http-client';
 import { Config } from '../../shared/config';
-import { LnbitsApiLogger } from '../../shared/lnbitsapi-logger';
-import { JobApipaymentWaitingTimer } from '../timer/job-apipayment.timer';
+import { Util } from '../../shared/util';
+import { JobApiPaymentWaitingTimer } from '../timer/job-apipayment.timer';
+import { JobService } from './job.service';
 
-export class JobApiPaymentService {
-  private readonly logger = new LnbitsApiLogger(JobApiPaymentService);
+export class JobApiPaymentService extends JobService {
+  private static readonly API_PAYMENT_TABLE_NAME = 'apipayments';
 
-  private waitingTimer: JobApipaymentWaitingTimer;
+  private static readonly API_PAYMENT_TABLE_COLUMN_NAMES =
+    'checking_id, pending, amount, fee, memo, time, bolt11, preimage, hash AS payment_hash, expiry, extra, wallet AS wallet_id, webhook, webhook_status';
+
+  webhookUrl = Config.transactionWebhookUrl;
+
+  dbFileName = Config.sqlite.mainDB;
+  dbCompareFileName = Config.sqlite.compareApiPaymentsDB;
+
+  jsonCompareFileName = Config.compare.apiPaymentsJson;
+
+  dbCompareCurrentTableName = 'api_payments_current';
+  dbCompareCheckTableName = 'api_payments_check';
 
   constructor() {
-    this.waitingTimer = new JobApipaymentWaitingTimer();
+    super(new JobApiPaymentWaitingTimer());
   }
 
   async checkApiPaymentChange(): Promise<void> {
-    this.logger.verbose(`checkApiPaymentChange(): waitingTimer is running? ${this.waitingTimer.isRunning()}`);
-    if (this.waitingTimer.isRunning()) return;
-
-    const maxTimeDBEntry = await this.getMaxTimeFromDB();
-    const maxTimeFileEntry = this.getMaxTimeFromFile();
-
-    this.logger.verbose(`maxTime: ${maxTimeDBEntry} : ${maxTimeFileEntry}`);
-
-    if (maxTimeDBEntry > maxTimeFileEntry) {
-      await this.doPaymentChange(maxTimeDBEntry, maxTimeFileEntry);
-    }
+    return this.checkChange<LnBitsTransactionDto>(100, 1000);
   }
 
-  private async doPaymentChange(maxTimeDBEntry: number, maxTimeFileEntry: number): Promise<void> {
-    this.logger.verbose('doPaymentChange()');
+  async getInsertedData<LnBitsTransactionDto>(): Promise<LnBitsTransactionDto[]> {
+    const selectSQL = `SELECT tbl_current.wallet_id, tbl_current.checking_id, tbl_current.hash FROM ${this.dbCompareCurrentTableName} tbl_current \
+    LEFT OUTER JOIN ${this.dbCompareCheckTableName} tbl_check ON tbl_current.wallet_id = tbl_check.wallet_id AND tbl_current.checking_id = tbl_check.checking_id \
+    WHERE tbl_check.hash IS NULL`;
 
-    const apiPayments = await this.getApiPayments(maxTimeFileEntry);
-    const webhookSuccess = await this.triggerTransactionWebhook(apiPayments);
-
-    if (webhookSuccess) this.saveMaxTimeToFile(maxTimeDBEntry);
-  }
-
-  private async getMaxTimeFromDB(): Promise<number> {
-    const maxTime = await DBService.selectOne<{ maxTime: number }>(
-      Config.sqlite.mainDB,
-      'SELECT MAX(time) AS maxTime FROM apipayments WHERE (pending = false AND amount > 0) OR amount < 0',
-    ).then((r) => r?.maxTime);
-    return maxTime ?? 0;
-  }
-
-  private getMaxTimeFromFile(): number {
-    const filename = Config.apiPaymentJson;
-
-    try {
-      if (existsSync(filename)) {
-        const maxTimeJsonEntry = JSON.parse(readFileSync(filename, 'utf8')).maxTime;
-        if (maxTimeJsonEntry) return Number(maxTimeJsonEntry);
-      }
-    } catch (e) {
-      this.logger.error(`error reading file ${filename}`, e);
-    }
-
-    return 0;
-  }
-
-  private async getApiPayments(maxTime: number): Promise<LnBitsTransactionDto[]> {
-    return DBService.selectAll<LnBitsTransactionDto[]>(
-      Config.sqlite.mainDB,
-      `SELECT checking_id, pending, amount, fee, memo, time, bolt11, preimage, hash AS payment_hash, expiry, extra, wallet AS wallet_id, webhook, webhook_status FROM apipayments WHERE time > ${maxTime} AND ((pending = false AND amount > 0) OR amount < 0)`,
+    const comparisonResults = await this.compareDBService.getData<LNbitsApiPaymentCompareDto>(
+      this.dbCompareFileName,
+      selectSQL,
     );
+
+    return this.getDataByByComparisonResults<LnBitsTransactionDto>(comparisonResults);
   }
 
-  private async triggerTransactionWebhook(transactions: LnBitsTransactionDto[]): Promise<boolean> {
-    const result = await HttpClient.triggerTransactionsWebhook(transactions);
-    this.logger.verbose(`triggerTransactionWebhook: ${result}`);
+  async getUpdatedData<LnBitsTransactionDto>(): Promise<LnBitsTransactionDto[]> {
+    const selectSQL = `SELECT tbl_current.wallet_id, tbl_current.checking_id, tbl_current.hash FROM ${this.dbCompareCurrentTableName} tbl_current \
+    LEFT OUTER JOIN ${this.dbCompareCheckTableName} tbl_check ON tbl_current.wallet_id = tbl_check.wallet_id AND tbl_current.checking_id = tbl_check.checking_id \
+    WHERE tbl_current.hash != tbl_check.hash`;
 
-    result ? this.waitingTimer.stop() : this.waitingTimer.start();
+    const comparisonResults = await this.compareDBService.getData<LNbitsApiPaymentCompareDto>(
+      this.dbCompareFileName,
+      selectSQL,
+    );
 
-    return result;
+    return this.getDataByByComparisonResults<LnBitsTransactionDto>(comparisonResults);
   }
 
-  private saveMaxTimeToFile(maxTime: number) {
-    const filename = Config.apiPaymentJson;
-    this.logger.verbose(`saveMaxTimeToFile: ${filename}`);
+  async getDeletedIds(): Promise<string[]> {
+    return []; // Non-pending ApiPayments are never deleted
+  }
 
-    writeFileSync(filename, JSON.stringify({ maxTime }), 'utf-8');
+  getPreparedDataSelectSQL(): string {
+    return `SELECT ${JobApiPaymentService.API_PAYMENT_TABLE_COLUMN_NAMES} FROM ${JobApiPaymentService.API_PAYMENT_TABLE_NAME} WHERE wallet = ? AND checking_id = ?`;
+  }
+
+  getParamsByComparisonResults(comparisonResults: LNbitsApiPaymentCompareDto[]): string[][] {
+    const selectParams: string[][] = [];
+
+    for (const comparisonResult of comparisonResults) {
+      selectParams.push([comparisonResult.wallet_id, comparisonResult.checking_id]);
+    }
+
+    return selectParams;
+  }
+
+  getPreparedLimitAndOffsetDataSelectSQL(): string {
+    return `SELECT ${JobApiPaymentService.API_PAYMENT_TABLE_COLUMN_NAMES} FROM ${JobApiPaymentService.API_PAYMENT_TABLE_NAME} WHERE pending = false ORDER BY wallet, checking_id LIMIT ? OFFSET ?`;
+  }
+
+  getPreparedCompareInsertSQL(): string {
+    return `INSERT INTO ${this.dbCompareCurrentTableName} (wallet_id, checking_id, hash) VALUES (?,?,?)`;
+  }
+
+  getParamsByData(transactions: LnBitsTransactionDto[]): string[][] {
+    const insertParams: string[][] = [];
+
+    for (const transaction of transactions) {
+      const walletId = transaction.wallet_id;
+      const checkingId = transaction.checking_id;
+      const hash = Util.createHash(JSON.stringify(transaction));
+
+      insertParams.push([walletId, checkingId, hash]);
+    }
+
+    return insertParams;
   }
 }

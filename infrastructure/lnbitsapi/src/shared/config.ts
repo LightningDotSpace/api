@@ -12,11 +12,15 @@ class Configuration {
     mainDB: process.env.SQLITE3_DB ?? '',
     usermanagerDB: process.env.SQLITE3_EXT_USERMANAGER_DB ?? '',
     boltcardsDB: process.env.SQLITE3_EXT_BOLTCARDS_DB ?? '',
-    boltcardsCompareDB: process.env.SQLITE3_BOLTCARDS_COMPARE_DB ?? '',
+
+    compareApiPaymentsDB: process.env.SQLITE3_COMPARE_APIPAYMENTS_DB ?? '',
+    compareBoltcardsDB: process.env.SQLITE3_COMPARE_BOLTCARDS_DB ?? '',
   };
 
-  apiPaymentJson = process.env.API_PAYMENT_JSON ?? '';
-  boltcardJson = process.env.BOLTCARD_JSON ?? '';
+  compare = {
+    apiPaymentsJson: process.env.COMPARE_APIPAYMENTS_JSON ?? '',
+    boltcardsJson: process.env.COMPARE_BOLTCARDS_JSON ?? '',
+  };
 
   httpSignature = {
     privKey: process.env.HTTP_SIGNATURE_PRIV_KEY?.split('<br>').join('\n') ?? '',

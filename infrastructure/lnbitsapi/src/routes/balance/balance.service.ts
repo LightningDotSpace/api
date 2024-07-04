@@ -1,12 +1,9 @@
 import { DBService } from '../../database/sqlite.service';
 import { Config } from '../../shared/config';
-import { LnbitsApiLogger } from '../../shared/lnbitsapi-logger';
 import { Util } from '../../shared/util';
 import { BalanceDto, TotalBalanceDto } from './balance.dto';
 
 export class BalanceService {
-  private readonly logger = new LnbitsApiLogger(BalanceService);
-
   async balance(): Promise<BalanceDto[]> {
     const walletIds = await this.userWallets('BTC');
 
@@ -28,7 +25,6 @@ export class BalanceService {
 
     const adminUserBalances = allBalances.filter((b) => walletIds.includes(b.wallet));
 
-    this.logger.verbose(`${JSON.stringify(adminUserBalances)}`);
     const totalBalance = Util.sum(adminUserBalances.map((b) => b.balance));
 
     return { balance: totalBalance };

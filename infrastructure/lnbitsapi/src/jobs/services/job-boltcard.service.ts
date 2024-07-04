@@ -1,190 +1,105 @@
-import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { Statement } from 'sqlite';
-import { DBService } from '../../database/sqlite.service';
-import { LNbitsBoltcardCompareDto, LnBitsBoltcardDto } from '../../http/dto/lnbits-boltcard.dto';
-import { HttpClient } from '../../http/http-client';
+import { LnBitsBoltcardDto } from '../../http/dto/lnbits-boltcard.dto';
+import { LNbitsBoltcardCompareDto } from '../../http/dto/lnbits-compare.dto';
 import { Config } from '../../shared/config';
-import { LnbitsApiLogger } from '../../shared/lnbitsapi-logger';
 import { Util } from '../../shared/util';
 import { JobBoltcardWaitingTimer } from '../timer/job-boltcard.timer';
+import { JobService } from './job.service';
 
-export class JobBoltcardService {
-  private readonly logger = new LnbitsApiLogger(JobBoltcardService);
+export class JobBoltcardService extends JobService {
+  private static readonly CARDS_TABLE_NAME = 'cards';
 
-  private waitingTimer: JobBoltcardWaitingTimer;
+  private static readonly CARDS_TABLE_COLUMN_NAMES =
+    'id, wallet, card_name, uid, external_id, counter, tx_limit, daily_limit, enable, k0, k1, k2, prev_k0, prev_k1, prev_k2, otp, time';
+
+  webhookUrl = Config.boltcardWebhookUrl;
+
+  dbFileName = Config.sqlite.boltcardsDB;
+  dbCompareFileName = Config.sqlite.compareBoltcardsDB;
+
+  jsonCompareFileName = Config.compare.boltcardsJson;
+
+  dbCompareCurrentTableName = 'boltcard_cards_current';
+  dbCompareCheckTableName = 'boltcard_cards_check';
 
   constructor() {
-    this.waitingTimer = new JobBoltcardWaitingTimer();
+    super(new JobBoltcardWaitingTimer());
   }
 
   async checkBoltcardChange(): Promise<void> {
-    this.logger.verbose(`checkBoltcardChange(): waitingTimer is running? ${this.waitingTimer.isRunning()}`);
-    if (this.waitingTimer.isRunning()) return;
-
-    const fileHashDBEntry = await this.getFileHashFromDB();
-    const fileHashFileEntry = this.getFileHashFromFile();
-
-    this.logger.verbose(`fileHash: ${fileHashDBEntry} : ${fileHashFileEntry}`);
-
-    if (fileHashDBEntry !== fileHashFileEntry) {
-      await this.doBoltcardChange(fileHashDBEntry);
-    }
+    return this.checkChange<LnBitsBoltcardDto>(100, 1000);
   }
 
-  private async doBoltcardChange(fileHashDBEntry: string): Promise<void> {
-    this.logger.verbose('doBoltcardChange()');
+  async getInsertedData<LnBitsBoltcardDto>(): Promise<LnBitsBoltcardDto[]> {
+    const selectSQL = `SELECT tbl_current.id, tbl_current.hash FROM ${this.dbCompareCurrentTableName} tbl_current \
+    LEFT OUTER JOIN ${this.dbCompareCheckTableName} tbl_check ON tbl_current.id = tbl_check.id \
+    WHERE tbl_check.hash IS NULL`;
 
-    await this.fillBoldcardsCompareTable();
+    const comparisonResults = await this.compareDBService.getData<LNbitsBoltcardCompareDto>(
+      this.dbCompareFileName,
+      selectSQL,
+    );
 
-    const changedBoltcards: LnBitsBoltcardDto[] = [];
-
-    const insertedBoltcardIds = await this.getInsertedBoltcardIds();
-    const insertedBoltcards = await this.getBoltcardsByIds(insertedBoltcardIds);
-    changedBoltcards.push(...insertedBoltcards);
-
-    const updatedBoltcardIds = await this.getUpdatedBoltcardIds();
-    const updatedBoltcards = await this.getBoltcardsByIds(updatedBoltcardIds);
-    changedBoltcards.push(...updatedBoltcards);
-
-    const deletedBoltcardIds = await this.getDeletedBoltcardIds();
-
-    const webhookSuccess = await this.triggerBoltcardsWebhook(changedBoltcards, deletedBoltcardIds);
-
-    if (webhookSuccess) {
-      await this.fillBoldcardsActualTable();
-      this.saveFileHashToFile(fileHashDBEntry);
-    }
+    return this.getDataByByComparisonResults<LnBitsBoltcardDto>(comparisonResults);
   }
 
-  private async getFileHashFromDB(): Promise<string> {
-    return Util.createFileHash(Config.sqlite.boltcardsDB);
+  async getUpdatedData<LnBitsBoltcardDto>(): Promise<LnBitsBoltcardDto[]> {
+    const selectSQL = `SELECT tbl_current.id, tbl_current.hash FROM ${this.dbCompareCurrentTableName} tbl_current \
+    LEFT OUTER JOIN ${this.dbCompareCheckTableName} tbl_check ON tbl_current.id = tbl_check.id \
+    WHERE tbl_current.hash != tbl_check.hash`;
+
+    const comparisonResults = await this.compareDBService.getData<LNbitsBoltcardCompareDto>(
+      this.dbCompareFileName,
+      selectSQL,
+    );
+
+    return this.getDataByByComparisonResults<LnBitsBoltcardDto>(comparisonResults);
   }
 
-  private getFileHashFromFile(): string {
-    const filename = Config.boltcardJson;
+  async getDeletedIds(): Promise<string[]> {
+    const selectSQL = `SELECT tbl_check.id, tbl_check.hash FROM ${this.dbCompareCheckTableName} tbl_check \
+    LEFT OUTER JOIN ${this.dbCompareCurrentTableName} tbl_current ON tbl_check.id = tbl_current.id \
+    WHERE tbl_current.hash IS NULL`;
 
-    try {
-      if (existsSync(filename)) {
-        const fileHashJsonEntry = JSON.parse(readFileSync(filename, 'utf8')).fileHash;
-        if (fileHashJsonEntry) return String(fileHashJsonEntry);
-      }
-    } catch (e) {
-      this.logger.error(`error reading file ${filename}`, e);
-    }
+    const comparisonResults = await this.compareDBService.getData<LNbitsBoltcardCompareDto>(
+      this.dbCompareFileName,
+      selectSQL,
+    );
 
-    return '';
+    return comparisonResults.map((r) => r.id);
   }
 
-  private saveFileHashToFile(fileHash: string) {
-    const filename = Config.boltcardJson;
-    this.logger.verbose(`saveFileHashToFile: ${filename}`);
-
-    writeFileSync(filename, JSON.stringify({ fileHash }), 'utf-8');
+  getPreparedDataSelectSQL(): string {
+    return `SELECT ${JobBoltcardService.CARDS_TABLE_COLUMN_NAMES} FROM ${JobBoltcardService.CARDS_TABLE_NAME} WHERE id = ?`;
   }
 
-  private async fillBoldcardsCompareTable(): Promise<void> {
-    await this.doCleanBoltcardsCompareTable();
+  getParamsByComparisonResults(comparisonResults: LNbitsBoltcardCompareDto[]): string[][] {
+    const selectParams: string[][] = [];
 
-    const boltcardsCompareDB = await DBService.openRW(Config.sqlite.boltcardsCompareDB);
-    const insertSQL = 'INSERT INTO boltcard_cards_compare (id, hash) VALUES (?,?)';
-    const insertStatement = await DBService.createStatement(boltcardsCompareDB, insertSQL);
-
-    const boltcardsDB = await DBService.openRW(Config.sqlite.boltcardsDB);
-    const selectSQL =
-      'SELECT id, wallet, card_name, uid, external_id, counter, tx_limit, daily_limit, enable, k0, k1, k2, prev_k0, prev_k1, prev_k2, otp, time FROM cards ORDER BY time,id LIMIT ? OFFSET ?';
-    const selectStatement = await DBService.createStatement(boltcardsDB, selectSQL);
-
-    const loopLimit = 100;
-    const sqlLimit = 1000;
-    let sqlOffset = 0;
-
-    for (let loopCounter = 0; loopCounter < loopLimit; loopCounter++) {
-      const boltcards = await selectStatement.all<LnBitsBoltcardDto[]>([sqlLimit, sqlOffset]);
-      if (!boltcards.length) break;
-
-      await this.doFillBoltcardsCompareTable(insertStatement, boltcards);
-
-      sqlOffset += sqlLimit;
+    for (const comparisonResult of comparisonResults) {
+      selectParams.push([comparisonResult.id]);
     }
 
-    await insertStatement.finalize();
-    await selectStatement.finalize();
-
-    await DBService.close(boltcardsCompareDB);
-    await DBService.close(boltcardsDB);
+    return selectParams;
   }
 
-  private async doCleanBoltcardsCompareTable(): Promise<void> {
-    const deleteSQL = 'DELETE FROM boltcard_cards_compare';
-    await DBService.execute(Config.sqlite.boltcardsCompareDB, deleteSQL);
+  getPreparedLimitAndOffsetDataSelectSQL(): string {
+    return `SELECT ${JobBoltcardService.CARDS_TABLE_COLUMN_NAMES} FROM ${JobBoltcardService.CARDS_TABLE_NAME} ORDER BY id LIMIT ? OFFSET ?`;
   }
 
-  private async doFillBoltcardsCompareTable(insertStatement: Statement, boltcards: LnBitsBoltcardDto[]): Promise<void> {
+  getPreparedCompareInsertSQL(): string {
+    return `INSERT INTO ${this.dbCompareCurrentTableName} (id, hash) VALUES (?,?)`;
+  }
+
+  getParamsByData(boltcards: LnBitsBoltcardDto[]): string[][] {
+    const insertParams: string[][] = [];
+
     for (const boltcard of boltcards) {
-      const boltcardId = boltcard.id;
+      const id = boltcard.id;
       const hash = Util.createHash(JSON.stringify(boltcard));
 
-      await insertStatement.run([boltcardId, hash]);
+      insertParams.push([id, hash]);
     }
-  }
 
-  private async fillBoldcardsActualTable(): Promise<void> {
-    await this.doCleanBoltcardsActualTable();
-    await this.doFillBoltcardsActualTable();
-  }
-
-  private async doCleanBoltcardsActualTable(): Promise<void> {
-    const deleteSQL = 'DELETE FROM boltcard_cards_actual';
-    await DBService.execute(Config.sqlite.boltcardsCompareDB, deleteSQL);
-  }
-
-  private async doFillBoltcardsActualTable(): Promise<void> {
-    const insertSQL = 'INSERT INTO boltcard_cards_actual SELECT * FROM boltcard_cards_compare';
-    await DBService.execute(Config.sqlite.boltcardsCompareDB, insertSQL);
-  }
-
-  async getInsertedBoltcardIds(): Promise<string[]> {
-    const selectSQL =
-      'SELECT compare.id, compare.hash FROM boltcard_cards_compare compare LEFT OUTER JOIN boltcard_cards_actual actual ON compare.id = actual.id WHERE actual.hash IS NULL';
-    return DBService.selectAll<LNbitsBoltcardCompareDto[]>(Config.sqlite.boltcardsCompareDB, selectSQL).then((r) =>
-      r.map((b) => b.id),
-    );
-  }
-
-  async getUpdatedBoltcardIds(): Promise<string[]> {
-    const selectSQL =
-      'SELECT compare.id, compare.hash FROM boltcard_cards_compare compare LEFT OUTER JOIN boltcard_cards_actual actual ON compare.id = actual.id WHERE compare.hash != actual.hash';
-    return DBService.selectAll<LNbitsBoltcardCompareDto[]>(Config.sqlite.boltcardsCompareDB, selectSQL).then((r) =>
-      r.map((b) => b.id),
-    );
-  }
-
-  async getDeletedBoltcardIds(): Promise<string[]> {
-    const selectSQL =
-      'SELECT actual.id, actual.hash FROM boltcard_cards_actual actual LEFT OUTER JOIN boltcard_cards_compare compare ON actual.id = compare.id WHERE compare.hash IS NULL';
-    return DBService.selectAll<LNbitsBoltcardCompareDto[]>(Config.sqlite.boltcardsCompareDB, selectSQL).then((r) =>
-      r.map((b) => b.id),
-    );
-  }
-
-  async getBoltcardsByIds(boltcardIds: string[]): Promise<LnBitsBoltcardDto[]> {
-    if (!boltcardIds.length) return [];
-
-    const boltcardIdsInSQL = boltcardIds.map((i) => `'${i}'`).join(',');
-    const selectSQL = `SELECT id, wallet, card_name, uid, external_id, counter, tx_limit, daily_limit, enable, k0, k1, k2, prev_k0, prev_k1, prev_k2, otp, time FROM cards WHERE id IN (${boltcardIdsInSQL})`;
-
-    return DBService.selectAll<LnBitsBoltcardDto[]>(Config.sqlite.boltcardsDB, selectSQL);
-  }
-
-  private async triggerBoltcardsWebhook(
-    changedBoltcards: LnBitsBoltcardDto[],
-    deletedBoltcardIds: string[],
-  ): Promise<boolean> {
-    const result = await HttpClient.triggerBoltcardsWebhook(changedBoltcards, deletedBoltcardIds);
-    this.logger.verbose(`triggerBoltcardsWebhook: ${result}`);
-
-    result ? this.waitingTimer.stop() : this.waitingTimer.start();
-
-    return result;
+    return insertParams;
   }
 }
