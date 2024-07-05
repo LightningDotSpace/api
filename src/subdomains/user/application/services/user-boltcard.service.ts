@@ -40,7 +40,7 @@ export class UserBoltcardService {
     this.boltcardWebhookMessageQueue
       .handle<void>(async () => this.processBoltcardRequest(webhookTransfer))
       .catch((e) => {
-        this.logger.error('Error while processing new transactions', e);
+        this.logger.error('Error while processing boltcard webhook data', e);
       });
   }
 

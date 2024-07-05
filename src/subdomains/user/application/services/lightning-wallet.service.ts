@@ -279,7 +279,7 @@ export class LightningWalletService {
     this.paymentWebhookMessageQueue
       .handle<void>(async () => this.processTransactionRequest(webhookTransfer))
       .catch((e) => {
-        this.logger.error('Error while processing new transactions', e);
+        this.logger.error('Error while processing transaction webhook data', e);
       });
   }
 
