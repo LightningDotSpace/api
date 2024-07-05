@@ -1,4 +1,4 @@
-import { LNbitsApiPaymentCompareDto } from 'src/http/dto/lnbits-compare.dto';
+import { LNbitsApiPaymentCompareDto } from '../../http/dto/lnbits-compare.dto';
 import { LnBitsTransactionDto } from '../../http/dto/lnbits-transaction.dto';
 import { Config } from '../../shared/config';
 import { Util } from '../../shared/util';

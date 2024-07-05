@@ -1,19 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { Observable, Subject } from 'rxjs';
 import { BoltcardWebhookTransferDto } from '../dto/boltcards.dto';
-import { LnBitsTransactionDto } from '../dto/lnbits.dto';
+import { LnBitsTransactionWebhookTransferDto } from '../dto/lnbits.dto';
 
 @Injectable()
 export class LnbitsWebHookService {
-  private transactionWebhookSubject: Subject<LnBitsTransactionDto[]>;
+  private transactionWebhookSubject: Subject<LnBitsTransactionWebhookTransferDto>;
   private boltcardWebhookSubject: Subject<BoltcardWebhookTransferDto>;
 
   constructor() {
-    this.transactionWebhookSubject = new Subject<LnBitsTransactionDto[]>();
+    this.transactionWebhookSubject = new Subject<LnBitsTransactionWebhookTransferDto>();
     this.boltcardWebhookSubject = new Subject<BoltcardWebhookTransferDto>();
   }
 
-  getTransactionWebhookObservable(): Observable<LnBitsTransactionDto[]> {
+  getTransactionWebhookObservable(): Observable<LnBitsTransactionWebhookTransferDto> {
     return this.transactionWebhookSubject.asObservable();
   }
 
@@ -21,11 +21,11 @@ export class LnbitsWebHookService {
     return this.boltcardWebhookSubject.asObservable();
   }
 
-  processTransactions(transactions: LnBitsTransactionDto[]): void {
-    this.transactionWebhookSubject.next(transactions);
+  processTransactions(webhookTransfer: LnBitsTransactionWebhookTransferDto): void {
+    this.transactionWebhookSubject.next(webhookTransfer);
   }
 
-  processBoltcards(webhookDto: BoltcardWebhookTransferDto): void {
-    this.boltcardWebhookSubject.next(webhookDto);
+  processBoltcards(webhookTransfer: BoltcardWebhookTransferDto): void {
+    this.boltcardWebhookSubject.next(webhookTransfer);
   }
 }
