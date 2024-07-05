@@ -17,8 +17,3 @@ export interface LnBitsBoltcardDto {
   otp: string;
   time: number;
 }
-
-export interface LNbitsBoltcardCompareDto {
-  id: string;
-  hash: string;
-}

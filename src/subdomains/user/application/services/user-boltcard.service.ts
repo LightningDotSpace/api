@@ -33,20 +33,20 @@ export class UserBoltcardService {
 
     lnbitsWebHookService
       .getBoltcardWebhookObservable()
-      .subscribe((boltcards) => this.processBoltcardRequestMessageQueue(boltcards));
+      .subscribe((webhookTransfer) => this.processBoltcardRequestMessageQueue(webhookTransfer));
   }
 
-  private processBoltcardRequestMessageQueue(boltcards: BoltcardWebhookTransferDto): void {
+  private processBoltcardRequestMessageQueue(webhookTransfer: BoltcardWebhookTransferDto): void {
     this.boltcardWebhookMessageQueue
-      .handle<void>(async () => this.processBoltcardRequest(boltcards))
+      .handle<void>(async () => this.processBoltcardRequest(webhookTransfer))
       .catch((e) => {
-        this.logger.error('Error while processing new transactions', e);
+        this.logger.error('Error while processing boltcard webhook data', e);
       });
   }
 
-  private async processBoltcardRequest(boltcards: BoltcardWebhookTransferDto): Promise<void> {
-    await this.updateBoltcards(boltcards.changed);
-    await this.deleteBoltcards(boltcards.deleted);
+  private async processBoltcardRequest(webhookTransfer: BoltcardWebhookTransferDto): Promise<void> {
+    await this.updateBoltcards(webhookTransfer.changed);
+    await this.deleteBoltcards(webhookTransfer.deleted);
   }
 
   private async updateBoltcards(boltcards: BoltcardInfoDto[]): Promise<UserBoltcardEntity[]> {

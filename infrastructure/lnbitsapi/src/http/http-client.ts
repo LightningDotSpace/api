@@ -3,8 +3,6 @@ import { Agent } from 'https';
 import { Config } from '../shared/config';
 import { LnbitsApiLogger } from '../shared/lnbitsapi-logger';
 import { Util } from '../shared/util';
-import { LnBitsBoltcardDto } from './dto/lnbits-boltcard.dto';
-import { LnBitsTransactionDto } from './dto/lnbits-transaction.dto';
 import { HttpService } from './http.service';
 
 class HttpSender {
@@ -16,33 +14,25 @@ class HttpSender {
     this.http = new HttpService();
   }
 
-  async triggerTransactionsWebhook(transactions: LnBitsTransactionDto[]): Promise<boolean> {
-    const webhookUrl = Config.transactionWebhookUrl;
-    this.logger.verbose(`triggerTransactionsWebhook: ${webhookUrl}`);
-
-    return this.http
-      .post<any>(webhookUrl, transactions, this.httpConfig(JSON.stringify(transactions)))
-      .then(() => true)
-      .catch((e) => {
-        this.logger.error(`triggerTransactionsWebhook: ${webhookUrl}`, e);
-        return false;
-      });
-  }
-
-  async triggerBoltcardsWebhook(changedBoltcards: LnBitsBoltcardDto[], deletedBoltcardIds: string[]): Promise<boolean> {
-    const webhookUrl = Config.boltcardWebhookUrl;
-    this.logger.verbose(`triggerBoltcardsWebhook: ${webhookUrl}`);
+  async triggerWebhook<T>(webhookUrl: string, changed: T[], deletedIds: string[]): Promise<boolean> {
+    this.logger.verbose(`triggerWebhook(): ${webhookUrl}`);
+    this.logger.verbose(`Number of changed data: ${changed.length}`);
+    this.logger.verbose(`Number of deleted data: ${deletedIds.length}`);
 
     const data = {
-      changed: changedBoltcards,
-      deleted: deletedBoltcardIds,
+      changed: changed,
+      deleted: deletedIds,
     };
+
+    this.logger.verbose('-'.repeat(80));
+    this.logger.verbose(JSON.stringify(data));
+    this.logger.verbose('-'.repeat(80));
 
     return this.http
       .post<any>(webhookUrl, data, this.httpConfig(JSON.stringify(data)))
       .then(() => true)
       .catch((e) => {
-        this.logger.error(`triggerBoltcardsWebhook: ${webhookUrl}`, e);
+        this.logger.error(`triggerWebhook: ${webhookUrl}`, e);
         return false;
       });
   }

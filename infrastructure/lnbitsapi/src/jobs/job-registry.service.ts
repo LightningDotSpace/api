@@ -1,8 +1,7 @@
 import { CronJob } from 'cron';
 import { randomUUID } from 'crypto';
 import { LnbitsApiLogger } from '../shared/lnbitsapi-logger';
-import { JobApiPayment } from './job-apipayment';
-import { JobBoltcard } from './job-boltcard';
+import { JobCommon } from './job-common';
 
 class JobRegistryService {
   private readonly logger = new LnbitsApiLogger(JobRegistryService);
@@ -15,8 +14,7 @@ class JobRegistryService {
   }
 
   setup() {
-    this.register(new JobApiPayment());
-    this.register(new JobBoltcard());
+    this.register(new JobCommon());
   }
 
   register(job: CronJob): string {

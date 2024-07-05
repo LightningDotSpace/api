@@ -1,20 +1,23 @@
 import { CronJob } from 'cron';
-import { LnbitsApiLogger } from '../shared/lnbitsapi-logger';
 import { CronExpression } from './enums/cron-expression.enum';
 import { JobApiPaymentService } from './services/job-apipayment.service';
 
 export class JobApiPayment extends CronJob {
-  private readonly logger = new LnbitsApiLogger(JobApiPayment);
+  private isRunning = false;
 
-  private service: JobApiPaymentService;
+  private apiPaymentService: JobApiPaymentService;
 
   constructor() {
     super(CronExpression.EVERY_5_SECONDS, async () => this.process());
 
-    this.service = new JobApiPaymentService();
+    this.apiPaymentService = new JobApiPaymentService();
   }
 
   async process(): Promise<void> {
-    return this.service.checkApiPaymentChange();
+    if (this.isRunning) return;
+
+    this.isRunning = true;
+    await this.apiPaymentService.checkApiPaymentChange();
+    this.isRunning = false;
   }
 }

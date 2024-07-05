@@ -3,7 +3,7 @@ import { ApiExcludeEndpoint, ApiTags } from '@nestjs/swagger';
 import { Config } from 'src/config/config';
 import { Util } from 'src/shared/utils/util';
 import { BoltcardWebhookTransferDto } from '../dto/boltcards.dto';
-import { LnBitsTransactionDto } from '../dto/lnbits.dto';
+import { LnBitsTransactionWebhookTransferDto } from '../dto/lnbits.dto';
 import { LnbitsWebHookService } from '../services/lnbits-webhook.service';
 
 @ApiTags('LNbits')
@@ -15,11 +15,11 @@ export class LnbitsWebhookController {
   @ApiExcludeEndpoint()
   async transactionWebhook(
     @Headers('LDS-LnbitsApi-Signature') lnbitsApiSignature: string,
-    @Body() transactions: LnBitsTransactionDto[],
+    @Body() webhookTransfer: LnBitsTransactionWebhookTransferDto,
   ): Promise<void> {
     try {
-      if (this.isValid(lnbitsApiSignature, JSON.stringify(transactions))) {
-        this.lightningWebHookService.processTransactions(transactions);
+      if (this.isValid(lnbitsApiSignature, JSON.stringify(webhookTransfer))) {
+        this.lightningWebHookService.processTransactions(webhookTransfer);
       }
     } catch (e) {
       throw new BadRequestException();
@@ -30,11 +30,11 @@ export class LnbitsWebhookController {
   @ApiExcludeEndpoint()
   async boltcardWebhook(
     @Headers('LDS-LnbitsApi-Signature') lnbitsApiSignature: string,
-    @Body() boltcards: BoltcardWebhookTransferDto,
+    @Body() webhookTransfer: BoltcardWebhookTransferDto,
   ): Promise<void> {
     try {
-      if (this.isValid(lnbitsApiSignature, JSON.stringify(boltcards))) {
-        this.lightningWebHookService.processBoltcards(boltcards);
+      if (this.isValid(lnbitsApiSignature, JSON.stringify(webhookTransfer))) {
+        this.lightningWebHookService.processBoltcards(webhookTransfer);
       }
     } catch (e) {
       throw new BadRequestException();
