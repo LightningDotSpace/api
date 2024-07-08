@@ -1,8 +1,9 @@
-import { Controller, Get, Param, Query, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Put, Query, Req } from '@nestjs/common';
 import { ApiExcludeEndpoint, ApiTags } from '@nestjs/swagger';
 import { LnurlpResponse, PubKeyResponse } from '@uma-sdk/core';
-import { LnBitsLnurlPayRequestDto } from 'src/integration/blockchain/lightning/dto/lnbits.dto';
+import { LnBitsLnurlPayRequestDto, LnBitsLnurlpLinkDto } from 'src/integration/blockchain/lightning/dto/lnbits.dto';
 import { UmaService } from 'src/integration/blockchain/uma/services/uma.service';
+import { UpdateWellknownForwardDto } from '../dto/lightning-wellknown-forward.dto';
 import { LightningForwardService } from '../services/lightning-forward.service';
 
 @ApiTags('Wellknown')
@@ -22,6 +23,16 @@ export class LightingWellknownForwardController {
     }
 
     return this.forwardService.wellknownForward(address);
+  }
+
+  @Put('lnurlp/:address/asset/:assetName')
+  async wellknownForwardUpdate(
+    @Req() request,
+    @Body() body: UpdateWellknownForwardDto,
+    @Param('address') address: string,
+    @Param('assetName') assetName: string,
+  ): Promise<LnBitsLnurlpLinkDto> {
+    return this.forwardService.wellknownForwardUpdate(request, address, assetName, body);
   }
 
   @Get('lnurlp/:address/cb')

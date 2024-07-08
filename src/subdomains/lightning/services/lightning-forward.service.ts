@@ -21,12 +21,14 @@ import {
   LnBitsLnurlPayRequestDto,
   LnBitsLnurlWithdrawRequestDto,
   LnBitsLnurlpInvoiceDto,
+  LnBitsLnurlpLinkDto,
   LnBitsLnurlwInvoiceDto,
 } from '../../../integration/blockchain/lightning/dto/lnbits.dto';
 import { LightningClient } from '../../../integration/blockchain/lightning/lightning-client';
 import { LightningHelper } from '../../../integration/blockchain/lightning/lightning-helper';
 import { LightningService } from '../../../integration/blockchain/lightning/services/lightning.service';
 import { LightingWalletPaymentParamDto } from '../dto/lightning-wallet.dto';
+import { UpdateWellknownForwardDto } from '../dto/lightning-wellknown-forward.dto';
 
 @Injectable()
 export class LightningForwardService {
@@ -192,6 +194,18 @@ export class LightningForwardService {
     );
 
     return this.evmPaymentService.createPaymentRequest(walletPaymentParam, chfLightningWallet);
+  }
+
+  async wellknownForwardUpdate(
+    request: Request,
+    address: string,
+    assetName: string,
+    body: UpdateWellknownForwardDto,
+  ): Promise<LnBitsLnurlpLinkDto> {
+    const { lnurlpId } = await this.getLightningWallet(address, assetName);
+    const { min, max } = body;
+    const adminKey = request.headers['x-api-key'] as string;
+    return this.client.updateAmountLnurlpLink(adminKey, lnurlpId, min, max);
   }
 
   // --- LNURLw --- //
