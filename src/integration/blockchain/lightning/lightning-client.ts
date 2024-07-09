@@ -391,6 +391,10 @@ export class LightningClient {
     );
   }
 
+  async getLnurlpLink(adminKey: string, linkId: string): Promise<LnBitsLnurlpLinkDto | undefined> {
+    return this.getLnurlpLinks(adminKey).then((l) => l.find((l) => l.id === linkId));
+  }
+
   async createLnurlpLink(
     adminKey: string,
     description: string,
@@ -410,6 +414,27 @@ export class LightningClient {
     return this.http.post<LnBitsLnurlpLinkDto>(
       `${Config.blockchain.lightning.lnbits.lnurlpApiUrl}/links`,
       newLnurlpLinkDto,
+      this.httpLnBitsConfig(adminKey),
+    );
+  }
+
+  async updateAmountLnurlpLink(
+    adminKey: string,
+    linkId: string,
+    min: number,
+    max: number,
+  ): Promise<LnBitsLnurlpLinkDto> {
+    if (!min || !max) throw new Error('min and max are required');
+
+    const lnurlp = await this.getLnurlpLink(adminKey, linkId);
+    if (!lnurlp) throw new Error('Link not found');
+
+    lnurlp.min = min;
+    lnurlp.max = max;
+
+    return this.http.put<LnBitsLnurlpLinkDto>(
+      `${Config.blockchain.lightning.lnbits.lnurlpApiUrl}/links/${linkId}`,
+      lnurlp,
       this.httpLnBitsConfig(adminKey),
     );
   }
