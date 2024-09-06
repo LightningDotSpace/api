@@ -1,7 +1,7 @@
 import { CronJob } from 'cron';
 import { randomUUID } from 'crypto';
-import { LnbitsApiLogger } from '../../shared/lnbitsapi-logger';
-import { JobApiPayment } from '../job-apipayment';
+import { LnbitsApiLogger } from '../shared/lnbitsapi-logger';
+import { JobCommon } from './job-common';
 
 class JobRegistryService {
   private readonly logger = new LnbitsApiLogger(JobRegistryService);
@@ -14,21 +14,21 @@ class JobRegistryService {
   }
 
   setup() {
-    const jobApiPayment = new JobApiPayment();
-    const uniqueJobId = this.register(jobApiPayment);
-    this.logger.verbose(`JobApiPayment registered with id ${uniqueJobId}`);
+    this.register(new JobCommon());
   }
 
   register(job: CronJob): string {
     const uniqueJobId = randomUUID();
 
     this.jobRegistry.set(uniqueJobId, job);
+    this.logger.verbose(`${job.constructor.name} registered: ${uniqueJobId}`);
 
     return uniqueJobId;
   }
 
   unregister(uniqueJobId: string): void {
     this.jobRegistry.delete(uniqueJobId);
+    this.logger.verbose(`Job unregistered: ${uniqueJobId}`);
   }
 
   startJobs(): void {

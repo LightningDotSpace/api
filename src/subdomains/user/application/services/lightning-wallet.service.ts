@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   LnBitsTransactionDto,
   LnBitsTransactionExtraDto,
+  LnBitsTransactionWebhookTransferDto,
   isLnBitsTransactionExtraTag,
 } from 'src/integration/blockchain/lightning/dto/lnbits.dto';
 import { LightningClient } from 'src/integration/blockchain/lightning/lightning-client';
@@ -58,7 +59,11 @@ export class LightningWalletService {
 
     lnbitsWebHookService
       .getTransactionWebhookObservable()
-      .subscribe((transactions) => this.processTransactionRequestMessageQueue(transactions));
+      .subscribe((webhookTransfer) => this.processTransactionRequestMessageQueue(webhookTransfer));
+  }
+
+  async getLightningWallet(walletId: string): Promise<LightningWalletEntity> {
+    return this.lightingWalletRepository.getByWalletId(walletId);
   }
 
   async updateLightningWalletBalances(): Promise<void> {
@@ -173,7 +178,7 @@ export class LightningWalletService {
     endDate: Date,
     withBalance = false,
   ): Promise<UserTransactionEntity[]> {
-    const lightningWalletEntity = await this.lightingWalletRepository.getByWalletId(lightningWalletInfo.lnbitsWalletId);
+    const lightningWalletEntity = await this.getLightningWallet(lightningWalletInfo.lnbitsWalletId);
 
     const allUserWalletTransactions = await this.client.getUserWalletTransactions(lightningWalletInfo.lnbitsWalletId);
     const updateUserWalletTransactions = allUserWalletTransactions.filter(
@@ -270,15 +275,17 @@ export class LightningWalletService {
     return this.userTransactionRepository.save(dbUserTransactionEntity);
   }
 
-  private processTransactionRequestMessageQueue(transactions: LnBitsTransactionDto[]): void {
+  private processTransactionRequestMessageQueue(webhookTransfer: LnBitsTransactionWebhookTransferDto): void {
     this.paymentWebhookMessageQueue
-      .handle<void>(async () => this.processTransactionRequest(transactions))
+      .handle<void>(async () => this.processTransactionRequest(webhookTransfer))
       .catch((e) => {
-        this.logger.error('Error while processing new transactions', e);
+        this.logger.error('Error while processing transaction webhook data', e);
       });
   }
 
-  private async processTransactionRequest(transactions: LnBitsTransactionDto[]): Promise<void> {
+  private async processTransactionRequest(webhookTransfer: LnBitsTransactionWebhookTransferDto): Promise<void> {
+    const transactions = webhookTransfer.changed;
+
     for (const transaction of transactions) {
       await this.doProcessTransaction(transaction);
       await this.doProcessPayment(transaction);
@@ -288,7 +295,7 @@ export class LightningWalletService {
   }
 
   private async doProcessTransaction(transaction: LnBitsTransactionDto): Promise<void> {
-    const lightningWalletEntity = await this.lightingWalletRepository.getByWalletId(transaction.wallet_id);
+    const lightningWalletEntity = await this.getLightningWallet(transaction.wallet_id);
 
     const userTransactionEntities = await this.doCreateLightningUserTransactionEntities(
       lightningWalletEntity,

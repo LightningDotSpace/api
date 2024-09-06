@@ -1,0 +1,44 @@
+---------------------
+New LNbits Compare DB
+---------------------
+- compare_apipayments.sqlite3
+- compare_boltcards.sqlite3
+
+1. just create an empty file
+   - compare_apipayments.sqlite3
+   - compare_boltcards.sqlite3
+
+2. open the empty file in sqlite3
+
+3. enable the auto vacuum mode:
+sqlite> PRAGMA auto_vacuum = 1;
+
+4. create the tables for 'compare_apipayments.sqlite3':
+sqlite>
+
+CREATE TABLE IF NOT EXISTS 'api_payments_check' (
+  wallet_id TEXT NOT NULL,
+  checking_id TEXT NOT NULL,
+  hash TEXT NOT NULL UNIQUE,
+  UNIQUE (wallet_id, checking_id)
+);
+
+CREATE TABLE IF NOT EXISTS 'api_payments_current' (
+  wallet_id TEXT NOT NULL,
+  checking_id TEXT NOT NULL,
+  hash TEXT NOT NULL UNIQUE,
+  UNIQUE (wallet_id, checking_id)
+);
+
+5. create the tables for 'compare_boltcards.sqlite3':
+sqlite>
+
+CREATE TABLE IF NOT EXISTS 'boltcard_cards_check' (
+  id TEXT PRIMARY KEY UNIQUE,
+  hash TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS 'boltcard_cards_current' (
+  id TEXT PRIMARY KEY UNIQUE,
+  hash TEXT NOT NULL UNIQUE
+);

@@ -43,6 +43,11 @@ export interface LnBitsWalletPaymentDto {
   lnurl_response: string;
 }
 
+export interface LnBitsTransactionWebhookTransferDto {
+  changed: LnBitsTransactionDto[];
+  deleted: string[];
+}
+
 export interface LnBitsTransactionExtraTagDto {
   tag: string;
   link: string;
