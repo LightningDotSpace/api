@@ -164,6 +164,10 @@ export class Configuration {
     limitCheck: process.env.REQUEST_LIMIT_CHECK === 'true',
   };
 
+  monitoring = {
+    excludeLnbitsWalletIds: process.env.MONITORING_EXCLUDE_LNBITS_WALLET_IDS?.split(',') ?? [],
+  };
+
   // --- GETTERS --- //
   get baseUrl(): string {
     return this.environment === Environment.LOC

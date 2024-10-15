@@ -17,11 +17,16 @@ export class LightingWalletRepository extends BaseRepository<LightningWalletEnti
     return lightningWallet;
   }
 
-  async getTotalBalances(): Promise<LightningWalletTotalBalanceDto[]> {
-    return this.createQueryBuilder()
+  async getCustomerBalances(excludeLnbitsWalletIds: string[]): Promise<LightningWalletTotalBalanceDto[]> {
+    const query = this.createQueryBuilder()
       .select('assetId')
       .addSelect('SUM(balance)', 'totalBalance')
-      .groupBy('assetId')
-      .getRawMany<LightningWalletTotalBalanceDto>();
+      .groupBy('assetId');
+
+    if (excludeLnbitsWalletIds.length) {
+      query.where('lnbitsWalletId NOT IN (:...excludeLnbitsWalletIds)', { excludeLnbitsWalletIds });
+    }
+
+    return query.getRawMany<LightningWalletTotalBalanceDto>();
   }
 }
