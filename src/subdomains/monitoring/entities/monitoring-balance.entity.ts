@@ -33,6 +33,7 @@ export class MonitoringBalanceEntity extends IEntity {
   static createAsBtcEntity(
     onchainBalance: number,
     lightningBalance: number,
+    internalBalance: LightningWalletTotalBalanceDto,
     customerBalance: LightningWalletTotalBalanceDto,
     chfPrice: Price,
   ): MonitoringBalanceEntity {
@@ -43,7 +44,8 @@ export class MonitoringBalanceEntity extends IEntity {
     entity.lightningBalance = lightningBalance;
     entity.customerBalance = customerBalance.totalBalance;
 
-    entity.ldsBalance = entity.onchainBalance + entity.lightningBalance - entity.customerBalance;
+    entity.ldsBalance =
+      entity.onchainBalance + entity.lightningBalance + internalBalance.totalBalance - entity.customerBalance;
 
     entity.assetPriceInCHF = chfPrice.convert(1, 2);
     entity.ldsBalanceInCHF = chfPrice.convert(LightningHelper.satToBtc(entity.ldsBalance), 2);

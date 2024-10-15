@@ -27,6 +27,7 @@ param lightningLndAdminMacaroon string
 @secure()
 param lightningLnbitsApiCertificate string
 param lightningLnbitsExtensions string
+param lightningLnbitsInternalWalletIds string
 
 param ethereumGatewayUrl string
 param ethereumChainId string
@@ -55,8 +56,6 @@ param paymentEvmAddress string
 
 @secure()
 param coingeckoApiKey string
-
-param monitoringExcludeLnbitsWalletIds string
 
 // --- VARIABLES --- //
 var compName = 'lds'
@@ -364,6 +363,10 @@ resource apiAppService 'Microsoft.Web/sites@2018-11-01' = if (env != 'loc') {
           value: lightningLnbitsExtensions
         }
         {
+          name: 'LIGHTNING_LNBITS_INTERNAL_WALLET_IDS'
+          value: lightningLnbitsInternalWalletIds
+        }
+        {
           name: 'ETHEREUM_GATEWAY_URL'
           value: ethereumGatewayUrl
         }
@@ -450,10 +453,6 @@ resource apiAppService 'Microsoft.Web/sites@2018-11-01' = if (env != 'loc') {
         {
           name: 'COIN_GECKO_API_KEY'
           value: coingeckoApiKey
-        }
-        {
-          name: 'MONITORING_EXCLUDE_LNBITS_WALLET_IDS'
-          value: monitoringExcludeLnbitsWalletIds
         }
         {
           name: 'WEBSITE_RUN_FROM_PACKAGE'

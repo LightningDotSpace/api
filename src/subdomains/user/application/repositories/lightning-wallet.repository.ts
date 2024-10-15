@@ -17,6 +17,17 @@ export class LightingWalletRepository extends BaseRepository<LightningWalletEnti
     return lightningWallet;
   }
 
+  async getInternalBalances(internalLnbitsWalletIds: string[]): Promise<LightningWalletTotalBalanceDto[]> {
+    if (!internalLnbitsWalletIds.length) return [];
+
+    return this.createQueryBuilder()
+      .select('assetId')
+      .addSelect('SUM(balance)', 'totalBalance')
+      .where('lnbitsWalletId IN (:...internalLnbitsWalletIds)', { internalLnbitsWalletIds })
+      .groupBy('assetId')
+      .getRawMany<LightningWalletTotalBalanceDto>();
+  }
+
   async getCustomerBalances(excludeLnbitsWalletIds: string[]): Promise<LightningWalletTotalBalanceDto[]> {
     const query = this.createQueryBuilder()
       .select('assetId')
