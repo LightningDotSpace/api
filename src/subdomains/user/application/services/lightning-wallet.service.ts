@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Config } from 'src/config/config';
 import {
   LnBitsTransactionDto,
   LnBitsTransactionExtraDto,
@@ -78,7 +79,9 @@ export class LightningWalletService {
       );
     }
 
-    const customerBalances = await this.lightingWalletRepository.getTotalBalances();
+    const customerBalances = await this.lightingWalletRepository.getCustomerBalances(
+      Config.monitoring.excludeLnbitsWalletIds,
+    );
     await this.monitoringService.processBalanceMonitoring(customerBalances);
   }
 

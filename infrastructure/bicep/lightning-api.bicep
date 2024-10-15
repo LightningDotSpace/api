@@ -56,6 +56,8 @@ param paymentEvmAddress string
 @secure()
 param coingeckoApiKey string
 
+param monitoringExcludeLnbitsWalletIds string
+
 // --- VARIABLES --- //
 var compName = 'lds'
 var apiName = 'api'
@@ -448,6 +450,10 @@ resource apiAppService 'Microsoft.Web/sites@2018-11-01' = if (env != 'loc') {
         {
           name: 'COIN_GECKO_API_KEY'
           value: coingeckoApiKey
+        }
+        {
+          name: 'MONITORING_EXCLUDE_LNBITS_WALLET_IDS'
+          value: monitoringExcludeLnbitsWalletIds
         }
         {
           name: 'WEBSITE_RUN_FROM_PACKAGE'

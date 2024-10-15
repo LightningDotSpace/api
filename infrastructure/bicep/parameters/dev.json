@@ -106,6 +106,9 @@
     },
     "coingeckoApiKey": {
       "value": "xxx"
+    },
+    "monitoringExcludeLnbitsWalletIds": {
+      "value": "xxx"
     }
   }
 }
