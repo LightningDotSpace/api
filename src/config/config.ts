@@ -90,6 +90,7 @@ export class Configuration {
         adminUserId: process.env.LIGHTNING_LNBITS_ADMIN_USER_ID ?? '',
         adminKey: process.env.LIGHTNING_LNBITS_ADMIN_KEY ?? '',
         extensions: process.env.LIGHTNING_LNBITS_EXTENSIONS?.split(',') ?? [],
+        internalWalletIds: process.env.LIGHTNING_LNBITS_INTERNAL_WALLET_IDS?.split(',') ?? [],
         apiUrl: process.env.LIGHTNING_LNBITS_API_URL ?? '',
         extensionManagementApiUrl: process.env.LIGHTNING_LNBITS_EXTENSION_MANAGEMENT_API_URL ?? '',
         lnurlpApiUrl: process.env.LIGHTNING_LNBITS_LNURLP_API_URL ?? '',
@@ -162,10 +163,6 @@ export class Configuration {
   request = {
     knownIps: process.env.REQUEST_KNOWN_IPS?.split(',') ?? [],
     limitCheck: process.env.REQUEST_LIMIT_CHECK === 'true',
-  };
-
-  monitoring = {
-    excludeLnbitsWalletIds: process.env.MONITORING_EXCLUDE_LNBITS_WALLET_IDS?.split(',') ?? [],
   };
 
   // --- GETTERS --- //

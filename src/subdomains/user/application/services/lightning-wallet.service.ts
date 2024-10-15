@@ -79,10 +79,12 @@ export class LightningWalletService {
       );
     }
 
-    const customerBalances = await this.lightingWalletRepository.getCustomerBalances(
-      Config.monitoring.excludeLnbitsWalletIds,
-    );
-    await this.monitoringService.processBalanceMonitoring(customerBalances);
+    const internalWalletIds = Config.blockchain.lightning.lnbits.internalWalletIds;
+
+    const internalBalances = await this.lightingWalletRepository.getInternalBalances(internalWalletIds);
+    const customerBalances = await this.lightingWalletRepository.getCustomerBalances(internalWalletIds);
+
+    await this.monitoringService.processBalanceMonitoring(internalBalances, customerBalances);
   }
 
   async syncLightningUserTransactions(
