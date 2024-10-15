@@ -35,10 +35,13 @@ export class MonitoringService {
 
   // --- LIGHTNING --- //
 
-  async processBalanceMonitoring(customerBalances: LightningWalletTotalBalanceDto[]): Promise<void> {
+  async processBalanceMonitoring(
+    internalBalances: LightningWalletTotalBalanceDto[],
+    customerBalances: LightningWalletTotalBalanceDto[],
+  ): Promise<void> {
     this.processBalancesQueue
       .handle<void>(async () => {
-        await this.processBalances(customerBalances);
+        await this.processBalances(internalBalances, customerBalances);
         await this.processChannels();
       })
       .catch((e) => {
@@ -46,13 +49,21 @@ export class MonitoringService {
       });
   }
 
-  private async processBalances(customerBalances: LightningWalletTotalBalanceDto[]): Promise<void> {
+  private async processBalances(
+    internalBalances: LightningWalletTotalBalanceDto[],
+    customerBalances: LightningWalletTotalBalanceDto[],
+  ): Promise<void> {
     try {
       const onchainBalance = await this.getOnchainBalance();
       const lightningBalance = await this.getLightningBalance();
 
       const btcAccountAsset = await this.assetService.getBtcAccountAssetOrThrow();
       const btcAccountAssetId = btcAccountAsset.id;
+
+      const internalBtcBalance = internalBalances?.find((b) => b.assetId === btcAccountAssetId) ?? {
+        assetId: btcAccountAssetId,
+        totalBalance: 0,
+      };
 
       const customerBtcBalance = customerBalances.find((b) => b.assetId === btcAccountAssetId) ?? {
         assetId: btcAccountAssetId,
@@ -61,7 +72,7 @@ export class MonitoringService {
 
       const customerFiatBalances = customerBalances.filter((b) => b.assetId !== btcAccountAssetId);
 
-      await this.processBtcBalance(onchainBalance, lightningBalance, customerBtcBalance);
+      await this.processBtcBalance(onchainBalance, lightningBalance, internalBtcBalance, customerBtcBalance);
       await this.processFiatBalances(customerFiatBalances);
     } catch (e) {
       this.logger.error('Error while processing balances', e);
@@ -89,6 +100,7 @@ export class MonitoringService {
   private async processBtcBalance(
     onchainBalance: number,
     lightningBalance: number,
+    internalBtcBalance: LightningWalletTotalBalanceDto,
     customerBtcBalance: LightningWalletTotalBalanceDto,
   ) {
     const chfPrice = await this.coinGeckoService.getPrice('BTC', 'CHF');
@@ -97,6 +109,7 @@ export class MonitoringService {
     const btcMonitoringEntity = MonitoringBalanceEntity.createAsBtcEntity(
       onchainBalance,
       lightningBalance,
+      internalBtcBalance,
       customerBtcBalance,
       chfPrice,
     );
