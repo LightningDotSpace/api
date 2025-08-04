@@ -209,16 +209,16 @@ export class LightningForwardService {
   }
 
   // --- LNURLw --- //
-  async lnurlwForward(id: string): Promise<LnBitsLnurlWithdrawRequestDto> {
-    const withdrawRequest = await this.client.getLnurlwWithdrawRequest(id);
+  async lnurlwForward(id: string, uniqueHash: string): Promise<LnBitsLnurlWithdrawRequestDto> {
+    const withdrawRequest = await this.client.getLnurlwWithdrawRequest(id, uniqueHash);
 
-    withdrawRequest.callback = LightningHelper.createLnurlwCallbackUrl(id);
+    withdrawRequest.callback = LightningHelper.createLnurlwCallbackUrl(id, uniqueHash);
 
     return withdrawRequest;
   }
 
-  async lnurlwCallbackForward(id: string, params: any): Promise<LnBitsLnurlwInvoiceDto> {
-    return this.client.sendLnurlwInvoice(id, params);
+  async lnurlwCallbackForward(id: string, k1: string, pr: string): Promise<LnBitsLnurlwInvoiceDto> {
+    return this.client.sendLnurlwInvoice(id, k1, pr);
   }
 
   // --- UTILITIES --- //
