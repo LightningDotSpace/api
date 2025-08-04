@@ -217,8 +217,8 @@ export class LightningForwardService {
     return withdrawRequest;
   }
 
-  async lnurlwCallbackForward(id: string, k1: string, pr: string): Promise<LnBitsLnurlwInvoiceDto> {
-    return this.client.sendLnurlwInvoice(id, k1, pr);
+  async lnurlwCallbackForward(id: string, uniqueHash: string, k1: string, pr: string): Promise<LnBitsLnurlwInvoiceDto> {
+    return this.client.sendLnurlwInvoice(id, uniqueHash, k1, pr);
   }
 
   // --- UTILITIES --- //
