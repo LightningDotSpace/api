@@ -565,7 +565,7 @@ export class LightningClient {
 
   async sendLnurlwInvoice(linkId: string, uniqueHash: string, k1: string, pr: string): Promise<LnBitsLnurlwInvoiceDto> {
     const lnBitsCallbackUrl = new URL(`${Config.blockchain.lightning.lnbits.lnurlwApiUrl}/lnurl/cb/${linkId}`);
-    lnBitsCallbackUrl.searchParams.set('unique_hash', uniqueHash);
+    lnBitsCallbackUrl.searchParams.set('id_unique_hash', uniqueHash);
     lnBitsCallbackUrl.searchParams.set('k1', k1);
     lnBitsCallbackUrl.searchParams.set('pr', pr);
 
