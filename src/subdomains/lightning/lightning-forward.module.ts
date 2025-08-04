@@ -5,6 +5,7 @@ import { EvmModule } from '../evm/evm.module';
 import { UserModule } from '../user/user.module';
 import { LightingBoltcardsForwardController } from './controllers/lightning-boltcards-forward.controller';
 import { LightingLndhubForwardController } from './controllers/lightning-lndhub-forward.controller';
+import { LightingLnurlwForwardController } from './controllers/lightning-lnurlw-forward.controller';
 import { LightingWellknownForwardController } from './controllers/lightning-wellknown-forward.controller';
 import { LightningForwardService } from './services/lightning-forward.service';
 
@@ -14,6 +15,7 @@ import { LightningForwardService } from './services/lightning-forward.service';
     LightingLndhubForwardController,
     LightingBoltcardsForwardController,
     LightingWellknownForwardController,
+    LightingLnurlwForwardController,
   ],
   providers: [LightningForwardService],
   exports: [LightningForwardService],
