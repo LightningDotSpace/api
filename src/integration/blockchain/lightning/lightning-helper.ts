@@ -40,7 +40,9 @@ export class LightningHelper {
 
   // --- LNURLw --- //
   static createLnurlwCallbackUrl(id: string): string {
-    return `https://lightning.space/withdraw/api/v1/lnurl/cb/${id}`;
+    const protocol = Config.environment === Environment.LOC ? 'http' : 'https';
+    const domain = Config.environment === Environment.PRD ? 'lightning.space' : Config.baseUrl;
+    return `${protocol}://${domain}/withdraw/api/v1/lnurl/cb/${id}`;
   }
 
   // --- LNURL --- //
