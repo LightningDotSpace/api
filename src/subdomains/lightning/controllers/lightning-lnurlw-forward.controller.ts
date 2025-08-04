@@ -6,7 +6,7 @@ import { LightningForwardService } from '../services/lightning-forward.service';
 export class LightingLnurlwForwardController {
   constructor(private forwardService: LightningForwardService) {}
 
-  @Get('lnurlw/:id/:unique_hash')
+  @Get(':id/:unique_hash')
   async lnurlwForward(
     @Param('id') id: string,
     @Param('unique_hash') uniqueHash: string,
@@ -14,7 +14,7 @@ export class LightingLnurlwForwardController {
     return this.forwardService.lnurlwForward(id, uniqueHash);
   }
 
-  @Get('lnurlw/cb/:id')
+  @Get('cb/:id')
   async lnUrlWCallbackForward(@Param('id') id: string, @Query('k1') k1: string, @Query('pr') pr: string): Promise<any> {
     return this.forwardService.lnurlwCallbackForward(id, k1, pr);
   }

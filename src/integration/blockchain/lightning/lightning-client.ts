@@ -560,7 +560,7 @@ export class LightningClient {
   // --- LNURLw REWRITE --- //
   async getLnurlwWithdrawRequest(linkId: string, uniqueHash: string): Promise<LnBitsLnurlWithdrawRequestDto> {
     const lnBitsUrl = `${Config.blockchain.lightning.lnbits.lnurlwApiUrl}/lnurl/${linkId}/${uniqueHash}`;
-    return this.http.get(lnBitsUrl);
+    return this.http.get(lnBitsUrl, this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey));
   }
 
   async sendLnurlwInvoice(linkId: string, k1: string, pr: string): Promise<LnBitsLnurlwInvoiceDto> {
@@ -568,7 +568,7 @@ export class LightningClient {
     lnBitsCallbackUrl.searchParams.set('k1', k1);
     lnBitsCallbackUrl.searchParams.set('pr', pr);
 
-    return this.http.get<LnBitsLnurlwInvoiceDto>(lnBitsCallbackUrl.toString());
+    return this.http.get<LnBitsLnurlwInvoiceDto>(lnBitsCallbackUrl.toString(), this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey));
   }
 
   // --- LNURLw LINKS --- //
