@@ -14,10 +14,10 @@ export class LightingLnurlwForwardController {
     return this.forwardService.lnurlwForward(id, uniqueHash);
   }
 
-  @Get('cb/:id')
+  @Get('cb/:id/:unique_hash')
   async lnUrlWCallbackForward(
     @Param('id') id: string,
-    @Query('unique_hash') uniqueHash: string,
+    @Param('unique_hash') uniqueHash: string,
     @Query('k1') k1: string,
     @Query('pr') pr: string,
   ): Promise<any> {
