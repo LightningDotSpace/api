@@ -558,21 +558,23 @@ export class LightningClient {
   }
 
   // --- LNURLw REWRITE --- //
-  async getLnurlwWithdrawRequest(linkId: string, uniqueHash: string): Promise<LnBitsLnurlWithdrawRequestDto | any> {
-    const lnBitsUrl = `${Config.blockchain.lightning.lnbits.lnurlwApiUrl}/lnurl/${linkId}/${uniqueHash}`;
+  async getLnurlwWithdrawRequest(linkId: string, uniqueHash?: string): Promise<LnBitsLnurlWithdrawRequestDto | any> {
+    const lnBitsUrl = `${Config.blockchain.lightning.lnbits.lnurlwApiUrl}/lnurl/${linkId}${
+      uniqueHash ? `/${uniqueHash}` : ''
+    }`;
     return this.http.get(lnBitsUrl, this.httpLnBitsConfig(Config.blockchain.lightning.lnbits.adminKey));
   }
 
   async sendLnurlwInvoice(
-    linkId: string,
-    uniqueHash: string,
+    id: string,
     k1: string,
     pr: string,
+    uniqueHash?: string,
   ): Promise<LnBitsLnurlwInvoiceDto | any> {
-    const lnBitsCallbackUrl = new URL(`${Config.blockchain.lightning.lnbits.lnurlwApiUrl}/lnurl/cb/${linkId}`);
-    lnBitsCallbackUrl.searchParams.set('id_unique_hash', uniqueHash);
+    const lnBitsCallbackUrl = new URL(`${Config.blockchain.lightning.lnbits.lnurlwApiUrl}/lnurl/cb/${id}`);
     lnBitsCallbackUrl.searchParams.set('k1', k1);
     lnBitsCallbackUrl.searchParams.set('pr', pr);
+    if (uniqueHash) lnBitsCallbackUrl.searchParams.set('id_unique_hash', uniqueHash);
 
     return this.http.get<LnBitsLnurlwInvoiceDto>(
       lnBitsCallbackUrl.toString(),

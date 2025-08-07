@@ -39,8 +39,8 @@ export class LightningHelper {
   }
 
   // --- LNURLw --- //
-  static createLnurlwCallbackUrl(id: string, uniqueHash: string): string {
-    return `${Config.url}/lnurlw/cb/${id}/${uniqueHash}`;
+  static createLnurlwCallbackUrl(id: string, uniqueHash?: string): string {
+    return `${Config.url}/lnurlw/cb/${id}${uniqueHash ? `/${uniqueHash}` : ''}`;
   }
 
   // --- LNURL --- //

@@ -209,7 +209,7 @@ export class LightningForwardService {
   }
 
   // --- LNURLw --- //
-  async lnurlwForward(id: string, uniqueHash: string): Promise<LnBitsLnurlWithdrawRequestDto> {
+  async lnurlwForward(id: string, uniqueHash?: string): Promise<LnBitsLnurlWithdrawRequestDto> {
     const withdrawRequest = await this.client.getLnurlwWithdrawRequest(id, uniqueHash);
 
     withdrawRequest.callback = LightningHelper.createLnurlwCallbackUrl(id, uniqueHash);
@@ -217,8 +217,13 @@ export class LightningForwardService {
     return withdrawRequest;
   }
 
-  async lnurlwCallbackForward(id: string, uniqueHash: string, k1: string, pr: string): Promise<LnBitsLnurlwInvoiceDto> {
-    return this.client.sendLnurlwInvoice(id, uniqueHash, k1, pr);
+  async lnurlwCallbackForward(
+    id: string,
+    k1: string,
+    pr: string,
+    uniqueHash?: string,
+  ): Promise<LnBitsLnurlwInvoiceDto> {
+    return this.client.sendLnurlwInvoice(id, k1, pr, uniqueHash);
   }
 
   // --- UTILITIES --- //
