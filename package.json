@@ -53,6 +53,7 @@
     "reflect-metadata": "^0.1.13",
     "rimraf": "^4.4.1",
     "rxjs": "^7.8.0",
+    "sqlite3": "^5.1.7",
     "swagger-ui-express": "^4.6.2",
     "typeorm": "^0.3.12",
     "ws": "^8.14.2"

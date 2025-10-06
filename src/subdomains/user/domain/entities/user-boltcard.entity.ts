@@ -56,7 +56,7 @@ export class UserBoltcardEntity extends IEntity {
   @Column()
   otp: string;
 
-  @Column({ type: 'datetime2' })
+  @Column({ type: 'datetime' })
   creationTimestamp: Date;
 
   @ManyToOne(() => LightningWalletEntity, { eager: true })

@@ -51,13 +51,13 @@ export class TransactionLightningEntity extends IEntity {
   @Column({ type: 'float', nullable: true })
   balance?: number;
 
-  @Column({ type: 'datetime2' })
+  @Column({ type: 'datetime' })
   creationTimestamp: Date;
 
-  @Column({ type: 'datetime2', nullable: true })
+  @Column({ type: 'datetime', nullable: true })
   expiresTimestamp?: Date;
 
-  @Column({ type: 'datetime2', nullable: true })
+  @Column({ type: 'datetime', nullable: true })
   confirmedTimestamp?: Date;
 
   @Column({ length: 'MAX', nullable: true })

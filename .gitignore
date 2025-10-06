@@ -41,3 +41,9 @@ placeholder.env
 
 # Custom
 thunder-tests/env
+
+# Local SQLite databases
+testDB/
+*.db
+*.sqlite
+*.sqlite3
