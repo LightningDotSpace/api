@@ -47,3 +47,4 @@ testDB/
 *.db
 *.sqlite
 *.sqlite3
+testDB
