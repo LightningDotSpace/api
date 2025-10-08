@@ -15,9 +15,7 @@ export interface Swap {
   updatedAt: number;
 
   // Cryptographic
-  preimage: string;
   preimageHash: string;
-  claimPrivateKey: string;
   claimPublicKey: string;
 
   // Lightning
@@ -35,21 +33,23 @@ export interface Swap {
   // Claimed
   claimTxId?: string;
   claimedAt?: number;
+  preimage?: string;  // Only populated AFTER user claims (extracted from chain)
 }
 
 export interface CreateSwapRequest {
   invoiceAmount: number;
+  preimageHash: string;  // User-supplied preimage hash (user keeps preimage secret!)
+  claimPublicKey: string;  // User-supplied public key for claiming
   claimAddress: string;
 }
 
 export interface CreateSwapResponse {
   id: string;
   invoice: string;
-  preimageHash: string;
-  claimPublicKey: string;
+  lockupAddress: string;
   timeoutBlockHeight: number;
-  claimPrivateKey: string;
-  preimage: string;
+  // Security: preimage and claimPrivateKey are NEVER exposed
+  // User already has their own preimage and privateKey
 }
 
 export interface SwapStatusResponse {

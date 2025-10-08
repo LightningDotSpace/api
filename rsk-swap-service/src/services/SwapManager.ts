@@ -13,33 +13,32 @@ export class SwapManager {
 
   /**
    * Create a new reverse swap (Lightning → RBTC)
+   * User provides: preimageHash, claimPublicKey (keeps preimage secret!)
    */
   async createReverseSwap(request: CreateSwapRequest): Promise<CreateSwapResponse> {
-    // Generate cryptographic material
-    const preimage = CryptoUtils.generatePreimage();
-    const preimageHash = CryptoUtils.hashPreimage(preimage);
-    const { privateKey, publicKey } = CryptoUtils.generateKeypair();
-
     const swapId = randomBytes(6).toString('base64url');
     const timeoutBlockHeight = await this.rskService.getCurrentBlock() + 1440; // 24 hours
 
-    // Create Lightning invoice
+    // Validate inputs
+    if (!request.preimageHash || request.preimageHash.length !== 64) {
+      throw new Error('Invalid preimageHash: must be 32 bytes (64 hex chars)');
+    }
+
+    // Create HODL invoice (settled when preimage revealed)
     const invoice = await this.lndService.createInvoice(
       request.invoiceAmount,
-      preimageHash,
+      request.preimageHash,
       `Lightning.space RSK Swap ${swapId}`
     );
 
-    // Save swap to database
+    // Save swap to database (NO preimage, NO privateKey stored!)
     const swap: Swap = {
       id: swapId,
       status: SwapStatus.PENDING,
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      preimage,
-      preimageHash,
-      claimPrivateKey: privateKey,
-      claimPublicKey: publicKey,
+      preimageHash: request.preimageHash,
+      claimPublicKey: request.claimPublicKey,
       invoiceAmount: request.invoiceAmount,
       invoice: invoice.paymentRequest,
       invoicePaid: false,
@@ -50,18 +49,16 @@ export class SwapManager {
     this.dbService.createSwap(swap);
 
     // Start monitoring invoice payment
-    this.monitorInvoicePayment(swapId, preimageHash);
+    this.monitorInvoicePayment(swapId, request.preimageHash);
 
     console.log(`Created swap ${swapId}: ${request.invoiceAmount} sats`);
+    console.log(`Security: User keeps preimage secret until claim`);
 
     return {
       id: swapId,
       invoice: invoice.paymentRequest,
-      preimageHash,
-      claimPublicKey: publicKey,
-      timeoutBlockHeight,
-      claimPrivateKey: privateKey,
-      preimage
+      lockupAddress: this.rskService.getAddress(),
+      timeoutBlockHeight
     };
   }
 
@@ -111,10 +108,10 @@ export class SwapManager {
       const feePercent = 0.005; // 0.5% fee
       const onchainAmount = Math.floor(swap.invoiceAmount * (1 - feePercent));
 
-      // Lock RBTC
+      // Lock RBTC (user will claim with their preimage)
       const lockupDetails = await this.rskService.lockup(
         swap.preimageHash,
-        swap.claimPublicKey,
+        swap.claimAddress,  // User claims to their address
         onchainAmount,
         1440 // 24 hours
       );

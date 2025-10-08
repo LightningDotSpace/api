@@ -149,6 +149,34 @@ export class LndService {
   }
 
   /**
+   * Settle a HODL invoice with preimage
+   * Called when user claims onchain and reveals preimage
+   */
+  async settleInvoice(preimage: string): Promise<void> {
+    if (!this.isConnected) {
+      throw new Error('LND not connected');
+    }
+
+    try {
+      // ln-service settleHodlInvoice function
+      const { settleHodlInvoice } = require('ln-service');
+
+      // Remove 0x prefix if present
+      const secret = preimage.startsWith('0x') ? preimage.slice(2) : preimage;
+
+      await settleHodlInvoice({
+        lnd: this.lnd,
+        secret
+      });
+
+      console.log(`HODL invoice settled with preimage ${preimage.substring(0, 8)}...`);
+    } catch (error) {
+      console.error('Failed to settle invoice:', error);
+      throw new Error(`Invoice settlement failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
    * Disconnect from LND
    */
   disconnect(): void {
