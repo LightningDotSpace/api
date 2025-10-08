@@ -5,6 +5,7 @@ import { RskService } from './services/RskService';
 import { LndService } from './services/LndService';
 import { DatabaseService } from './services/DatabaseService';
 import { SwapManager } from './services/SwapManager';
+import { ClaimMonitor } from './services/ClaimMonitor';
 import { createSwapRoutes } from './routes/swap.routes';
 
 // Load environment variables
@@ -53,6 +54,20 @@ async function startServer() {
       lndService,
       dbService
     );
+
+    // Initialize ClaimMonitor
+    const claimMonitor = new ClaimMonitor(
+      rskService,
+      lndService,
+      dbService
+    );
+
+    // Store instance for graceful shutdown
+    claimMonitorInstance = claimMonitor;
+
+    // Start monitoring for claims
+    claimMonitor.start();
+    console.log('ClaimMonitor started - watching for onchain claims');
 
     // Initialize Express app
     const app = express();
@@ -103,13 +118,21 @@ async function startServer() {
 }
 
 // Handle graceful shutdown
+let claimMonitorInstance: ClaimMonitor | null = null;
+
 process.on('SIGINT', () => {
   console.log('\nShutting down gracefully...');
+  if (claimMonitorInstance) {
+    claimMonitorInstance.stop();
+  }
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.log('\nShutting down gracefully...');
+  if (claimMonitorInstance) {
+    claimMonitorInstance.stop();
+  }
   process.exit(0);
 });
 
