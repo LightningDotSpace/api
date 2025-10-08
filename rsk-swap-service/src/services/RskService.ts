@@ -158,6 +158,71 @@ export class RskService {
   async getTransactionReceipt(txHash: string) {
     return await this.provider.getTransactionReceipt(txHash);
   }
+
+  /**
+   * Query Claim events for a specific preimageHash
+   * Returns the preimage revealed in the claim transaction
+   */
+  async findClaimEvent(preimageHash: string, fromBlock: number = -1000): Promise<{preimage: string, txHash: string} | null> {
+    try {
+      const formattedHash = preimageHash.startsWith('0x') ? preimageHash : `0x${preimageHash}`;
+
+      // Create filter for Claim events with our preimageHash
+      const filter = this.etherSwapContract.filters.Claim(formattedHash);
+
+      // Query events from the last N blocks to current
+      const currentBlock = await this.provider.getBlockNumber();
+      const searchFromBlock = fromBlock < 0 ? currentBlock + fromBlock : fromBlock;
+
+      console.log(`Searching for Claim event from block ${searchFromBlock} to ${currentBlock}`);
+
+      const events = await this.etherSwapContract.queryFilter(filter, searchFromBlock, currentBlock);
+
+      if (events.length > 0) {
+        const event = events[0];
+        console.log(`Found Claim event in tx ${event.transactionHash}`);
+
+        return {
+          preimage: event.args.preimage,
+          txHash: event.transactionHash
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error querying Claim events:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Listen for Claim events in real-time
+   */
+  onClaimEvent(preimageHash: string, callback: (preimage: string, txHash: string) => void): () => void {
+    const formattedHash = preimageHash.startsWith('0x') ? preimageHash : `0x${preimageHash}`;
+
+    const listener = async (pHash: string, preimage: string, event: any) => {
+      if (pHash.toLowerCase() === formattedHash.toLowerCase()) {
+        console.log(`Claim event detected for ${preimageHash} in tx ${event.log.transactionHash}`);
+        callback(preimage, event.log.transactionHash);
+      }
+    };
+
+    // Start listening
+    this.etherSwapContract.on('Claim', listener);
+
+    // Return cleanup function
+    return () => {
+      this.etherSwapContract.off('Claim', listener);
+    };
+  }
+
+  /**
+   * Get EtherSwap contract (for advanced usage)
+   */
+  getEtherSwapContract(): ethers.Contract {
+    return this.etherSwapContract;
+  }
 }
 
 /**

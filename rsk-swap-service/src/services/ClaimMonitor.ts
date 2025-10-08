@@ -59,28 +59,45 @@ export class ClaimMonitor {
 
   /**
    * Watch for a specific swap to be claimed
+   * Uses real-time event listening for instant detection
    */
   private async watchSwapClaim(swapId: string, preimageHash: string) {
     try {
       console.log(`Watching for claim of swap ${swapId}...`);
 
-      // Poll for claim transaction (in production, use event listeners)
+      // First, check if already claimed (historical event)
+      const existingClaim = await this.findClaimTransaction(preimageHash);
+      if (existingClaim) {
+        await this.handleClaim(swapId, existingClaim.preimage, existingClaim.txHash);
+        return;
+      }
+
+      // Setup real-time event listener
+      const cleanup = this.rskService.onClaimEvent(preimageHash, async (preimage, txHash) => {
+        console.log(`Real-time claim detected for swap ${swapId}!`);
+        cleanup(); // Stop listening
+        await this.handleClaim(swapId, preimage, txHash);
+      });
+
+      // Fallback: Poll every 30 seconds as backup (in case WebSocket connection drops)
       const checkInterval = setInterval(async () => {
         const swap = this.dbService.getSwap(swapId);
 
         if (!swap || swap.status !== SwapStatus.LOCKED) {
           clearInterval(checkInterval);
+          cleanup(); // Stop event listener
           return;
         }
 
-        // Check if claim transaction exists
+        // Check if claim transaction exists (fallback)
         const claimTx = await this.findClaimTransaction(preimageHash);
 
         if (claimTx) {
           clearInterval(checkInterval);
+          cleanup(); // Stop event listener
           await this.handleClaim(swapId, claimTx.preimage, claimTx.txHash);
         }
-      }, 10000); // Check every 10 seconds
+      }, 30000); // Check every 30 seconds (fallback only)
 
     } catch (error) {
       console.error(`Error watching swap ${swapId}:`, error);
@@ -92,23 +109,21 @@ export class ClaimMonitor {
    * Returns the preimage revealed in the claim
    */
   private async findClaimTransaction(preimageHash: string): Promise<{preimage: string, txHash: string} | null> {
-    // TODO: Implement proper blockchain scanning
-    // For now, this is a placeholder that would need to:
-    // 1. Query EtherSwap contract Claim events
-    // 2. Filter by preimageHash
-    // 3. Extract preimage from event data
+    try {
+      // Query EtherSwap contract for Claim events
+      // Search the last 1000 blocks (approximately 8 hours on RSK with 30s blocks)
+      const claimEvent = await this.rskService.findClaimEvent(preimageHash, -1000);
 
-    // Example implementation (needs actual contract event parsing):
-    // const filter = etherSwapContract.filters.Claim(preimageHash);
-    // const events = await etherSwapContract.queryFilter(filter);
-    // if (events.length > 0) {
-    //   return {
-    //     preimage: events[0].args.preimage,
-    //     txHash: events[0].transactionHash
-    //   };
-    // }
+      if (claimEvent) {
+        console.log(`Found claim for ${preimageHash}: preimage=${claimEvent.preimage.substring(0, 8)}...`);
+        return claimEvent;
+      }
 
-    return null;
+      return null;
+    } catch (error) {
+      console.error(`Error finding claim transaction for ${preimageHash}:`, error);
+      return null;
+    }
   }
 
   /**
