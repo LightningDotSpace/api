@@ -18,9 +18,8 @@ export class DatabaseService {
         createdAt INTEGER NOT NULL,
         updatedAt INTEGER NOT NULL,
 
-        preimage TEXT NOT NULL,
+        preimage TEXT,
         preimageHash TEXT NOT NULL,
-        claimPrivateKey TEXT NOT NULL,
         claimPublicKey TEXT NOT NULL,
 
         invoiceAmount INTEGER NOT NULL,
@@ -53,13 +52,13 @@ export class DatabaseService {
     const stmt = this.db.prepare(`
       INSERT INTO swaps (
         id, status, createdAt, updatedAt,
-        preimage, preimageHash, claimPrivateKey, claimPublicKey,
+        preimage, preimageHash, claimPublicKey,
         invoiceAmount, invoice, invoicePaid,
         lockupAddress, lockupTxId, lockupAmount, timeoutBlockHeight, claimAddress,
         claimTxId, claimedAt
       ) VALUES (
         ?, ?, ?, ?,
-        ?, ?, ?, ?,
+        ?, ?, ?,
         ?, ?, ?,
         ?, ?, ?, ?, ?,
         ?, ?
@@ -71,9 +70,8 @@ export class DatabaseService {
       swap.status,
       swap.createdAt,
       swap.updatedAt,
-      swap.preimage,
+      swap.preimage || null,
       swap.preimageHash,
-      swap.claimPrivateKey,
       swap.claimPublicKey,
       swap.invoiceAmount,
       swap.invoice,
@@ -194,9 +192,8 @@ export class DatabaseService {
       status: row.status as SwapStatus,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
-      preimage: row.preimage,
+      preimage: row.preimage || undefined,
       preimageHash: row.preimageHash,
-      claimPrivateKey: row.claimPrivateKey,
       claimPublicKey: row.claimPublicKey,
       invoiceAmount: row.invoiceAmount,
       invoice: row.invoice,

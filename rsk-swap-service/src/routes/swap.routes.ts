@@ -7,16 +7,30 @@ export function createSwapRoutes(swapManager: SwapManager): Router {
 
   /**
    * POST /api/swaps/reverse
-   * Create a new reverse swap (Lightning ’ RBTC)
+   * Create a new reverse swap (Lightning ï¿½ RBTC)
    */
   router.post('/reverse', async (req: Request, res: Response) => {
     try {
       const request: CreateSwapRequest = req.body;
 
-      // Validate request
-      if (!request.invoiceAmount || !request.claimAddress) {
+      // Validate required fields
+      if (!request.invoiceAmount || !request.claimAddress || !request.preimageHash || !request.claimPublicKey) {
         return res.status(400).json({
-          error: 'Missing required fields: invoiceAmount, claimAddress'
+          error: 'Missing required fields: invoiceAmount, preimageHash, claimPublicKey, claimAddress'
+        });
+      }
+
+      // Validate preimageHash format (must be 64 hex characters = 32 bytes)
+      if (!/^[0-9a-fA-F]{64}$/.test(request.preimageHash)) {
+        return res.status(400).json({
+          error: 'Invalid preimageHash: must be 64 hexadecimal characters (32 bytes)'
+        });
+      }
+
+      // Validate claimPublicKey format (must be valid Ethereum address)
+      if (!/^0x[0-9a-fA-F]{40}$/.test(request.claimPublicKey)) {
+        return res.status(400).json({
+          error: 'Invalid claimPublicKey: must be a valid Ethereum address (0x + 40 hex chars)'
         });
       }
 
