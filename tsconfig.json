@@ -15,5 +15,11 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "strictNullChecks": true
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "rsk-swap-service",
+    "rsk-swap-service/**"
+  ]
 }

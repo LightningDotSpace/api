@@ -177,6 +177,10 @@ export class Configuration {
     limitCheck: process.env.REQUEST_LIMIT_CHECK === 'true',
   };
 
+  rsk = {
+    microserviceUrl: process.env.RSK_MICROSERVICE_URL ?? 'http://localhost:3002',
+  };
+
   // --- GETTERS --- //
   get baseUrl(): string {
     return this.environment === Environment.LOC

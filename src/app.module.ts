@@ -6,6 +6,7 @@ import { SharedModule } from './shared/shared.module';
 import { LightningForwardModule } from './subdomains/lightning/lightning-forward.module';
 import { SupportModule } from './subdomains/support/support.module';
 import { UserModule } from './subdomains/user/user.module';
+import { RskSwapModule } from './subdomains/rsk-swap/rsk-swap.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { UserModule } from './subdomains/user/user.module';
     UserModule,
     LightningForwardModule,
     SupportModule,
+    RskSwapModule,
   ],
   controllers: [AppController],
   providers: [],

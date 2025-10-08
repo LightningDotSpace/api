@@ -3,6 +3,8 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "assets": ["assets/home.html"],
-    "watchAssets": true
-  }
+    "watchAssets": true,
+    "deleteOutDir": true
+  },
+  "exclude": ["rsk-swap-service/**"]
 }

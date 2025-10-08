@@ -48,3 +48,9 @@ testDB/
 *.sqlite
 *.sqlite3
 testDB
+
+# RSK Microservice
+rsk-swap-service/node_modules/
+rsk-swap-service/dist/
+rsk-swap-service/.env
+rsk-swap-service/*.db
