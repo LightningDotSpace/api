@@ -19,7 +19,7 @@ export interface LockupDetails {
 }
 
 export class RskService {
-  private provider: ethers.JsonRpcProvider;
+  private provider: ethers.Provider;
   private wallet: ethers.Wallet;
   private etherSwapContract: ethers.Contract;
   private readonly chainId: number;
@@ -179,7 +179,7 @@ export class RskService {
       const events = await this.etherSwapContract.queryFilter(filter, searchFromBlock, currentBlock);
 
       if (events.length > 0) {
-        const event = events[0];
+        const event = events[0] as ethers.EventLog;
         console.log(`Found Claim event in tx ${event.transactionHash}`);
 
         return {

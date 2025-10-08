@@ -4,26 +4,18 @@ node_modules/
 # Build output
 dist/
 
-# Environment variables
-.env
-
-# Database
+# Database files
 *.db
-*.db-journal
 *.db-shm
 *.db-wal
 
+# Environment variables
+.env
+.env.local
+
 # Logs
-logs/
 *.log
 npm-debug.log*
 
 # OS files
 .DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
