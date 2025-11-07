@@ -35,20 +35,22 @@ async function bootstrap() {
   app.useWebSocketAdapter(new WsAdapter(app));
 
   // --- REWRITE SWAP URL --- //
-  const rewriteUrl = `/${Config.version}/swap`;
+  if (process.env.SWAP_API_URL) {
+    const rewriteUrl = `/${Config.version}/swap`;
 
-  const forwardProxy = createProxyMiddleware<Request, Response>({
-    target: process.env.SWAP_API_URL,
-    changeOrigin: true,
-    ws: true,
-    toProxy: true,
-    secure: false,
-    pathRewrite: { [`${rewriteUrl}`]: '' },
-  });
-  app.use(rewriteUrl, forwardProxy);
+    const forwardProxy = createProxyMiddleware<Request, Response>({
+      target: process.env.SWAP_API_URL,
+      changeOrigin: true,
+      ws: true,
+      toProxy: true,
+      secure: false,
+      pathRewrite: { [`${rewriteUrl}`]: '' },
+    });
+    app.use(rewriteUrl, forwardProxy);
 
-  const server = app.getHttpServer();
-  server.on('upgrade', forwardProxy.upgrade);
+    const server = app.getHttpServer();
+    server.on('upgrade', forwardProxy.upgrade);
+  }
 
   // --- SWAGGER --- //
   const swaggerOptions = new DocumentBuilder()
