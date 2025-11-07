@@ -44,7 +44,7 @@ async function bootstrap() {
       ws: true,
       toProxy: true,
       secure: false,
-      pathRewrite: { [`${rewriteUrl}`]: '' },
+      pathRewrite: { [rewriteUrl]: '' },
     });
     app.use(rewriteUrl, forwardProxy);
 
