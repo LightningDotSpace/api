@@ -6,6 +6,7 @@ import * as AppInsights from 'applicationinsights';
 import cors from 'cors';
 import { json } from 'express';
 import helmet from 'helmet';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 import morgan from 'morgan';
 import { AppModule } from './app.module';
 import { Config } from './config/config';
@@ -33,6 +34,23 @@ async function bootstrap() {
 
   app.useWebSocketAdapter(new WsAdapter(app));
 
+  // --- REWRITE SWAP URL --- //
+  const rewriteUrl = `/${Config.version}/swap`;
+
+  const forwardProxy = createProxyMiddleware<Request, Response>({
+    target: process.env.SWAP_API_URL,
+    changeOrigin: true,
+    ws: true,
+    toProxy: true,
+    secure: false,
+    pathRewrite: { [`${rewriteUrl}`]: '' },
+  });
+  app.use(rewriteUrl, forwardProxy);
+
+  const server = app.getHttpServer();
+  server.on('upgrade', forwardProxy.upgrade);
+
+  // --- SWAGGER --- //
   const swaggerOptions = new DocumentBuilder()
     .setTitle('lightning.space API')
     .setDescription(

@@ -45,6 +45,7 @@
     "coingecko-api-v3": "^0.0.29",
     "ethers": "^5.7.2",
     "helmet": "^6.0.1",
+    "http-proxy-middleware": "^3.0.5",
     "lnurl": "^0.24.2",
     "morgan": "^1.10.0",
     "mssql": "^9.1.1",

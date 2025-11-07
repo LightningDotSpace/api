@@ -165,6 +165,10 @@ export class Configuration {
     limitCheck: process.env.REQUEST_LIMIT_CHECK === 'true',
   };
 
+  swap = {
+    apiUrl: process.env.SWAP_API_URL,
+  };
+
   // --- GETTERS --- //
   get baseUrl(): string {
     return this.environment === Environment.LOC
