@@ -47,12 +47,8 @@ async function bootstrap() {
       pathRewrite: { [rewriteUrl]: '' },
       on: {
         proxyReq(proxyReq, req: Request) {
-          let clientIp = req.ip;
-          if (clientIp.includes(':')) {
-            clientIp = clientIp.split(':')[0];
-          }
-
-          proxyReq.setHeader('X-Forwarded-For', clientIp);
+          // remove port from IP (not supported by Boltz backend)
+          if (req.ip) proxyReq.setHeader('X-Forwarded-For', req.ip.split(':')[0]);
 
           fixRequestBody(proxyReq, req);
         },
