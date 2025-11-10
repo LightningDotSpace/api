@@ -44,6 +44,7 @@ async function bootstrap() {
       ws: true,
       toProxy: true,
       secure: false,
+      xfwd: true,
       pathRewrite: { [rewriteUrl]: '' },
       on: {
         proxyReq: fixRequestBody,
