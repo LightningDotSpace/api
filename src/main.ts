@@ -4,9 +4,9 @@ import { WsAdapter } from '@nestjs/platform-ws';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as AppInsights from 'applicationinsights';
 import cors from 'cors';
-import { json } from 'express';
+import { json, Request, Response } from 'express';
 import helmet from 'helmet';
-import { createProxyMiddleware } from 'http-proxy-middleware';
+import { createProxyMiddleware, fixRequestBody } from 'http-proxy-middleware';
 import morgan from 'morgan';
 import { AppModule } from './app.module';
 import { Config } from './config/config';
@@ -45,6 +45,9 @@ async function bootstrap() {
       toProxy: true,
       secure: false,
       pathRewrite: { [rewriteUrl]: '' },
+      on: {
+        proxyReq: fixRequestBody,
+      },
     });
     app.use(rewriteUrl, forwardProxy);
 
