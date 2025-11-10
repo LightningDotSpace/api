@@ -44,10 +44,18 @@ async function bootstrap() {
       ws: true,
       toProxy: true,
       secure: false,
-      xfwd: true,
       pathRewrite: { [rewriteUrl]: '' },
       on: {
-        proxyReq: fixRequestBody,
+        proxyReq(proxyReq, req: Request) {
+          let clientIp = req.ip;
+          if (clientIp.includes(':')) {
+            clientIp = clientIp.split(':')[0];
+          }
+
+          proxyReq.setHeader('X-Forwarded-For', clientIp);
+
+          fixRequestBody(proxyReq, req);
+        },
       },
     });
     app.use(rewriteUrl, forwardProxy);
