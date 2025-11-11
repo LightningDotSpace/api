@@ -18,6 +18,6 @@ export class TransactionOnchainEntity extends IEntity {
   @Column({ type: 'int' })
   block: number;
 
-  @Column({ type: 'datetime2' })
+  @Column({ type: 'datetime' })
   timestamp: Date;
 }

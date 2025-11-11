@@ -30,22 +30,34 @@ export class Configuration {
 
   azureIpSubstring = '169.254';
 
-  database: TypeOrmModuleOptions = {
-    type: 'mssql',
-    host: process.env.SQL_HOST,
-    port: Number.parseInt(process.env.SQL_PORT ?? '3000'),
-    username: process.env.SQL_USERNAME,
-    password: process.env.SQL_PASSWORD,
-    database: process.env.SQL_DB,
-    entities: ['dist/**/*.entity{.ts,.js}'],
-    autoLoadEntities: true,
-    synchronize: process.env.SQL_SYNCHRONIZE === 'true',
-    migrationsRun: process.env.SQL_MIGRATE === 'true',
-    migrations: ['migration/*.js'],
-    connectionTimeout: 30000,
-    requestTimeout: 30000,
-    logging: false,
-  };
+  database: TypeOrmModuleOptions =
+    this.environment === Environment.LOC
+      ? {
+          type: 'sqlite',
+          database: process.env.SQL_DB,
+          entities: ['dist/**/*.entity{.ts,.js}'],
+          autoLoadEntities: true,
+          synchronize: process.env.SQL_SYNCHRONIZE === 'true',
+          migrationsRun: process.env.SQL_MIGRATE === 'true',
+          migrations: ['migration/*.js'],
+          logging: false,
+        }
+      : {
+          type: 'mssql',
+          host: process.env.SQL_HOST,
+          port: Number.parseInt(process.env.SQL_PORT ?? '3000'),
+          username: process.env.SQL_USERNAME,
+          password: process.env.SQL_PASSWORD,
+          database: process.env.SQL_DB,
+          entities: ['dist/**/*.entity{.ts,.js}'],
+          autoLoadEntities: true,
+          synchronize: process.env.SQL_SYNCHRONIZE === 'true',
+          migrationsRun: process.env.SQL_MIGRATE === 'true',
+          migrations: ['migration/*.js'],
+          connectionTimeout: 30000,
+          requestTimeout: 30000,
+          logging: false,
+        };
 
   auth = {
     jwt: {
