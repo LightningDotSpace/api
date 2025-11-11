@@ -6,7 +6,7 @@ import { AlchemyNetworkMapper } from '../alchemy-network-mapper';
 
 @Injectable()
 export class AlchemyService {
-  private alchemyMap = new Map<AlchemyNetwork, Alchemy>();
+  private readonly alchemyMap = new Map<AlchemyNetwork, Alchemy>();
 
   async getNativeCoinBalance(chainId: number, address: string): Promise<AlchemyBigNumber> {
     const alchemy = this.getAlchemy(chainId);

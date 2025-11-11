@@ -5,8 +5,8 @@ import { Util } from 'src/shared/utils/util';
 import { LndInvoiceInfoDto } from './dto/lnd.dto';
 
 export class LightningHelper {
-  private static SAT_BTC_FACTOR: number = 10 ** 8;
-  private static SAT_MSAT_FACTOR: number = 10 ** 3;
+  private static readonly SAT_BTC_FACTOR: number = 10 ** 8;
+  private static readonly SAT_MSAT_FACTOR: number = 10 ** 3;
 
   // --- LNDHUB --- //
   static getLightningAddress(lnbitsAddress: string): string {
