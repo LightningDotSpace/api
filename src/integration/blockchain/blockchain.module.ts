@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { BerndEvmController } from 'src/zzz-bernd/blockchain/bernd-evm.controller';
 import { ArbitrumModule } from './arbitrum/arbitrum.module';
 import { BaseModule } from './base/base.module';
 import { BitcoinModule } from './bitcoin/bitcoin.module';
@@ -23,7 +22,7 @@ import { UmaModule } from './uma/uma.module';
     BaseModule,
     RootstockModule,
   ],
-  controllers: [BerndEvmController],
+  controllers: [],
   providers: [CryptoService],
   exports: [CryptoService, BitcoinModule, LightningModule],
 })
