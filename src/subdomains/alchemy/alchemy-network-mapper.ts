@@ -11,6 +11,7 @@ export class AlchemyNetworkMapper {
     [Blockchain.OPTIMISM, this.blockchainConfig.optimism.chainId],
     [Blockchain.POLYGON, this.blockchainConfig.polygon.chainId],
     [Blockchain.BASE, this.blockchainConfig.base.chainId],
+    [Blockchain.ROOTSTOCK, this.blockchainConfig.rootstock.chainId],
   ]);
 
   private static readonly chainIdToNetworkMap = new Map<number, Network>([
@@ -28,10 +29,14 @@ export class AlchemyNetworkMapper {
 
     [137, Network.MATIC_MAINNET],
     [80001, Network.MATIC_MUMBAI],
+    [80002, Network.MATIC_AMOY],
 
     [8453, Network.BASE_MAINNET],
     [84531, Network.BASE_GOERLI],
     [84532, Network.BASE_SEPOLIA],
+
+    [30, Network.ROOTSTOCK_MAINNET],
+    [31, Network.ROOTSTOCK_TESTNET],
   ]);
 
   static getChainId(blockchain: Blockchain): number | undefined {

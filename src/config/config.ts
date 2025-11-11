@@ -85,6 +85,11 @@ export class Configuration {
   };
 
   blockchain = {
+    bitcoin: {
+      gatewayUrl: process.env.BITCOIN_GATEWAY_URL ?? '',
+      rpcUser: process.env.BITCOIN_RPC_USER ?? '',
+      rpcPassword: process.env.BITCOIN_RPC_PASSWORD ?? '',
+    },
     lightning: {
       lnbits: {
         adminUserId: process.env.LIGHTNING_LNBITS_ADMIN_USER_ID ?? '',
@@ -142,6 +147,12 @@ export class Configuration {
       apiKey: process.env.ALCHEMY_API_KEY ?? '',
       chainId: +(process.env.BASE_CHAIN_ID ?? -1),
       walletAddress: process.env.EVM_PAYMENT_ADDRESS ?? '',
+    },
+    rootstock: {
+      gatewayUrl: process.env.ROOTSTOCK_GATEWAY_URL ?? '',
+      apiKey: process.env.ALCHEMY_API_KEY ?? '',
+      chainId: +(process.env.ROOTSTOCK_CHAIN_ID ?? -1),
+      walletAddress: process.env.ROOTSTOCK_WALLET_ADDRESS ?? '',
     },
   };
 
