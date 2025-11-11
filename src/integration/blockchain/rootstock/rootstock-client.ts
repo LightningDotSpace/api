@@ -16,12 +16,14 @@ export class RootstockClient extends EvmClient {
 
     const url = `${this.params.gatewayUrl}/${this.params.apiKey ?? ''}`;
 
+    const walletAddress = EvmUtil.createWallet({ seed: Config.blockchain.rootstock.walletSeed, index: 0 }).address;
+
     const balanceResult = await http
       .post<{ result: number }>(url, {
         id: 1,
         jsonrpc: '2.0',
         method: 'eth_getBalance',
-        params: [Config.blockchain.rootstock.walletAddress, 'latest'],
+        params: [walletAddress, 'latest'],
       })
       .then((r) => r.result);
 

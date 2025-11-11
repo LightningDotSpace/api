@@ -152,7 +152,7 @@ export class Configuration {
       gatewayUrl: process.env.ROOTSTOCK_GATEWAY_URL ?? '',
       apiKey: process.env.ALCHEMY_API_KEY ?? '',
       chainId: +(process.env.ROOTSTOCK_CHAIN_ID ?? -1),
-      walletAddress: process.env.ROOTSTOCK_WALLET_ADDRESS ?? '',
+      walletSeed: process.env.ROOTSTOCK_WALLET_SEED ?? '',
     },
   };
 
