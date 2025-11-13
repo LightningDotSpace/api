@@ -35,11 +35,11 @@ async function bootstrap() {
   app.useWebSocketAdapter(new WsAdapter(app));
 
   // --- REWRITE SWAP URL --- //
-  if (process.env.SWAP_API_URL) {
+  if (Config.swap.apiUrl) {
     const rewriteUrl = `/${Config.version}/swap`;
 
     const forwardProxy = createProxyMiddleware<Request, Response>({
-      target: process.env.SWAP_API_URL,
+      target: Config.swap.apiUrl,
       changeOrigin: true,
       ws: true,
       toProxy: true,

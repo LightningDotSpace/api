@@ -69,13 +69,13 @@ export class MonitoringBalanceEntity extends IEntity {
   }
 
   static createAsChfEntity(
-    lndOnchainBalance: number,
+    evmchainBalance: number,
     customerBalance: LightningWalletTotalBalanceDto,
   ): MonitoringBalanceEntity {
     const entity = new MonitoringBalanceEntity();
 
     entity.asset = { id: customerBalance.assetId } as AssetAccountEntity;
-    entity.lndOnchainBalance = lndOnchainBalance;
+    entity.lndOnchainBalance = evmchainBalance;
     entity.lightningBalance = 0;
     entity.customerBalance = customerBalance.totalBalance;
 
