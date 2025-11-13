@@ -1,8 +1,12 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, OnModuleInit } from '@nestjs/common';
+import { BitcoinClient } from 'src/integration/blockchain/bitcoin/bitcoin-client';
+import { BitcoinService } from 'src/integration/blockchain/bitcoin/bitcoin.service';
 import { LndChannelDto } from 'src/integration/blockchain/lightning/dto/lnd.dto';
 import { LightningClient } from 'src/integration/blockchain/lightning/lightning-client';
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
+import { RootstockClient } from 'src/integration/blockchain/rootstock/rootstock-client';
 import { EvmRegistryService } from 'src/integration/blockchain/shared/evm/registry/evm-registry.service';
+import { Blockchain } from 'src/shared/enums/blockchain.enum';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { QueueHandler } from 'src/shared/utils/queue-handler';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
@@ -13,14 +17,17 @@ import { MonitoringBalanceRepository } from '../repositories/monitoring-balance.
 import { MonitoringRepository } from '../repositories/monitoring.repository';
 
 @Injectable()
-export class MonitoringService {
+export class MonitoringService implements OnModuleInit {
   private readonly logger = new LightningLogger(MonitoringService);
 
-  private readonly client: LightningClient;
+  private readonly bitcoinClient: BitcoinClient;
+  private readonly lightningClient: LightningClient;
+  private rootstockClient: RootstockClient;
 
   private readonly processBalancesQueue: QueueHandler;
 
   constructor(
+    bitcoinservice: BitcoinService,
     lightningService: LightningService,
     private readonly coinGeckoService: CoinGeckoService,
     private readonly assetService: AssetService,
@@ -28,9 +35,14 @@ export class MonitoringService {
     private readonly monitoringRepository: MonitoringRepository,
     private readonly monitoringBalanceRepository: MonitoringBalanceRepository,
   ) {
-    this.client = lightningService.getDefaultClient();
+    this.bitcoinClient = bitcoinservice.getDefaultClient();
+    this.lightningClient = lightningService.getDefaultClient();
 
     this.processBalancesQueue = new QueueHandler();
+  }
+
+  onModuleInit() {
+    this.rootstockClient = this.evmRegistryService.getClient(Blockchain.ROOTSTOCK) as RootstockClient;
   }
 
   // --- LIGHTNING --- //
@@ -55,7 +67,9 @@ export class MonitoringService {
   ): Promise<void> {
     try {
       const onchainBalance = await this.getOnchainBalance();
+      const lndOnchainBalance = await this.getLndOnchainBalance();
       const lightningBalance = await this.getLightningBalance();
+      const rootstockBalance = await this.getRootstockBalance();
 
       const btcAccountAsset = await this.assetService.getBtcAccountAssetOrThrow();
       const btcAccountAssetId = btcAccountAsset.id;
@@ -72,7 +86,14 @@ export class MonitoringService {
 
       const customerFiatBalances = customerBalances.filter((b) => b.assetId !== btcAccountAssetId);
 
-      await this.processBtcBalance(onchainBalance, lightningBalance, internalBtcBalance, customerBtcBalance);
+      await this.processBtcBalance(
+        onchainBalance,
+        lndOnchainBalance,
+        lightningBalance,
+        rootstockBalance,
+        internalBtcBalance,
+        customerBtcBalance,
+      );
       await this.processFiatBalances(customerFiatBalances);
     } catch (e) {
       this.logger.error('Error while processing balances', e);
@@ -99,7 +120,9 @@ export class MonitoringService {
 
   private async processBtcBalance(
     onchainBalance: number,
+    lndOnchainBalance: number,
     lightningBalance: number,
+    rootstockBalance: number,
     internalBtcBalance: LightningWalletTotalBalanceDto,
     customerBtcBalance: LightningWalletTotalBalanceDto,
   ) {
@@ -108,7 +131,9 @@ export class MonitoringService {
 
     const btcMonitoringEntity = MonitoringBalanceEntity.createAsBtcEntity(
       onchainBalance,
+      lndOnchainBalance,
       lightningBalance,
+      rootstockBalance,
       internalBtcBalance,
       customerBtcBalance,
       chfPrice,
@@ -145,14 +170,22 @@ export class MonitoringService {
   }
 
   private async getOnchainBalance(): Promise<number> {
-    return this.client.getLndConfirmedWalletBalance();
+    return this.bitcoinClient.getWalletBalance();
+  }
+
+  private async getLndOnchainBalance(): Promise<number> {
+    return this.lightningClient.getLndConfirmedWalletBalance();
   }
 
   private async getLightningBalance(): Promise<number> {
-    return this.client.getLndLightningBalance();
+    return this.lightningClient.getLndLightningBalance();
+  }
+
+  private async getRootstockBalance(): Promise<number> {
+    return this.rootstockClient.getNativeCoinBalance();
   }
 
   private async getChannels(): Promise<LndChannelDto[]> {
-    return this.client.getChannels();
+    return this.lightningClient.getChannels();
   }
 }

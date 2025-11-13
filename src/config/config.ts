@@ -85,6 +85,11 @@ export class Configuration {
   };
 
   blockchain = {
+    bitcoin: {
+      gatewayUrl: process.env.BITCOIN_GATEWAY_URL ?? '',
+      rpcUser: process.env.BITCOIN_RPC_USER ?? '',
+      rpcPassword: process.env.BITCOIN_RPC_PASSWORD ?? '',
+    },
     lightning: {
       lnbits: {
         adminUserId: process.env.LIGHTNING_LNBITS_ADMIN_USER_ID ?? '',
@@ -143,6 +148,12 @@ export class Configuration {
       chainId: +(process.env.BASE_CHAIN_ID ?? -1),
       walletAddress: process.env.EVM_PAYMENT_ADDRESS ?? '',
     },
+    rootstock: {
+      gatewayUrl: process.env.ROOTSTOCK_GATEWAY_URL ?? '',
+      apiKey: process.env.ALCHEMY_API_KEY ?? '',
+      chainId: +(process.env.ROOTSTOCK_CHAIN_ID ?? -1),
+      walletSeed: process.env.ROOTSTOCK_WALLET_SEED ?? '',
+    },
   };
 
   alchemy = {
@@ -163,6 +174,10 @@ export class Configuration {
   request = {
     knownIps: process.env.REQUEST_KNOWN_IPS?.split(',') ?? [],
     limitCheck: process.env.REQUEST_LIMIT_CHECK === 'true',
+  };
+
+  swap = {
+    apiUrl: process.env.SWAP_API_URL,
   };
 
   // --- GETTERS --- //

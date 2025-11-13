@@ -1,6 +1,7 @@
 import { Token } from '@uniswap/sdk-core';
 import { Contract, ethers } from 'ethers';
 import { Config } from 'src/config/config';
+import { HttpService } from 'src/shared/services/http.service';
 import { AsyncCache } from 'src/shared/utils/async-cache';
 import { AlchemyService } from 'src/subdomains/alchemy/services/alchemy.service';
 import { EvmUtil } from 'src/subdomains/evm/evm.util';
@@ -13,14 +14,15 @@ export interface EvmClientParams {
   gatewayUrl: string;
   apiKey: string;
   chainId: number;
+  http?: HttpService;
 }
 
 export abstract class EvmClient {
-  private alchemyService: AlchemyService;
-  private chainId: number;
+  private readonly alchemyService: AlchemyService;
+  private readonly chainId: number;
 
-  private provider: ethers.providers.JsonRpcProvider;
-  private tokens = new AsyncCache<Token>();
+  private readonly provider: ethers.providers.JsonRpcProvider;
+  private readonly tokens = new AsyncCache<Token>();
 
   constructor(params: EvmClientParams) {
     this.alchemyService = params.alchemyService;

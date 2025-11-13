@@ -10,13 +10,19 @@ export class MonitoringBalanceEntity extends IEntity {
   @ManyToOne(() => AssetAccountEntity, { eager: true })
   asset: AssetAccountEntity;
 
-  @Column({ type: 'float' })
+  @Column({ type: 'float', default: 0 })
   onchainBalance: number;
 
-  @Column({ type: 'float' })
+  @Column({ type: 'float', default: 0 })
+  lndOnchainBalance: number;
+
+  @Column({ type: 'float', default: 0 })
   lightningBalance: number;
 
-  @Column({ type: 'float' })
+  @Column({ type: 'float', default: 0 })
+  rootstockBalance: number;
+
+  @Column({ type: 'float', default: 0 })
   customerBalance: number;
 
   @Column({ type: 'float', default: 0 })
@@ -32,7 +38,9 @@ export class MonitoringBalanceEntity extends IEntity {
 
   static createAsBtcEntity(
     onchainBalance: number,
+    lndOnchainBalance: number,
     lightningBalance: number,
+    rootstockBalance: number,
     internalBalance: LightningWalletTotalBalanceDto,
     customerBalance: LightningWalletTotalBalanceDto,
     chfPrice: Price,
@@ -41,11 +49,18 @@ export class MonitoringBalanceEntity extends IEntity {
 
     entity.asset = { id: customerBalance.assetId } as AssetAccountEntity;
     entity.onchainBalance = onchainBalance;
+    entity.lndOnchainBalance = lndOnchainBalance;
     entity.lightningBalance = lightningBalance;
+    entity.rootstockBalance = rootstockBalance;
     entity.customerBalance = customerBalance.totalBalance;
 
     entity.ldsBalance =
-      entity.onchainBalance + entity.lightningBalance + internalBalance.totalBalance - entity.customerBalance;
+      entity.onchainBalance +
+      entity.lndOnchainBalance +
+      entity.lightningBalance +
+      entity.rootstockBalance +
+      internalBalance.totalBalance -
+      entity.customerBalance;
 
     entity.assetPriceInCHF = chfPrice.convert(1, 2);
     entity.ldsBalanceInCHF = chfPrice.convert(LightningHelper.satToBtc(entity.ldsBalance), 2);
@@ -54,17 +69,17 @@ export class MonitoringBalanceEntity extends IEntity {
   }
 
   static createAsChfEntity(
-    onchainBalance: number,
+    evmchainBalance: number,
     customerBalance: LightningWalletTotalBalanceDto,
   ): MonitoringBalanceEntity {
     const entity = new MonitoringBalanceEntity();
 
     entity.asset = { id: customerBalance.assetId } as AssetAccountEntity;
-    entity.onchainBalance = onchainBalance;
+    entity.lndOnchainBalance = evmchainBalance;
     entity.lightningBalance = 0;
     entity.customerBalance = customerBalance.totalBalance;
 
-    entity.ldsBalance = entity.onchainBalance + entity.lightningBalance - entity.customerBalance;
+    entity.ldsBalance = entity.lndOnchainBalance + entity.lightningBalance - entity.customerBalance;
 
     entity.assetPriceInCHF = 1;
     entity.ldsBalanceInCHF = entity.ldsBalance;
