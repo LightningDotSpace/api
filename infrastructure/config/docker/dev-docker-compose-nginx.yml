@@ -1,4 +1,4 @@
-name: 'nginx-lightning'
+name: 'network'
 
 services:
   nginx:

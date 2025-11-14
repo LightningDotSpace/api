@@ -1,4 +1,4 @@
-name: 'bitcoin-lightning'
+name: 'lightning'
 
 services:
   bitcoind:
@@ -8,8 +8,6 @@ services:
       - shared
     volumes:
       - ./volumes/bitcoin:/home/bitcoin/.bitcoin
-      - ./volumes/bitcoin/bitcoin.conf:/home/bitcoin/.bitcoin/bitcoin.conf
-      - ./volumes/bitcoin/wallets:/home/bitcoin/.bitcoin/wallets
     ports:
       - '8332:8332'
     healthcheck:
@@ -33,9 +31,9 @@ services:
       - shared
     volumes:
       - ./volumes/lightning:/root/.lnd
-      - ./volumes/lightning/lnd.conf:/root/.lnd/lnd.conf
     ports:
       - '8080:8080'
+      - '9735:9735'
     healthcheck:
       test: 'curl --fail --insecure --header "Grpc-Metadata-macaroon: $MACAROON" https://localhost:8080/v1/getinfo || exit 1'
       start_period: 120s
@@ -64,6 +62,7 @@ services:
       - ./volumes/taproot/tapd.conf:/home/tap/tapd.conf
     ports:
       - '8089:8089'
+      - '6060:6060'
     depends_on:
       lnd:
         condition: service_healthy
@@ -104,7 +103,7 @@ services:
       poetry run lnbits --ssl-keyfile /app/.lnd/tls.key --ssl-certfile /app/.lnd/tls.cert
 
   lnbitsapi:
-    image: dfxswiss/lnbitsapi:latest
+    image: dfxswiss/lnbitsapi:main
     restart: unless-stopped
     networks:
       - shared

@@ -1,4 +1,4 @@
-name: 'boltz-lightning'
+name: 'boltz'
 
 services:
   postgres:
@@ -53,7 +53,6 @@ services:
       - postgres
     volumes:
       - ./volumes/boltz/backend/data:/root/.boltz
-      - ./volumes/boltz/backend/boltz.conf:/root/.boltz/boltz.conf
       - ./volumes/lightning:/root/.lnd
     ports:
       - '9000:9000'
