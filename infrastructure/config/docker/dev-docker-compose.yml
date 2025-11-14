@@ -1,28 +1,36 @@
-version: '3.7'
 name: 'bitcoin-lightning'
 
 services:
   bitcoind:
     image: lightninglabs/bitcoin-core
-    restart: always
+    restart: unless-stopped
+    networks:
+      - shared
     volumes:
       - ./volumes/bitcoin:/home/bitcoin/.bitcoin
       - ./volumes/bitcoin/bitcoin.conf:/home/bitcoin/.bitcoin/bitcoin.conf
-      - ./volumes/bitcoin/wallets:/home/bitcoin/.bitcoin/testnet3/wallets
+      - ./volumes/bitcoin/wallets:/home/bitcoin/.bitcoin/wallets
     ports:
-      - '18332:18332'
+      - '8332:8332'
     healthcheck:
-      test: curl --fail http://localhost:18332/rest/chaininfo.json || exit 1
+      test: curl --fail http://localhost:8332/rest/chaininfo.json || exit 1
       start_period: 120s
       interval: 30s
       timeout: 60s
       retries: 10
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '3'
     command: >
       bitcoind -conf=/home/bitcoin/.bitcoin/bitcoin.conf
 
   lnd:
-    image: lightninglabs/lnd:v0.17.3-beta
-    restart: always
+    image: lightninglabs/lnd:v0.19.3-beta
+    restart: unless-stopped
+    networks:
+      - shared
     volumes:
       - ./volumes/lightning:/root/.lnd
       - ./volumes/lightning/lnd.conf:/root/.lnd/lnd.conf
@@ -34,15 +42,22 @@ services:
       interval: 30s
       timeout: 60s
       retries: 10
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '3'
     depends_on:
       bitcoind:
         condition: service_healthy
     command: >
-      lnd --configfile=/root/.lnd/lnd.conf --bitcoin.testnet
+      lnd --configfile=/root/.lnd/lnd.conf --bitcoin.mainnet
 
   tapd:
-    image: polarlightning/tapd:0.3.2-alpha
-    restart: always
+    image: polarlightning/tapd:0.3.3-alpha
+    restart: unless-stopped
+    networks:
+      - shared
     volumes:
       - ./volumes/lightning:/home/tap/.lnd
       - ./volumes/taproot:/home/tap/.tapd
@@ -52,12 +67,19 @@ services:
     depends_on:
       lnd:
         condition: service_healthy
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '3'
     command: >
       tapd --configfile=/home/tap/tapd.conf
 
   lnbits:
-    image: lnbitsdocker/lnbits-legend:0.11.3
-    restart: always
+    image: lnbits/lnbits:0.12.8
+    restart: unless-stopped
+    networks:
+      - shared
     volumes:
       - ./volumes/lightning:/app/.lnd
       - ./volumes/lnbits/data:/app/data
@@ -70,6 +92,11 @@ services:
       interval: 60s
       timeout: 30s
       retries: 10
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '3'
     depends_on:
       lnd:
         condition: service_healthy
@@ -78,20 +105,29 @@ services:
 
   lnbitsapi:
     image: dfxswiss/lnbitsapi:latest
-    restart: always
+    restart: unless-stopped
+    networks:
+      - shared
     volumes:
       - ./volumes/lnbitsapi/data:/home/node/data
       - ./volumes/lnbits/data:/home/node/data/sqlite3
       - ./volumes/lnbitsapi/.env:/home/node/.env
     ports:
       - '5001:5001'
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '3'
     depends_on:
       lnbits:
         condition: service_healthy
 
   thunderhub:
-    image: apotdevin/thunderhub:v0.13.30
-    restart: always
+    image: apotdevin/thunderhub:v0.13.31
+    restart: unless-stopped
+    networks:
+      - shared
     volumes:
       - ./volumes/lightning:/app/.lnd
       - ./volumes/thunderhub/.env:/app/.env
@@ -101,15 +137,13 @@ services:
     depends_on:
       lnd:
         condition: service_healthy
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '3'
 
-  nginx:
-    image: nginx:1.25.3-perl
-    restart: always
-    volumes:
-      - ./volumes/lightning:/app/.lnd
-      - ./volumes/nginx/default.conf:/etc/nginx/conf.d/default.conf
-    ports:
-      - '443:443'
-    depends_on:
-      - lnbits
-      - thunderhub
+networks:
+  shared:
+    external: true
+    name: lightning-network

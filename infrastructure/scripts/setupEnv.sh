@@ -2,18 +2,19 @@
 
 cd ~
 mkdir backup
-mkdir volumes
 
-cd ~/volumes
-mkdir bitcoin
-mkdir lightning
-mkdir taproot
-mkdir lnbits
-mkdir lnbitsapi
-mkdir thunderhub
-mkdir nginx
+mkdir -p volumes/bitcoin
+mkdir -p volumes/lightning
+mkdir -p volumes/taproot
+mkdir -p volumes/lnbits
+mkdir -p volumes/lnbitsapi
+mkdir -p volumes/thunderhub
+mkdir -p volumes/nginx
 
-cd ~
+mkdir -p volumes/boltz/postgres
+mkdir -p volumes/boltz/redis
+mkdir -p volumes/boltz/backend
+mkdir -p volumes/boltz/webapp
 
 sudo apt install wget
 sudo apt install iputils-ping
