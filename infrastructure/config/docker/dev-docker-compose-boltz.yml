@@ -52,8 +52,9 @@ services:
     depends_on:
       - postgres
     volumes:
-      - ./volumes/boltz/backend/data:/root/.boltz
       - ./volumes/lightning:/root/.lnd
+      - ./volumes/boltz/backend/data:/root/.boltz
+      - ./volumes/boltz/backend/boltz.conf:/root/.boltz/boltz.conf
     ports:
       - '9000:9000'
       - '9001:9001'
