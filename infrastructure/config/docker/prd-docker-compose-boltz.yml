@@ -1,0 +1,93 @@
+name: 'boltz'
+
+services:
+  postgres:
+    image: postgres:17
+    cpus: 0.5
+    shm_size: '1gb'
+    restart: unless-stopped
+    networks:
+      - shared
+    volumes:
+      - ./volumes/boltz/postgres:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U [POSTGRES_USERNAME]']
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '3'
+    environment:
+      - POSTGRES_DB=[POSTGRES_DATABASE]
+      - POSTGRES_USER=[POSTGRES_USERNAME]
+      - POSTGRES_PASSWORD=[POSTGRES_PASSWORD]
+    command: postgres -c max_connections=100
+
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    networks:
+      - shared
+    volumes:
+      - ./volumes/boltz/redis/data:/data
+    ports:
+      - '6379:6379'
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '3'
+    command: redis-server
+
+  backend:
+    image: dfxswiss/boltz-backend:dev
+    restart: unless-stopped
+    networks:
+      - shared
+    depends_on:
+      - postgres
+    volumes:
+      - ./volumes/lightning:/root/.lnd
+      - ./volumes/boltz/backend/data:/root/.boltz
+      - ./volumes/boltz/backend/boltz.conf:/root/.boltz/boltz.conf
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+      - '9004:9004'
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '3'
+    environment:
+      - NODE_EXTRA_CA_CERTS=/root/.lnd/tls.cert
+  webapp:
+    image: dfxswiss/boltz-webapp:dev
+    restart: unless-stopped
+    networks:
+      - shared
+    depends_on:
+      - backend
+    volumes:
+      - ./volumes/lightning:/root/.lnd
+
+    ports:
+      - '444:444'
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '3'
+    environment:
+      - VITE_API_URL=http://backend:9000
+      - VITE_RSK_LOG_SCAN_ENDPOINT=[VITE_RSK_LOG_SCAN_ENDPOINT]
+
+networks:
+  shared:
+    external: true
+    name: lightning-network
