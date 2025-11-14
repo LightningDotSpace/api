@@ -14,8 +14,11 @@
 1. Execute script: `sudo ./setupDocker.sh`
 1. Copy script `infrastructure/scripts/setupEnv.sh` to virtual machine `~/setupEnv.sh`
 1. Execute script: `./setupEnv.sh`
-1. Copy script `infrastructure/scripts/{env}-docker-compose.sh` to virtual machine `~/docker-compose.sh`
-1. Copy file `infrastructure/config/docker/{env}-docker-compose.yml` to virtual machine `~/docker-compose.yml`
+1. Create docker network `docker network create lightning-network`
+1. Copy script `infrastructure/scripts/docker-compose.sh` to virtual machine `~/docker-compose.sh`
+1. Copy file `infrastructure/config/docker/{env}-docker-compose-lightning.yml` to virtual machine `~/docker-compose-lightning.yml`
+1. Copy file `infrastructure/config/docker/{env}-docker-compose-nginx.yml` to virtual machine `~/docker-compose-nginx.yml`
+1. Copy file `infrastructure/config/docker/{env}-docker-compose-boltz.yml` to virtual machine `~/docker-compose-boltz.yml`
 1. Execute Docker Compose (see [below](#docker-compose)) after all other setup steps are done:
    1. [Bitcoin Node Setup](#bitcoin-node-setup-bitcoind)
    1. [Lightning Node Setup](#lightning-node-setup-lnd)
@@ -23,6 +26,7 @@
    1. [LNbits Setup](#lnbits-setup)
    1. [ThunderHub Setup](#thunderhub-setup)
    1. [NGINX Setup](#nginx-setup)
+   1. [Boltz Setup](#boltz-setup)
 
 # Bitcoin Node Setup (bitcoind)
 
@@ -58,6 +62,15 @@
 # NGINX Setup
 
 1. Copy content of config file `infrastructure/config/nginx/{env}-default.conf` to virtual machine `~/volumes/nginx/default.conf`
+
+# Boltz Setup
+
+1. Copy content of config file `infrastructure/config/boltz/backend/{env}-boltz.conf` to virtual machine `~/volumes/boltz/backend/boltz.conf`
+1. `boltz.conf`: Replace
+   1. `[POSTGRES_DATABASE]` / `[POSTGRES_USERNAME]` / `[POSTGRES_PASSWORD]`
+   1. `[RPC_USER]` / `[RPC_PASSWORD]`
+   1. `[WALLET_NAME]`
+   1. `[PROVIDER_ENDPOINT]`
 
 # Docker Compose
 

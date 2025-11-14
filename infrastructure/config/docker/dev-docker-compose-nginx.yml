@@ -1,0 +1,24 @@
+name: 'network'
+
+services:
+  nginx:
+    image: nginx:1.25.5-perl
+    restart: unless-stopped
+    networks:
+      - shared
+    volumes:
+      - ./volumes/lightning:/app/.lnd
+      - ./volumes/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - '443:443'
+      - '9006:9006'
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '3'
+
+networks:
+  shared:
+    external: true
+    name: lightning-network
