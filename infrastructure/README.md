@@ -15,8 +15,8 @@
 1. Copy script `infrastructure/scripts/setupEnv.sh` to virtual machine `~/setupEnv.sh`
 1. Execute script: `./setupEnv.sh`
 1. Create docker network `docker network create lightning-network`
-1. Copy script `infrastructure/scripts/{env}-docker-compose.sh` to virtual machine `~/docker-compose.sh`
-1. Copy file `infrastructure/config/docker/{env}-docker-compose.yml` to virtual machine `~/docker-compose.yml`
+1. Copy script `infrastructure/scripts/docker-compose.sh` to virtual machine `~/docker-compose.sh`
+1. Copy file `infrastructure/config/docker/{env}-docker-compose-lightning.yml` to virtual machine `~/docker-compose-lightning.yml`
 1. Copy file `infrastructure/config/docker/{env}-docker-compose-nginx.yml` to virtual machine `~/docker-compose-nginx.yml`
 1. Copy file `infrastructure/config/docker/{env}-docker-compose-boltz.yml` to virtual machine `~/docker-compose-boltz.yml`
 1. Execute Docker Compose (see [below](#docker-compose)) after all other setup steps are done:
