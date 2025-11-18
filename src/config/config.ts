@@ -154,6 +154,11 @@ export class Configuration {
       chainId: +(process.env.ROOTSTOCK_CHAIN_ID ?? -1),
       walletSeed: process.env.ROOTSTOCK_WALLET_SEED ?? '',
     },
+    citrea: {
+      gatewayUrl: process.env.CITREA_GATEWAY_URL ?? '',
+      chainId: +(process.env.CITREA_CHAIN_ID ?? -1),
+      walletAddress: process.env.CITREA_WALLET_ADDRESS ?? '',
+    },
   };
 
   alchemy = {
