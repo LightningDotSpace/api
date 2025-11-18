@@ -1,6 +1,7 @@
 import { Injectable, InternalServerErrorException, OnModuleInit } from '@nestjs/common';
 import { BitcoinClient } from 'src/integration/blockchain/bitcoin/bitcoin-client';
 import { BitcoinService } from 'src/integration/blockchain/bitcoin/bitcoin.service';
+import { CitreaClient } from 'src/integration/blockchain/citrea/citrea-client';
 import { LndChannelDto } from 'src/integration/blockchain/lightning/dto/lnd.dto';
 import { LightningClient } from 'src/integration/blockchain/lightning/lightning-client';
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
@@ -12,7 +13,7 @@ import { QueueHandler } from 'src/shared/utils/queue-handler';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
 import { CoinGeckoService } from 'src/subdomains/pricing/services/coingecko.service';
 import { LightningWalletTotalBalanceDto } from 'src/subdomains/user/application/dto/lightning-wallet.dto';
-import { MonitoringBalanceEntity } from '../entities/monitoring-balance.entity';
+import { MonitoringBalanceEntity, MonitoringBlockchainBalance } from '../entities/monitoring-balance.entity';
 import { MonitoringBalanceRepository } from '../repositories/monitoring-balance.repository';
 import { MonitoringRepository } from '../repositories/monitoring.repository';
 
@@ -23,6 +24,7 @@ export class MonitoringService implements OnModuleInit {
   private readonly bitcoinClient: BitcoinClient;
   private readonly lightningClient: LightningClient;
   private rootstockClient: RootstockClient;
+  private citreaClient: CitreaClient;
 
   private readonly processBalancesQueue: QueueHandler;
 
@@ -43,6 +45,7 @@ export class MonitoringService implements OnModuleInit {
 
   onModuleInit() {
     this.rootstockClient = this.evmRegistryService.getClient(Blockchain.ROOTSTOCK) as RootstockClient;
+    this.citreaClient = this.evmRegistryService.getClient(Blockchain.CITREA) as CitreaClient;
   }
 
   // --- LIGHTNING --- //
@@ -66,10 +69,7 @@ export class MonitoringService implements OnModuleInit {
     customerBalances: LightningWalletTotalBalanceDto[],
   ): Promise<void> {
     try {
-      const onchainBalance = await this.getOnchainBalance();
-      const lndOnchainBalance = await this.getLndOnchainBalance();
-      const lightningBalance = await this.getLightningBalance();
-      const rootstockBalance = await this.getRootstockBalance();
+      const blockchainBalance = await this.getBlockchainBalances();
 
       const btcAccountAsset = await this.assetService.getBtcAccountAssetOrThrow();
       const btcAccountAssetId = btcAccountAsset.id;
@@ -86,14 +86,7 @@ export class MonitoringService implements OnModuleInit {
 
       const customerFiatBalances = customerBalances.filter((b) => b.assetId !== btcAccountAssetId);
 
-      await this.processBtcBalance(
-        onchainBalance,
-        lndOnchainBalance,
-        lightningBalance,
-        rootstockBalance,
-        internalBtcBalance,
-        customerBtcBalance,
-      );
+      await this.processBtcBalance(blockchainBalance, internalBtcBalance, customerBtcBalance);
       await this.processFiatBalances(customerFiatBalances);
     } catch (e) {
       this.logger.error('Error while processing balances', e);
@@ -119,10 +112,7 @@ export class MonitoringService implements OnModuleInit {
   }
 
   private async processBtcBalance(
-    onchainBalance: number,
-    lndOnchainBalance: number,
-    lightningBalance: number,
-    rootstockBalance: number,
+    blockchainBalance: MonitoringBlockchainBalance,
     internalBtcBalance: LightningWalletTotalBalanceDto,
     customerBtcBalance: LightningWalletTotalBalanceDto,
   ) {
@@ -130,10 +120,7 @@ export class MonitoringService implements OnModuleInit {
     if (!chfPrice.isValid) throw new InternalServerErrorException(`Invalid price from BTC to CHF`);
 
     const btcMonitoringEntity = MonitoringBalanceEntity.createAsBtcEntity(
-      onchainBalance,
-      lndOnchainBalance,
-      lightningBalance,
-      rootstockBalance,
+      blockchainBalance,
       internalBtcBalance,
       customerBtcBalance,
       chfPrice,
@@ -169,20 +156,14 @@ export class MonitoringService implements OnModuleInit {
     return balance;
   }
 
-  private async getOnchainBalance(): Promise<number> {
-    return this.bitcoinClient.getWalletBalance();
-  }
-
-  private async getLndOnchainBalance(): Promise<number> {
-    return this.lightningClient.getLndConfirmedWalletBalance();
-  }
-
-  private async getLightningBalance(): Promise<number> {
-    return this.lightningClient.getLndLightningBalance();
-  }
-
-  private async getRootstockBalance(): Promise<number> {
-    return this.rootstockClient.getNativeCoinBalance();
+  private async getBlockchainBalances(): Promise<MonitoringBlockchainBalance> {
+    return {
+      onchainBalance: await this.bitcoinClient.getWalletBalance(),
+      lndOnchainBalance: await this.lightningClient.getLndConfirmedWalletBalance(),
+      lightningBalance: await this.lightningClient.getLndLightningBalance(),
+      rootstockBalance: await this.rootstockClient.getNativeCoinBalance(),
+      citreaBalance: await this.citreaClient.getNativeCoinBalance(),
+    };
   }
 
   private async getChannels(): Promise<LndChannelDto[]> {

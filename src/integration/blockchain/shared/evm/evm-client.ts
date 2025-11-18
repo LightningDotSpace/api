@@ -21,7 +21,7 @@ export abstract class EvmClient {
   private readonly alchemyService: AlchemyService;
   private readonly chainId: number;
 
-  private readonly provider: ethers.providers.JsonRpcProvider;
+  protected readonly provider: ethers.providers.JsonRpcProvider;
   private readonly tokens = new AsyncCache<Token>();
 
   constructor(params: EvmClientParams) {
