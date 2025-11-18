@@ -11,7 +11,9 @@ export class CitreaClient extends EvmClient {
   }
 
   async getNativeCoinBalance(): Promise<number> {
-    const balance = await this.provider.getBalance(Config.blockchain.citrea.walletAddress);
+    const walletAddress = EvmUtil.createWallet({ seed: Config.evm.walletSeed, index: 0 }).address;
+
+    const balance = await this.provider.getBalance(walletAddress);
     return LightningHelper.btcToSat(EvmUtil.fromWeiAmount(balance.toString()));
   }
 
