@@ -62,7 +62,7 @@ async function bootstrap() {
 
   // --- REWRITE BOLTZ CLAIM URL --- //
   if (Config.boltzClaim.apiUrl) {
-    const rewriteUrl = `/${Config.version}/boltz-claim`;
+    const rewriteUrl = `/${Config.version}/claim`;
     const forwardProxy = createProxyMiddleware<Request, Response>({
       target: Config.boltzClaim.apiUrl,
       changeOrigin: true,
