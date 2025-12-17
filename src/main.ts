@@ -69,6 +69,11 @@ async function bootstrap() {
       toProxy: true,
       secure: false,
       pathRewrite: { [rewriteUrl]: '' },
+      on: {
+        proxyReq(proxyReq, req: Request) {
+          fixRequestBody(proxyReq, req);
+        },
+      },
     });
     app.use(rewriteUrl, forwardProxy);
   }
