@@ -66,6 +66,7 @@ services:
         max-file: '3'
     environment:
       - NODE_EXTRA_CA_CERTS=/root/.lnd/tls.cert
+
   webapp:
     image: dfxswiss/boltz-webapp:dev
     restart: unless-stopped
@@ -86,6 +87,27 @@ services:
     environment:
       - VITE_API_URL=http://backend:9000
       - VITE_RSK_LOG_SCAN_ENDPOINT=[VITE_RSK_LOG_SCAN_ENDPOINT]
+
+  claim:
+    image: dfxswiss/boltz-claim:dev
+    restart: unless-stopped
+    networks:
+      - shared
+    depends_on:
+      - postgres
+    ports:
+      - '3001:3001'
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '100m'
+        max-file: '3'
+    environment:
+      - PORT=3001
+      - PONDER_PROFILE=mainnet
+      - DATABASE_URL=postgresql://[POSTGRES_USERNAME]:[POSTGRES_PASSWORD]@postgres:5432/boltz_claim
+      - SIGNER_PRIVATE_KEY=[SIGNER_PRIVATE_KEY]
+      - RPC_PROVIDER_URL=https://rpc.testnet.juiceswap.com/
 
 networks:
   shared:

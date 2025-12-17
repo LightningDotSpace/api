@@ -61,20 +61,14 @@ async function bootstrap() {
   }
 
   // --- REWRITE BOLTZ CLAIM URL --- //
-  if (Config.boltzClaim.apiUrl) {
+  if (Config.swap.claimApiUrl) {
     const rewriteUrl = `/${Config.version}/claim`;
     const forwardProxy = createProxyMiddleware<Request, Response>({
-      target: Config.boltzClaim.apiUrl,
+      target: Config.swap.claimApiUrl,
       changeOrigin: true,
       toProxy: true,
       secure: false,
       pathRewrite: { [rewriteUrl]: '' },
-      on: {
-        proxyReq(proxyReq, req: Request) {
-          if (req.ip) proxyReq.setHeader('X-Forwarded-For', req.ip.split(':')[0]);
-          fixRequestBody(proxyReq, req);
-        },
-      },
     });
     app.use(rewriteUrl, forwardProxy);
   }

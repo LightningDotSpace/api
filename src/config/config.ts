@@ -185,10 +185,7 @@ export class Configuration {
 
   swap = {
     apiUrl: process.env.SWAP_API_URL,
-  };
-
-  boltzClaim = {
-    apiUrl: process.env.BOLTZ_CLAIM_API_URL,
+    claimApiUrl: process.env.SWAP_CLAIM_API_URL,
   };
 
   // --- GETTERS --- //
