@@ -89,7 +89,7 @@ services:
       - VITE_RSK_LOG_SCAN_ENDPOINT=[VITE_RSK_LOG_SCAN_ENDPOINT]
 
   claim:
-    image: dfxswiss/boltz-claim:dev
+    image: dfxswiss/boltz-claim:beta
     restart: unless-stopped
     networks:
       - shared
