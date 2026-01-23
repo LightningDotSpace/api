@@ -35,20 +35,20 @@ Access requires a wallet with the `DEBUG` role. The role hierarchy allows `ADMIN
 
 2. **Register the wallet** on the target environment (dev/prd) via the normal registration flow.
 
-3. **Create a migration** to grant DEBUG role:
+3. **Create a migration** to grant DEBUG role (replace `TIMESTAMP` with `date +%s000`):
    ```javascript
-   // migration/<timestamp>-addDebugWallet.js
+   // migration/TIMESTAMP-addDebugWallet.js
    const { MigrationInterface, QueryRunner } = require("typeorm");
 
-   module.exports = class addDebugWallet<timestamp> {
-       name = 'addDebugWallet<timestamp>'
+   module.exports = class addDebugWalletTIMESTAMP {
+       name = 'addDebugWalletTIMESTAMP'
 
        async up(queryRunner) {
-           await queryRunner.query(`UPDATE wallet SET role = 'Debug', updated = GETDATE() WHERE address = '<wallet-address>'`);
+           await queryRunner.query(`UPDATE wallet SET role = 'Debug', updated = GETDATE() WHERE address = 'WALLET_ADDRESS'`);
        }
 
        async down(queryRunner) {
-           await queryRunner.query(`UPDATE wallet SET role = 'User', updated = GETDATE() WHERE address = '<wallet-address>'`);
+           await queryRunner.query(`UPDATE wallet SET role = 'User', updated = GETDATE() WHERE address = 'WALLET_ADDRESS'`);
        }
    }
    ```
