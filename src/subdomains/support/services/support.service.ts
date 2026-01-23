@@ -134,7 +134,7 @@ export class SupportService {
 
     // Build KQL with safe parameter substitution
     let kql = template.kql;
-    kql = kql.replace('{operationId}', dto.operationId ?? '');
+    kql = kql.replace('{operationId}', this.escapeKqlString(dto.operationId ?? ''));
     kql = kql.replace('{messageFilter}', this.escapeKqlString(dto.messageFilter ?? ''));
     kql = kql.replaceAll('{hours}', String(dto.hours ?? 1));
     kql = kql.replace('{durationMs}', String(dto.durationMs ?? 1000));
