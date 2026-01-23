@@ -136,7 +136,7 @@ export class SupportService {
     let kql = template.kql;
     kql = kql.replace('{operationId}', dto.operationId ?? '');
     kql = kql.replace('{messageFilter}', this.escapeKqlString(dto.messageFilter ?? ''));
-    kql = kql.replace(/{hours}/g, String(dto.hours ?? 1));
+    kql = kql.replaceAll('{hours}', String(dto.hours ?? 1));
     kql = kql.replace('{durationMs}', String(dto.durationMs ?? 1000));
     kql = kql.replace('{eventName}', this.escapeKqlString(dto.eventName ?? ''));
 
@@ -169,7 +169,7 @@ export class SupportService {
   //*** HELPER METHODS ***//
 
   private escapeKqlString(value: string): string {
-    return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    return value.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
   }
 
   private transformResultArray(
@@ -218,6 +218,17 @@ export class SupportService {
     return map;
   }
 
+  private resolveTableFromAlias(
+    tableOrAlias: string,
+    tables: string[],
+    aliasMap: Map<string, string>,
+  ): string | null {
+    if (tableOrAlias === 'null') {
+      return tables.length === 1 ? tables[0] : null;
+    }
+    return aliasMap.get(tableOrAlias) || tableOrAlias;
+  }
+
   private isColumnBlockedInTable(columnName: string, table: string | null, allTables: string[]): boolean {
     const lower = columnName.toLowerCase();
 
@@ -244,12 +255,7 @@ export class SupportService {
 
         if (columnName === '*' || columnName === '(.*)') continue;
 
-        const resolvedTable =
-          tableOrAlias === 'null'
-            ? tables.length === 1
-              ? tables[0]
-              : null
-            : aliasMap.get(tableOrAlias) || tableOrAlias;
+        const resolvedTable = this.resolveTableFromAlias(tableOrAlias, tables, aliasMap);
 
         if (this.isColumnBlockedInTable(columnName, resolvedTable, tables)) {
           return `${resolvedTable || 'unknown'}.${columnName}`;
