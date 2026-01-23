@@ -16,7 +16,6 @@ export const DebugBlockedCols: Record<string, string[]> = {
   wallet: ['signature', 'addressOwnershipProof'],
   lightning_wallet: ['adminKey', 'invoiceKey'],
   user_boltcard: ['k0', 'k1', 'k2', 'prevK0', 'prevK1', 'prevK2', 'otp', 'uid'],
-  wallet_provider: ['apiKey', 'apiSecret'],
   transaction_lightning: ['secret', 'paymentRequest'],
   payment_request: ['paymentRequest'],
 };
