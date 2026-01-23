@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Parser } from 'node-sql-parser';
+import { AppInsightsQueryService } from 'src/shared/services/app-insights-query.service';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { DataSource } from 'typeorm';
 import { DbQueryDto } from '../dto/db-query.dto';
@@ -7,15 +8,20 @@ import {
   DebugBlockedCols,
   DebugBlockedSchemas,
   DebugDangerousFunctions,
+  DebugLogQueryTemplates,
   DebugMaxResults,
 } from '../dto/debug.config';
+import { LogQueryDto, LogQueryResult } from '../dto/log-query.dto';
 
 @Injectable()
 export class SupportService {
   private readonly logger = new LightningLogger(SupportService);
   private readonly sqlParser = new Parser();
 
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly appInsightsQueryService: AppInsightsQueryService,
+  ) {}
 
   async getRawData(query: DbQueryDto): Promise<any> {
     const request = this.dataSource
@@ -113,7 +119,58 @@ export class SupportService {
     }
   }
 
+  async executeLogQuery(dto: LogQueryDto, userIdentifier: string): Promise<LogQueryResult> {
+    const template = DebugLogQueryTemplates[dto.template];
+    if (!template) {
+      throw new BadRequestException('Unknown template');
+    }
+
+    // Validate required params
+    for (const param of template.requiredParams) {
+      if (!dto[param]) {
+        throw new BadRequestException(`Parameter '${param}' is required for template '${dto.template}'`);
+      }
+    }
+
+    // Build KQL with safe parameter substitution
+    let kql = template.kql;
+    kql = kql.replace('{operationId}', dto.operationId ?? '');
+    kql = kql.replace('{messageFilter}', this.escapeKqlString(dto.messageFilter ?? ''));
+    kql = kql.replace(/{hours}/g, String(dto.hours ?? 1));
+    kql = kql.replace('{durationMs}', String(dto.durationMs ?? 1000));
+    kql = kql.replace('{eventName}', this.escapeKqlString(dto.eventName ?? ''));
+
+    // Add limit
+    kql += `\n| take ${template.defaultLimit}`;
+
+    // Log for audit
+    this.logger.verbose(`Log query by ${userIdentifier}: template=${dto.template}, params=${JSON.stringify(dto)}`);
+
+    // Execute
+    const timespan = `PT${dto.hours ?? 1}H`;
+
+    try {
+      const response = await this.appInsightsQueryService.query(kql, timespan);
+
+      if (!response.tables?.length) {
+        return { columns: [], rows: [] };
+      }
+
+      return {
+        columns: response.tables[0].columns,
+        rows: response.tables[0].rows,
+      };
+    } catch (e) {
+      this.logger.info(`Log query by ${userIdentifier} failed: ${e.message}`);
+      throw new BadRequestException('Query execution failed');
+    }
+  }
+
   //*** HELPER METHODS ***//
+
+  private escapeKqlString(value: string): string {
+    return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  }
 
   private transformResultArray(
     data: any[],

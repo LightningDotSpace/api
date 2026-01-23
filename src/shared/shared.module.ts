@@ -7,6 +7,7 @@ import { GetConfig } from 'src/config/config';
 import { ConfigModule } from 'src/config/config.module';
 import { JwtStrategy } from './auth/jwt.strategy';
 import { RepositoryFactory } from './db/repository.factory';
+import { AppInsightsQueryService } from './services/app-insights-query.service';
 import { HttpService } from './services/http.service';
 
 @Module({
@@ -18,7 +19,7 @@ import { HttpService } from './services/http.service';
     ScheduleModule.forRoot(),
   ],
   controllers: [],
-  providers: [HttpService, JwtStrategy, RepositoryFactory],
-  exports: [PassportModule, JwtModule, ScheduleModule, HttpService, RepositoryFactory],
+  providers: [HttpService, JwtStrategy, RepositoryFactory, AppInsightsQueryService],
+  exports: [PassportModule, JwtModule, ScheduleModule, HttpService, RepositoryFactory, AppInsightsQueryService],
 })
 export class SharedModule {}

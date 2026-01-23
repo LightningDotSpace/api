@@ -8,6 +8,7 @@ import { RoleGuard } from 'src/shared/auth/role.guard';
 import { WalletRole } from 'src/shared/auth/wallet-role.enum';
 import { DbQueryDto } from '../dto/db-query.dto';
 import { DebugQueryDto } from '../dto/debug-query.dto';
+import { LogQueryDto, LogQueryResult } from '../dto/log-query.dto';
 import { SupportService } from '../services/support.service';
 
 @Controller('support')
@@ -34,5 +35,13 @@ export class SupportController {
     @Body() dto: DebugQueryDto,
   ): Promise<Record<string, unknown>[]> {
     return this.supportService.executeDebugQuery(dto.sql, jwt.address);
+  }
+
+  @Post('debug/logs')
+  @ApiBearerAuth()
+  @ApiExcludeEndpoint()
+  @UseGuards(AuthGuard(), new RoleGuard(WalletRole.DEBUG))
+  async executeLogQuery(@GetJwt() jwt: JwtPayload, @Body() dto: LogQueryDto): Promise<LogQueryResult> {
+    return this.supportService.executeLogQuery(dto, jwt.address);
   }
 }
