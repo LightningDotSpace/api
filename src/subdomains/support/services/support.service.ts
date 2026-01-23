@@ -233,11 +233,11 @@ export class SupportService {
     const lower = columnName.toLowerCase();
 
     if (table) {
-      const blockedCols = DebugBlockedCols[table];
+      const blockedCols = DebugBlockedCols[table.toLowerCase()];
       return blockedCols?.some((b) => b.toLowerCase() === lower) ?? false;
     } else {
       return allTables.some((t) => {
-        const blockedCols = DebugBlockedCols[t];
+        const blockedCols = DebugBlockedCols[t.toLowerCase()];
         return blockedCols?.some((b) => b.toLowerCase() === lower) ?? false;
       });
     }
@@ -574,7 +574,7 @@ export class SupportService {
 
     const blockedColumns = new Set<string>();
     for (const table of tables) {
-      const tableCols = DebugBlockedCols[table];
+      const tableCols = DebugBlockedCols[table.toLowerCase()];
       if (tableCols) {
         for (const col of tableCols) {
           blockedColumns.add(col.toLowerCase());
