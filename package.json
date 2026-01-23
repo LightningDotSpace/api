@@ -49,6 +49,7 @@
     "lnurl": "^0.24.2",
     "morgan": "^1.10.1",
     "mssql": "^9.3.2",
+    "node-sql-parser": "^5.3.6",
     "nestjs-real-ip": "^2.2.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.1.14",

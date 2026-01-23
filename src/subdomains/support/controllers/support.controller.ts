@@ -2,9 +2,12 @@ import { Controller, UseGuards } from '@nestjs/common';
 import { Body, Post } from '@nestjs/common/decorators';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiExcludeEndpoint } from '@nestjs/swagger';
+import { GetJwt } from 'src/shared/auth/get-jwt.decorator';
+import { JwtPayload } from 'src/shared/auth/jwt-payload.interface';
 import { RoleGuard } from 'src/shared/auth/role.guard';
 import { WalletRole } from 'src/shared/auth/wallet-role.enum';
 import { DbQueryDto } from '../dto/db-query.dto';
+import { DebugQueryDto } from '../dto/debug-query.dto';
 import { SupportService } from '../services/support.service';
 
 @Controller('support')
@@ -20,5 +23,16 @@ export class SupportController {
     query: DbQueryDto,
   ): Promise<{ keys: string[]; values: any }> {
     return this.supportService.getRawData(query);
+  }
+
+  @Post('debug')
+  @ApiBearerAuth()
+  @ApiExcludeEndpoint()
+  @UseGuards(AuthGuard(), new RoleGuard(WalletRole.DEBUG))
+  async executeDebugQuery(
+    @GetJwt() jwt: JwtPayload,
+    @Body() dto: DebugQueryDto,
+  ): Promise<Record<string, unknown>[]> {
+    return this.supportService.executeDebugQuery(dto.sql, jwt.address);
   }
 }
