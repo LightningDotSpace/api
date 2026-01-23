@@ -178,6 +178,13 @@ export class Configuration {
     apiKey: process.env.COIN_GECKO_API_KEY,
   };
 
+  azure = {
+    appInsights: {
+      appId: process.env.AZURE_APP_INSIGHTS_APP_ID ?? '',
+      apiKey: process.env.AZURE_APP_INSIGHTS_API_KEY ?? '',
+    },
+  };
+
   request = {
     knownIps: process.env.REQUEST_KNOWN_IPS?.split(',') ?? [],
     limitCheck: process.env.REQUEST_LIMIT_CHECK === 'true',
