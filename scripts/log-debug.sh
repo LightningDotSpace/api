@@ -18,7 +18,7 @@
 #   Uses the central .env file. Required variables:
 #   - DEBUG_ADDRESS: Wallet address with DEBUG role
 #   - DEBUG_SIGNATURE: Signature from signing the LDS login message
-#   - DEBUG_API_URL (optional): API URL, defaults to https://api.lightning.space/v1
+#   - DEBUG_API_URL (optional): API URL, defaults to https://lightning.space/v1
 
 set -e
 
@@ -43,7 +43,7 @@ if [ -z "$DEBUG_ADDRESS" ] || [ -z "$DEBUG_SIGNATURE" ]; then
   exit 1
 fi
 
-API_URL="${DEBUG_API_URL:-https://api.lightning.space/v1}"
+API_URL="${DEBUG_API_URL:-https://lightning.space/v1}"
 
 # Parse arguments
 HOURS=1
