@@ -19,7 +19,7 @@ export const BoltzDangerousFunctions = [
 ];
 
 // Blocked columns per table (sensitive data that should not be exposed via debug endpoint)
-// Table names are lowercase (PostgreSQL converts unquoted identifiers to lowercase)
+// Table names MUST be lowercase (lookup uses case-insensitive matching via toLowerCase())
 export const BoltzBlockedCols: Record<string, string[]> = {
   referrals: ['apiKey', 'apiSecret'],
   swaps: ['preimage'],

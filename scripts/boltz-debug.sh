@@ -25,17 +25,21 @@ if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
   echo "Usage:"
   echo "  ./scripts/boltz-debug.sh [SQL_QUERY]"
   echo ""
+  echo "IMPORTANT: PostgreSQL is case-sensitive for table names!"
+  echo "  - Use double quotes for camelCase tables: \"reverseSwaps\", \"chainSwaps\""
+  echo "  - Lowercase tables work without quotes: swaps, pairs, referrals"
+  echo ""
   echo "Examples:"
-  echo "  ./scripts/boltz-debug.sh \"SELECT * FROM swaps LIMIT 10\""
-  echo "  ./scripts/boltz-debug.sh \"SELECT * FROM reverseswaps WHERE status = 'swap.created' LIMIT 10\""
-  echo "  ./scripts/boltz-debug.sh \"SELECT * FROM chainswaps LIMIT 10\""
-  echo "  ./scripts/boltz-debug.sh \"SELECT * FROM pairs\""
-  echo "  ./scripts/boltz-debug.sh \"SELECT id, pair, status, fee FROM chainswaps ORDER BY id DESC LIMIT 20\""
+  echo "  ./scripts/boltz-debug.sh 'SELECT * FROM swaps LIMIT 10'"
+  echo "  ./scripts/boltz-debug.sh 'SELECT * FROM \"reverseSwaps\" WHERE status = '\\''swap.created'\\'' LIMIT 10'"
+  echo "  ./scripts/boltz-debug.sh 'SELECT * FROM \"chainSwaps\" LIMIT 10'"
+  echo "  ./scripts/boltz-debug.sh 'SELECT * FROM pairs'"
+  echo "  ./scripts/boltz-debug.sh 'SELECT id, pair, status, fee FROM \"chainSwaps\" ORDER BY id DESC LIMIT 20'"
   exit 0
 fi
 
 # --- Parse arguments ---
-SQL="${1:-SELECT id, pair, status, \"createdAt\" FROM swaps ORDER BY id DESC LIMIT 5}"
+SQL="${1:-SELECT id, pair, status, \"createdAt\" FROM swaps ORDER BY \"createdAt\" DESC LIMIT 5}"
 
 # --- Load environment ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
