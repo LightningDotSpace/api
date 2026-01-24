@@ -203,8 +203,7 @@ This creates a self-correcting mechanism that maintains the JUSD peg.
 
 | Swap Type | Fee |
 |-----------|-----|
-| Chain Swap (USDT → JUSD) | 0.25% |
-| Reverse Swap (JUSD → USDT) | 0.5% |
+| All Swaps | 0% |
 
 ### StablecoinBridge Fees
 
