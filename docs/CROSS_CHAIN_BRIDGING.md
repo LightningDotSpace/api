@@ -68,21 +68,23 @@ Lightning.space provides atomic swaps between Ethereum stablecoins and JUSD on C
 
 ### Swap Pairs
 
+All stablecoin swaps are exclusively against **JUSD** (JuiceDollar) on Citrea.
+
 #### USDT Pairs
 
 | From | To | Direction | Min | Max |
 |------|-----|-----------|-----|-----|
-| ETH USDT | Citrea USDT/JUSD | Chain Swap | 1 USDT | 10,000 USDT |
-| Citrea USDT/JUSD | ETH USDT | Reverse Swap | 1 USDT | 10,000 USDT |
-| Polygon USDT | Citrea USDT/JUSD | Chain Swap | 1 USDT | 10,000 USDT |
-| Citrea USDT/JUSD | Polygon USDT | Reverse Swap | 1 USDT | 10,000 USDT |
+| ETH USDT | JUSD | Chain Swap | 1 USDT | 10,000 USDT |
+| JUSD | ETH USDT | Reverse Swap | 1 USDT | 10,000 USDT |
+| Polygon USDT | JUSD | Chain Swap | 1 USDT | 10,000 USDT |
+| JUSD | Polygon USDT | Reverse Swap | 1 USDT | 10,000 USDT |
 
 #### USDC Pairs (Ethereum only)
 
 | From | To | Direction | Min | Max |
 |------|-----|-----------|-----|-----|
-| ETH USDC | Citrea USDC/JUSD | Chain Swap | 1 USDC | 10,000 USDC |
-| Citrea USDC/JUSD | ETH USDC | Reverse Swap | 1 USDC | 10,000 USDC |
+| ETH USDC | JUSD | Chain Swap | 1 USDC | 10,000 USDC |
+| JUSD | ETH USDC | Reverse Swap | 1 USDC | 10,000 USDC |
 
 > **Note:** Polygon USDC is not supported due to bridge incompatibility (native USDC vs bridged USDC.e).
 
@@ -111,8 +113,7 @@ Lightning.space provides atomic swaps between Ethereum stablecoins and JUSD on C
 |----------|---------|
 | EtherSwap | [`0xd02731fD8c5FDD53B613A699234FAd5EE8851B65`](https://explorer.mainnet.citrea.xyz/address/0xd02731fD8c5FDD53B613A699234FAd5EE8851B65) |
 | ERC20Swap | [`0xf2e019a371e5Fd32dB2fC564Ad9eAE9E433133cc`](https://explorer.mainnet.citrea.xyz/address/0xf2e019a371e5Fd32dB2fC564Ad9eAE9E433133cc) |
-| USDT_CITREA | [`0x1Dd3057888944ff1f914626aB4BD47Dc8b6285Fe`](https://explorer.mainnet.citrea.xyz/address/0x1Dd3057888944ff1f914626aB4BD47Dc8b6285Fe) |
-| USDC_CITREA | [`0xE045e6c36cF77FAA2CfB54466D71A3aEF7bBE839`](https://explorer.mainnet.citrea.xyz/address/0xE045e6c36cF77FAA2CfB54466D71A3aEF7bBE839) |
+| JUSD | [`0xFdB0a83d94CD65151148a131167Eb499Cb85d015`](https://explorer.mainnet.citrea.xyz/address/0xFdB0a83d94CD65151148a131167Eb499Cb85d015) |
 
 ### Token Compatibility
 
