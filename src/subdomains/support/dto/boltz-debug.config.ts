@@ -6,7 +6,7 @@ export const BoltzMaxResults = 10000;
 // Blocked database schemas (PostgreSQL system tables)
 export const BoltzBlockedSchemas = ['pg_catalog', 'information_schema', 'pg_toast'];
 
-// Dangerous SQL functions that could be used for data exfiltration or external connections
+// Dangerous SQL functions that could be used for data exfiltration, external connections, or DoS
 export const BoltzDangerousFunctions = [
   'pg_read_file',
   'pg_read_binary_file',
@@ -16,6 +16,7 @@ export const BoltzDangerousFunctions = [
   'dblink',
   'dblink_exec',
   'dblink_connect',
+  'pg_sleep',
 ];
 
 // Blocked columns per table (sensitive data that should not be exposed via debug endpoint)
@@ -23,6 +24,6 @@ export const BoltzDangerousFunctions = [
 export const BoltzBlockedCols: Record<string, string[]> = {
   referrals: ['apiKey', 'apiSecret'],
   swaps: ['preimage'],
-  reverseswaps: ['preimage'],
+  reverseswaps: ['preimage', 'minerFeeInvoicePreimage'],
   chainswaps: ['preimage'],
 };
