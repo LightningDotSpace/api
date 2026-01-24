@@ -72,10 +72,10 @@ Lightning.space provides atomic swaps between Ethereum stablecoins and JUSD on C
 
 | From | To | Direction | Min | Max |
 |------|-----|-----------|-----|-----|
-| ETH USDT | Citrea USDT/JUSD | Chain Swap | 1 USDT | 1,000 USDT |
-| Citrea USDT/JUSD | ETH USDT | Reverse Swap | 1 USDT | 1,000 USDT |
-| Polygon USDT | Citrea USDT/JUSD | Chain Swap | 1 USDT | 1,000 USDT |
-| Citrea USDT/JUSD | Polygon USDT | Reverse Swap | 1 USDT | 1,000 USDT |
+| ETH USDT | Citrea USDT/JUSD | Chain Swap | 1 USDT | 10,000 USDT |
+| Citrea USDT/JUSD | ETH USDT | Reverse Swap | 1 USDT | 10,000 USDT |
+| Polygon USDT | Citrea USDT/JUSD | Chain Swap | 1 USDT | 10,000 USDT |
+| Citrea USDT/JUSD | Polygon USDT | Reverse Swap | 1 USDT | 10,000 USDT |
 
 #### USDC Pairs (Ethereum only)
 
