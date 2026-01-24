@@ -7,13 +7,21 @@ export const BoltzMaxResults = 10000;
 export const BoltzBlockedSchemas = ['pg_catalog', 'information_schema', 'pg_toast'];
 
 // Dangerous SQL functions that could be used for data exfiltration or external connections
-export const BoltzDangerousFunctions = ['pg_read_file', 'pg_read_binary_file', 'pg_ls_dir', 'lo_import', 'lo_export'];
+export const BoltzDangerousFunctions = [
+  'pg_read_file',
+  'pg_read_binary_file',
+  'pg_ls_dir',
+  'lo_import',
+  'lo_export',
+  'dblink',
+  'dblink_exec',
+  'dblink_connect',
+];
 
 // Blocked columns per table (sensitive data that should not be exposed via debug endpoint)
-// Table names are lowercase (PostgreSQL default)
+// Table names are lowercase (PostgreSQL converts unquoted identifiers to lowercase)
 export const BoltzBlockedCols: Record<string, string[]> = {
   referrals: ['apiKey', 'apiSecret'],
-  keyproviders: ['privateKey'],
   swaps: ['preimage'],
   reverseswaps: ['preimage'],
   chainswaps: ['preimage'],
