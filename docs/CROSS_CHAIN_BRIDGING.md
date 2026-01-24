@@ -68,12 +68,25 @@ Lightning.space provides atomic swaps between Ethereum stablecoins and JUSD on C
 
 ### Swap Pairs
 
+All stablecoin swaps are exclusively against **JUSD** (JuiceDollar) on Citrea.
+
+#### USDT Pairs
+
 | From | To | Direction | Min | Max |
 |------|-----|-----------|-----|-----|
-| ETH USDT | Citrea JUSD | Chain Swap | 1 USDT | 10,000 USDT |
-| Citrea JUSD | ETH USDT | Reverse Swap | 1 USDT | 10,000 USDT |
-| Polygon USDT | Citrea JUSD | Chain Swap | 1 USDT | 10,000 USDT |
-| Citrea JUSD | Polygon USDT | Reverse Swap | 1 USDT | 10,000 USDT |
+| ETH USDT | JUSD | Chain Swap | 1 USDT | 10,000 USDT |
+| JUSD | ETH USDT | Reverse Swap | 1 USDT | 10,000 USDT |
+| Polygon USDT | JUSD | Chain Swap | 1 USDT | 10,000 USDT |
+| JUSD | Polygon USDT | Reverse Swap | 1 USDT | 10,000 USDT |
+
+#### USDC Pairs (Ethereum only)
+
+| From | To | Direction | Min | Max |
+|------|-----|-----------|-----|-----|
+| ETH USDC | JUSD | Chain Swap | 1 USDC | 10,000 USDC |
+| JUSD | ETH USDC | Reverse Swap | 1 USDC | 10,000 USDC |
+
+> **Note:** Polygon USDC is not supported due to bridge incompatibility (native USDC vs bridged USDC.e).
 
 ### Contract Addresses
 
@@ -84,6 +97,7 @@ Lightning.space provides atomic swaps between Ethereum stablecoins and JUSD on C
 | EtherSwap | [`0x9ADfB0F1B783486289Fc23f3A3Ad2927cebb17e4`](https://etherscan.io/address/0x9ADfB0F1B783486289Fc23f3A3Ad2927cebb17e4) |
 | ERC20Swap | [`0x2E21F58Da58c391F110467c7484EdfA849C1CB9B`](https://etherscan.io/address/0x2E21F58Da58c391F110467c7484EdfA849C1CB9B) |
 | USDT Token | [`0xdAC17F958D2ee523a2206206994597C13D831ec7`](https://etherscan.io/address/0xdAC17F958D2ee523a2206206994597C13D831ec7) |
+| USDC Token | [`0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`](https://etherscan.io/address/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48) |
 
 #### Polygon Mainnet
 
@@ -99,14 +113,15 @@ Lightning.space provides atomic swaps between Ethereum stablecoins and JUSD on C
 |----------|---------|
 | EtherSwap | [`0xd02731fD8c5FDD53B613A699234FAd5EE8851B65`](https://explorer.mainnet.citrea.xyz/address/0xd02731fD8c5FDD53B613A699234FAd5EE8851B65) |
 | ERC20Swap | [`0xf2e019a371e5Fd32dB2fC564Ad9eAE9E433133cc`](https://explorer.mainnet.citrea.xyz/address/0xf2e019a371e5Fd32dB2fC564Ad9eAE9E433133cc) |
-| USDT_CITREA | [`0x1Dd3057888944ff1f914626aB4BD47Dc8b6285Fe`](https://explorer.mainnet.citrea.xyz/address/0x1Dd3057888944ff1f914626aB4BD47Dc8b6285Fe) |
+| JUSD | [`0xFdB0a83d94CD65151148a131167Eb499Cb85d015`](https://explorer.mainnet.citrea.xyz/address/0xFdB0a83d94CD65151148a131167Eb499Cb85d015) |
 
 ### Token Compatibility
 
-Lightning.space uses the **same Ethereum USDT contract** as Layer0:
+Lightning.space uses the **same Ethereum token contracts** as Layer0:
 
 ```
 Ethereum USDT: 0xdAC17F958D2ee523a2206206994597C13D831ec7
+Ethereum USDC: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
 ```
 
 This ensures that tokens bridged via Layer0 can be used in Lightning.space swaps and vice versa.
@@ -189,8 +204,7 @@ This creates a self-correcting mechanism that maintains the JUSD peg.
 
 | Swap Type | Fee |
 |-----------|-----|
-| Chain Swap (USDT → JUSD) | 0.25% |
-| Reverse Swap (JUSD → USDT) | 0.5% |
+| All Swaps | 0% |
 
 ### StablecoinBridge Fees
 
