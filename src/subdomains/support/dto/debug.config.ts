@@ -1,23 +1,35 @@
+import { SqlDialect, SqlQueryConfig } from '../services/sql-query-validator';
 import { LogQueryDto, LogQueryTemplate } from './log-query.dto';
 
 // Debug endpoint configuration
 
 // Maximum number of results returned by debug queries
-export const DebugMaxResults = 10000;
+const DebugMaxResults = 10000;
 
 // Blocked database schemas (system tables)
-export const DebugBlockedSchemas = ['sys', 'information_schema', 'master', 'msdb', 'tempdb'];
+const DebugBlockedSchemas = ['sys', 'information_schema', 'master', 'msdb', 'tempdb'];
 
 // Dangerous SQL functions that could be used for data exfiltration or external connections
-export const DebugDangerousFunctions = ['openrowset', 'openquery', 'opendatasource', 'openxml'];
+const DebugDangerousFunctions = ['openrowset', 'openquery', 'opendatasource', 'openxml'];
 
 // Blocked columns per table (sensitive data that should not be exposed via debug endpoint)
-export const DebugBlockedCols: Record<string, string[]> = {
+const DebugBlockedCols: Record<string, string[]> = {
   wallet: ['signature', 'addressOwnershipProof'],
   lightning_wallet: ['adminKey', 'invoiceKey'],
   user_boltcard: ['k0', 'k1', 'k2', 'prevK0', 'prevK1', 'prevK2', 'otp', 'uid'],
   transaction_lightning: ['secret', 'paymentRequest'],
   payment_request: ['paymentRequest'],
+};
+
+// MSSQL debug query configuration
+export const MssqlDebugConfig: SqlQueryConfig = {
+  database: SqlDialect.MSSQL,
+  blockedSchemas: DebugBlockedSchemas,
+  blockedCols: DebugBlockedCols,
+  dangerousFunctions: DebugDangerousFunctions,
+  maxResults: DebugMaxResults,
+  checkForXmlJson: true,
+  checkLinkedServers: true,
 };
 
 // Log query templates for Azure Application Insights
