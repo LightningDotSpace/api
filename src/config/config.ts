@@ -185,6 +185,14 @@ export class Configuration {
     },
   };
 
+  boltzPostgres = {
+    host: process.env.BOLTZ_PG_HOST ?? '',
+    port: parseInt(process.env.BOLTZ_PG_PORT ?? '5432'),
+    database: process.env.BOLTZ_PG_DATABASE ?? '',
+    user: process.env.BOLTZ_PG_USER ?? '',
+    password: process.env.BOLTZ_PG_PASSWORD ?? '',
+  };
+
   request = {
     knownIps: process.env.REQUEST_KNOWN_IPS?.split(',') ?? [],
     limitCheck: process.env.REQUEST_LIMIT_CHECK === 'true',
