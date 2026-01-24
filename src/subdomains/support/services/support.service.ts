@@ -1,8 +1,16 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Parser } from 'node-sql-parser';
+import { Pool } from 'pg';
+import { Config } from 'src/config/config';
 import { AppInsightsQueryService } from 'src/shared/services/app-insights-query.service';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { DataSource } from 'typeorm';
+import {
+  BoltzBlockedCols,
+  BoltzBlockedSchemas,
+  BoltzDangerousFunctions,
+  BoltzMaxResults,
+} from '../dto/boltz-debug.config';
 import { DbQueryDto } from '../dto/db-query.dto';
 import {
   DebugBlockedCols,
@@ -14,14 +22,41 @@ import {
 import { LogQueryDto, LogQueryResult } from '../dto/log-query.dto';
 
 @Injectable()
-export class SupportService {
+export class SupportService implements OnModuleDestroy {
   private readonly logger = new LightningLogger(SupportService);
   private readonly sqlParser = new Parser();
+  private boltzPool: Pool | null = null;
 
   constructor(
     private readonly dataSource: DataSource,
     private readonly appInsightsQueryService: AppInsightsQueryService,
   ) {}
+
+  async onModuleDestroy(): Promise<void> {
+    if (this.boltzPool) {
+      await this.boltzPool.end();
+    }
+  }
+
+  private getBoltzPool(): Pool {
+    if (!this.boltzPool) {
+      const pgConfig = Config.boltzPostgres;
+      if (!pgConfig.host || !pgConfig.database) {
+        throw new BadRequestException('Boltz PostgreSQL not configured');
+      }
+      this.boltzPool = new Pool({
+        host: pgConfig.host,
+        port: pgConfig.port,
+        database: pgConfig.database,
+        user: pgConfig.user,
+        password: pgConfig.password,
+        max: 5,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
+      });
+    }
+    return this.boltzPool;
+  }
 
   async getRawData(query: DbQueryDto): Promise<any> {
     const request = this.dataSource
@@ -162,6 +197,73 @@ export class SupportService {
       };
     } catch (e) {
       this.logger.info(`Log query by ${userIdentifier} failed: ${e.message}`);
+      throw new BadRequestException('Query execution failed');
+    }
+  }
+
+  async executeBoltzQuery(sql: string, userIdentifier: string): Promise<Record<string, unknown>[]> {
+    // 1. Parse SQL to AST for robust validation (PostgreSQL dialect)
+    let ast;
+    try {
+      ast = this.sqlParser.astify(sql, { database: 'PostgreSQL' });
+    } catch {
+      throw new BadRequestException('Invalid SQL syntax');
+    }
+
+    // 2. Only single SELECT statements allowed
+    const statements = Array.isArray(ast) ? ast : [ast];
+    if (statements.length !== 1) {
+      throw new BadRequestException('Only single statements allowed');
+    }
+
+    const stmt = statements[0];
+    if (stmt.type !== 'select') {
+      throw new BadRequestException('Only SELECT queries allowed');
+    }
+
+    // 3. No UNION/INTERSECT/EXCEPT queries
+    if (stmt._next) {
+      throw new BadRequestException('UNION/INTERSECT/EXCEPT queries not allowed');
+    }
+
+    // 4. No SELECT INTO
+    if (stmt.into?.type === 'into' || stmt.into?.expr) {
+      throw new BadRequestException('SELECT INTO not allowed');
+    }
+
+    // 5. No system tables/schemas
+    this.checkForBoltzBlockedSchemas(stmt);
+
+    // 6. No dangerous functions
+    this.checkForBoltzDangerousFunctionsRecursive(stmt);
+
+    // 7. Check for blocked columns BEFORE execution
+    const tables = this.getBoltzTablesFromQuery(sql);
+    const blockedColumn = this.findBoltzBlockedColumnInQuery(sql, stmt, tables);
+    if (blockedColumn) {
+      throw new BadRequestException(`Access to column '${blockedColumn}' is not allowed`);
+    }
+
+    // 8. Validate LIMIT value if present
+    if (stmt.limit?.value?.[0]?.value > BoltzMaxResults) {
+      throw new BadRequestException(`LIMIT value exceeds maximum of ${BoltzMaxResults}`);
+    }
+
+    // 9. Log query for audit trail
+    this.logger.verbose(`Boltz query by ${userIdentifier}: ${sql.substring(0, 500)}${sql.length > 500 ? '...' : ''}`);
+
+    // 10. Execute query with result limit
+    try {
+      const limitedSql = this.ensureBoltzResultLimit(sql);
+      const pool = this.getBoltzPool();
+      const result = await pool.query(limitedSql);
+
+      // 11. Post-execution masking (defense in depth)
+      this.maskBoltzBlockedColumns(result.rows, tables);
+
+      return result.rows;
+    } catch (e) {
+      this.logger.info(`Boltz query by ${userIdentifier} failed: ${e.message}`);
       throw new BadRequestException('Query execution failed');
     }
   }
@@ -618,5 +720,253 @@ export class SupportService {
     while (trimmed.endsWith(';')) trimmed = trimmed.slice(0, -1);
 
     return `${trimmed}${orderByClause} OFFSET 0 ROWS FETCH NEXT ${DebugMaxResults} ROWS ONLY`;
+  }
+
+  // --- BOLTZ QUERY HELPER METHODS --- //
+
+  private getBoltzTablesFromQuery(sql: string): string[] {
+    const tableList = this.sqlParser.tableList(sql, { database: 'PostgreSQL' });
+    return tableList.map((t) => t.split('::')[2]).filter(Boolean);
+  }
+
+  private getBoltzAliasToTableMap(ast: any): Map<string, string> {
+    const map = new Map<string, string>();
+    if (!ast.from) return map;
+
+    for (const item of ast.from) {
+      if (item.table) {
+        map.set(item.as || item.table, item.table);
+      }
+    }
+    return map;
+  }
+
+  private resolveBoltzTableFromAlias(
+    tableOrAlias: string,
+    tables: string[],
+    aliasMap: Map<string, string>,
+  ): string | null {
+    if (tableOrAlias === 'null') {
+      return tables.length === 1 ? tables[0] : null;
+    }
+    return aliasMap.get(tableOrAlias) || tableOrAlias;
+  }
+
+  private isBoltzColumnBlockedInTable(columnName: string, table: string | null, allTables: string[]): boolean {
+    const lower = columnName.toLowerCase();
+
+    if (table) {
+      const blockedCols = BoltzBlockedCols[table.toLowerCase()];
+      return blockedCols?.some((b) => b.toLowerCase() === lower) ?? false;
+    } else {
+      return allTables.some((t) => {
+        const blockedCols = BoltzBlockedCols[t.toLowerCase()];
+        return blockedCols?.some((b) => b.toLowerCase() === lower) ?? false;
+      });
+    }
+  }
+
+  private findBoltzBlockedColumnInQuery(sql: string, ast: any, tables: string[]): string | null {
+    try {
+      const columns = this.sqlParser.columnList(sql, { database: 'PostgreSQL' });
+      const aliasMap = this.getBoltzAliasToTableMap(ast);
+
+      for (const col of columns) {
+        const parts = col.split('::');
+        const tableOrAlias = parts[1];
+        const columnName = parts[2];
+
+        if (columnName === '*' || columnName === '(.*)') continue;
+
+        const resolvedTable = this.resolveBoltzTableFromAlias(tableOrAlias, tables, aliasMap);
+
+        if (this.isBoltzColumnBlockedInTable(columnName, resolvedTable, tables)) {
+          return `${resolvedTable || 'unknown'}.${columnName}`;
+        }
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  private checkForBoltzBlockedSchemas(stmt: any): void {
+    if (!stmt) return;
+
+    if (stmt.from) {
+      for (const item of stmt.from) {
+        const schema = item.db?.toLowerCase() || item.schema?.toLowerCase();
+        const table = item.table?.toLowerCase();
+
+        if (schema && BoltzBlockedSchemas.includes(schema)) {
+          throw new BadRequestException(`Access to schema '${schema}' is not allowed`);
+        }
+
+        if (table && BoltzBlockedSchemas.some((s) => table.startsWith(s + '.'))) {
+          throw new BadRequestException(`Access to system tables is not allowed`);
+        }
+
+        if (item.expr?.ast) {
+          this.checkForBoltzBlockedSchemas(item.expr.ast);
+        }
+
+        this.checkBoltzSubqueriesForBlockedSchemas(item.on);
+      }
+    }
+
+    if (stmt.columns) {
+      for (const col of stmt.columns) {
+        this.checkBoltzSubqueriesForBlockedSchemas(col.expr);
+      }
+    }
+
+    this.checkBoltzSubqueriesForBlockedSchemas(stmt.where);
+    this.checkBoltzSubqueriesForBlockedSchemas(stmt.having);
+
+    if (stmt.with) {
+      for (const cte of stmt.with) {
+        if (cte.stmt?.ast) {
+          this.checkForBoltzBlockedSchemas(cte.stmt.ast);
+        }
+      }
+    }
+  }
+
+  private checkBoltzSubqueriesForBlockedSchemas(node: any): void {
+    if (!node) return;
+
+    if (node.ast) {
+      this.checkForBoltzBlockedSchemas(node.ast);
+    }
+
+    if (node.left) this.checkBoltzSubqueriesForBlockedSchemas(node.left);
+    if (node.right) this.checkBoltzSubqueriesForBlockedSchemas(node.right);
+    if (node.expr) this.checkBoltzSubqueriesForBlockedSchemas(node.expr);
+
+    if (node.args) {
+      const args = Array.isArray(node.args) ? node.args : node.args?.value || [];
+      for (const arg of Array.isArray(args) ? args : [args]) {
+        this.checkBoltzSubqueriesForBlockedSchemas(arg);
+      }
+    }
+  }
+
+  private checkForBoltzDangerousFunctionsRecursive(stmt: any): void {
+    if (!stmt) return;
+
+    this.checkBoltzFromForDangerousFunctions(stmt.from);
+    this.checkBoltzExpressionsForDangerousFunctions(stmt.columns);
+    this.checkBoltzNodeForDangerousFunctions(stmt.where);
+    this.checkBoltzNodeForDangerousFunctions(stmt.having);
+
+    if (stmt.with) {
+      for (const cte of stmt.with) {
+        if (cte.stmt?.ast) {
+          this.checkForBoltzDangerousFunctionsRecursive(cte.stmt.ast);
+        }
+      }
+    }
+  }
+
+  private checkBoltzFromForDangerousFunctions(from: any[]): void {
+    if (!from) return;
+
+    for (const item of from) {
+      if (item.type === 'expr' && item.expr?.type === 'function') {
+        const funcName = this.extractFunctionName(item.expr);
+        if (funcName && BoltzDangerousFunctions.includes(funcName)) {
+          throw new BadRequestException(`Function '${funcName.toUpperCase()}' not allowed`);
+        }
+      }
+
+      if (item.expr?.ast) {
+        this.checkForBoltzDangerousFunctionsRecursive(item.expr.ast);
+      }
+
+      this.checkBoltzNodeForDangerousFunctions(item.on);
+    }
+  }
+
+  private checkBoltzExpressionsForDangerousFunctions(columns: any[]): void {
+    if (!columns) return;
+
+    for (const col of columns) {
+      this.checkBoltzNodeForDangerousFunctions(col.expr);
+    }
+  }
+
+  private checkBoltzNodeForDangerousFunctions(node: any): void {
+    if (!node) return;
+
+    if (node.type === 'function') {
+      const funcName = this.extractFunctionName(node);
+      if (funcName && BoltzDangerousFunctions.includes(funcName)) {
+        throw new BadRequestException(`Function '${funcName.toUpperCase()}' not allowed`);
+      }
+    }
+
+    if (node.ast) {
+      this.checkForBoltzDangerousFunctionsRecursive(node.ast);
+    }
+
+    if (node.left) this.checkBoltzNodeForDangerousFunctions(node.left);
+    if (node.right) this.checkBoltzNodeForDangerousFunctions(node.right);
+    if (node.expr) this.checkBoltzNodeForDangerousFunctions(node.expr);
+
+    if (node.args) {
+      const args = Array.isArray(node.args) ? node.args : node.args?.value || [];
+      for (const arg of Array.isArray(args) ? args : [args]) {
+        this.checkBoltzNodeForDangerousFunctions(arg);
+      }
+    }
+  }
+
+  private maskBoltzBlockedColumns(data: Record<string, unknown>[], tables: string[]): void {
+    if (!data?.length || !tables?.length) return;
+
+    const blockedColumns = new Set<string>();
+    for (const table of tables) {
+      const tableCols = BoltzBlockedCols[table.toLowerCase()];
+      if (tableCols) {
+        for (const col of tableCols) {
+          blockedColumns.add(col.toLowerCase());
+        }
+      }
+    }
+
+    if (blockedColumns.size === 0) return;
+
+    for (const entry of data) {
+      for (const key of Object.keys(entry)) {
+        if (this.shouldMaskBoltzColumn(key, blockedColumns)) {
+          entry[key] = entry[key] == null ? '[RESTRICTED:NULL]' : '[RESTRICTED:SET]';
+        }
+      }
+    }
+  }
+
+  private shouldMaskBoltzColumn(columnName: string, blockedColumns: Set<string>): boolean {
+    const lower = columnName.toLowerCase();
+
+    for (const blocked of blockedColumns) {
+      if (lower === blocked || lower.endsWith('_' + blocked)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private ensureBoltzResultLimit(sql: string): string {
+    const normalized = sql.trim().toLowerCase();
+
+    if (normalized.includes(' limit ')) {
+      return sql;
+    }
+
+    let trimmed = sql.trim();
+    while (trimmed.endsWith(';')) trimmed = trimmed.slice(0, -1);
+
+    return `${trimmed} LIMIT ${BoltzMaxResults}`;
   }
 }
