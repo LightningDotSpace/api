@@ -60,6 +60,24 @@ async function bootstrap() {
     server.on('upgrade', forwardProxy.upgrade);
   }
 
+  // --- REWRITE BOLTZ CLAIM URL --- //
+  if (Config.swap.claimApiUrl) {
+    const rewriteUrl = `/${Config.version}/claim`;
+    const forwardProxy = createProxyMiddleware<Request, Response>({
+      target: Config.swap.claimApiUrl,
+      changeOrigin: true,
+      toProxy: true,
+      secure: false,
+      pathRewrite: { [rewriteUrl]: '' },
+      on: {
+        proxyReq(proxyReq, req: Request) {
+          fixRequestBody(proxyReq, req);
+        },
+      },
+    });
+    app.use(rewriteUrl, forwardProxy);
+  }
+
   // --- SWAGGER --- //
   const swaggerOptions = new DocumentBuilder()
     .setTitle('lightning.space API')

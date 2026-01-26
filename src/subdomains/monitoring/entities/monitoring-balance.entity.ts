@@ -5,6 +5,14 @@ import { Price } from 'src/subdomains/support/dto/price.dto';
 import { LightningWalletTotalBalanceDto } from 'src/subdomains/user/application/dto/lightning-wallet.dto';
 import { Column, Entity, ManyToOne } from 'typeorm';
 
+export interface MonitoringBlockchainBalance {
+  onchainBalance: number;
+  lndOnchainBalance: number;
+  lightningBalance: number;
+  rootstockBalance: number;
+  citreaBalance: number;
+}
+
 @Entity('monitoring_balance')
 export class MonitoringBalanceEntity extends IEntity {
   @ManyToOne(() => AssetAccountEntity, { eager: true })
@@ -23,6 +31,9 @@ export class MonitoringBalanceEntity extends IEntity {
   rootstockBalance: number;
 
   @Column({ type: 'float', default: 0 })
+  citreaBalance: number;
+
+  @Column({ type: 'float', default: 0 })
   customerBalance: number;
 
   @Column({ type: 'float', default: 0 })
@@ -37,10 +48,7 @@ export class MonitoringBalanceEntity extends IEntity {
   // --- FACTORY METHODS --- //
 
   static createAsBtcEntity(
-    onchainBalance: number,
-    lndOnchainBalance: number,
-    lightningBalance: number,
-    rootstockBalance: number,
+    blockchainBalance: MonitoringBlockchainBalance,
     internalBalance: LightningWalletTotalBalanceDto,
     customerBalance: LightningWalletTotalBalanceDto,
     chfPrice: Price,
@@ -48,10 +56,11 @@ export class MonitoringBalanceEntity extends IEntity {
     const entity = new MonitoringBalanceEntity();
 
     entity.asset = { id: customerBalance.assetId } as AssetAccountEntity;
-    entity.onchainBalance = onchainBalance;
-    entity.lndOnchainBalance = lndOnchainBalance;
-    entity.lightningBalance = lightningBalance;
-    entity.rootstockBalance = rootstockBalance;
+    entity.onchainBalance = blockchainBalance.onchainBalance;
+    entity.lndOnchainBalance = blockchainBalance.lndOnchainBalance;
+    entity.lightningBalance = blockchainBalance.lightningBalance;
+    entity.rootstockBalance = blockchainBalance.rootstockBalance;
+    entity.citreaBalance = blockchainBalance.citreaBalance;
     entity.customerBalance = customerBalance.totalBalance;
 
     entity.ldsBalance =
@@ -59,6 +68,7 @@ export class MonitoringBalanceEntity extends IEntity {
       entity.lndOnchainBalance +
       entity.lightningBalance +
       entity.rootstockBalance +
+      entity.citreaBalance +
       internalBalance.totalBalance -
       entity.customerBalance;
 

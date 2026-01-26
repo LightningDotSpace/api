@@ -152,8 +152,15 @@ export class Configuration {
       gatewayUrl: process.env.ROOTSTOCK_GATEWAY_URL ?? '',
       apiKey: process.env.ALCHEMY_API_KEY ?? '',
       chainId: +(process.env.ROOTSTOCK_CHAIN_ID ?? -1),
-      walletSeed: process.env.ROOTSTOCK_WALLET_SEED ?? '',
     },
+    citrea: {
+      gatewayUrl: process.env.CITREA_GATEWAY_URL ?? '',
+      chainId: +(process.env.CITREA_CHAIN_ID ?? -1),
+    },
+  };
+
+  evm = {
+    walletSeed: process.env.EVM_WALLET_SEED ?? '',
   };
 
   alchemy = {
@@ -171,6 +178,21 @@ export class Configuration {
     apiKey: process.env.COIN_GECKO_API_KEY,
   };
 
+  azure = {
+    appInsights: {
+      appId: process.env.AZURE_APP_INSIGHTS_APP_ID ?? '',
+      apiKey: process.env.AZURE_APP_INSIGHTS_API_KEY ?? '',
+    },
+  };
+
+  boltzPostgres = {
+    host: process.env.BOLTZ_PG_HOST ?? '',
+    port: parseInt(process.env.BOLTZ_PG_PORT ?? '5432'),
+    database: process.env.BOLTZ_PG_DATABASE ?? '',
+    user: process.env.BOLTZ_PG_USER ?? '',
+    password: process.env.BOLTZ_PG_PASSWORD ?? '',
+  };
+
   request = {
     knownIps: process.env.REQUEST_KNOWN_IPS?.split(',') ?? [],
     limitCheck: process.env.REQUEST_LIMIT_CHECK === 'true',
@@ -178,6 +200,7 @@ export class Configuration {
 
   swap = {
     apiUrl: process.env.SWAP_API_URL,
+    claimApiUrl: process.env.SWAP_CLAIM_API_URL,
   };
 
   // --- GETTERS --- //
