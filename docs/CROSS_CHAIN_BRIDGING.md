@@ -38,19 +38,19 @@ LayerZero provides omnichain messaging to bridge assets between Ethereum and Cit
 
 | Asset | Ethereum Contract | Citrea Contract | Type |
 |-------|-------------------|-----------------|------|
-| **USDT** | [`0x6925ccD29e3993c82a574CED4372d8737C6dbba6`](https://etherscan.io/address/0x6925ccD29e3993c82a574CED4372d8737C6dbba6) | [`0x9f3096Bac87e7F03DC09b0B416eB0DF837304dc4`](https://explorer.mainnet.citrea.xyz/address/0x9f3096Bac87e7F03DC09b0B416eB0DF837304dc4) | SourceOFTAdapter → USDT.e |
-| **USDC** | [`0xdaa289CC487Cf95Ba99Db62f791c7E2d2a4b868E`](https://etherscan.io/address/0xdaa289CC487Cf95Ba99Db62f791c7E2d2a4b868E) | [`0xE045e6c36cF77FAA2CfB54466D71A3aEF7bBE839`](https://explorer.mainnet.citrea.xyz/address/0xE045e6c36cF77FAA2CfB54466D71A3aEF7bBE839) | SourceOFTAdapter → USDC.e |
-| **WBTC** | [`0x2c01390E10e44C968B73A7BcFF7E4b4F50ba76Ed`](https://etherscan.io/address/0x2c01390E10e44C968B73A7BcFF7E4b4F50ba76Ed) | [`0xDF240DC08B0FdaD1d93b74d5048871232f6BEA3d`](https://explorer.mainnet.citrea.xyz/address/0xDF240DC08B0FdaD1d93b74d5048871232f6BEA3d) | WBTCOFTAdapter → WBTC.e |
+| **USDT** | [`0x6925ccD29e3993c82a574CED4372d8737C6dbba6`](https://etherscan.io/address/0x6925ccD29e3993c82a574CED4372d8737C6dbba6) | [`0x9f3096Bac87e7F03DC09b0B416eB0DF837304dc4`](https://citreascan.com/address/0x9f3096Bac87e7F03DC09b0B416eB0DF837304dc4) | SourceOFTAdapter → USDT.e |
+| **USDC** | [`0xdaa289CC487Cf95Ba99Db62f791c7E2d2a4b868E`](https://etherscan.io/address/0xdaa289CC487Cf95Ba99Db62f791c7E2d2a4b868E) | [`0xE045e6c36cF77FAA2CfB54466D71A3aEF7bBE839`](https://citreascan.com/address/0xE045e6c36cF77FAA2CfB54466D71A3aEF7bBE839) | SourceOFTAdapter → USDC.e |
+| **WBTC** | [`0x2c01390E10e44C968B73A7BcFF7E4b4F50ba76Ed`](https://etherscan.io/address/0x2c01390E10e44C968B73A7BcFF7E4b4F50ba76Ed) | [`0xDF240DC08B0FdaD1d93b74d5048871232f6BEA3d`](https://citreascan.com/address/0xDF240DC08B0FdaD1d93b74d5048871232f6BEA3d) | WBTCOFTAdapter → WBTC.e |
 
 ### Bridge Contracts on Citrea
 
 | Contract | Address | Purpose |
 |----------|---------|---------|
-| USDC.e Token | [`0xE045e6c36cF77FAA2CfB54466D71A3aEF7bBE839`](https://explorer.mainnet.citrea.xyz/address/0xE045e6c36cF77FAA2CfB54466D71A3aEF7bBE839) | Bridged USDC from Ethereum |
-| USDC.e Bridge | [`0x41710804caB0974638E1504DB723D7bddec22e30`](https://explorer.mainnet.citrea.xyz/address/0x41710804caB0974638E1504DB723D7bddec22e30) | DestinationOUSDC |
-| USDT.e Token | [`0x9f3096Bac87e7F03DC09b0B416eB0DF837304dc4`](https://explorer.mainnet.citrea.xyz/address/0x9f3096Bac87e7F03DC09b0B416eB0DF837304dc4) | Bridged USDT from Ethereum |
-| USDT.e Bridge | [`0xF8b5983BFa11dc763184c96065D508AE1502C030`](https://explorer.mainnet.citrea.xyz/address/0xF8b5983BFa11dc763184c96065D508AE1502C030) | DestinationOUSDT |
-| WBTC.e + Bridge | [`0xDF240DC08B0FdaD1d93b74d5048871232f6BEA3d`](https://explorer.mainnet.citrea.xyz/address/0xDF240DC08B0FdaD1d93b74d5048871232f6BEA3d) | WBTCOFT (combined) |
+| USDC.e Token | [`0xE045e6c36cF77FAA2CfB54466D71A3aEF7bBE839`](https://citreascan.com/address/0xE045e6c36cF77FAA2CfB54466D71A3aEF7bBE839) | Bridged USDC from Ethereum |
+| USDC.e Bridge | [`0x41710804caB0974638E1504DB723D7bddec22e30`](https://citreascan.com/address/0x41710804caB0974638E1504DB723D7bddec22e30) | DestinationOUSDC |
+| USDT.e Token | [`0x9f3096Bac87e7F03DC09b0B416eB0DF837304dc4`](https://citreascan.com/address/0x9f3096Bac87e7F03DC09b0B416eB0DF837304dc4) | Bridged USDT from Ethereum |
+| USDT.e Bridge | [`0xF8b5983BFa11dc763184c96065D508AE1502C030`](https://citreascan.com/address/0xF8b5983BFa11dc763184c96065D508AE1502C030) | DestinationOUSDT |
+| WBTC.e + Bridge | [`0xDF240DC08B0FdaD1d93b74d5048871232f6BEA3d`](https://citreascan.com/address/0xDF240DC08B0FdaD1d93b74d5048871232f6BEA3d) | WBTCOFT (combined) |
 
 ### Source Token Verification
 
@@ -111,9 +111,9 @@ All stablecoin swaps are exclusively against **JUSD** (JuiceDollar) on Citrea.
 
 | Contract | Address |
 |----------|---------|
-| EtherSwap | [`0xd02731fD8c5FDD53B613A699234FAd5EE8851B65`](https://explorer.mainnet.citrea.xyz/address/0xd02731fD8c5FDD53B613A699234FAd5EE8851B65) |
-| ERC20Swap | [`0xf2e019a371e5Fd32dB2fC564Ad9eAE9E433133cc`](https://explorer.mainnet.citrea.xyz/address/0xf2e019a371e5Fd32dB2fC564Ad9eAE9E433133cc) |
-| JUSD | [`0xFdB0a83d94CD65151148a131167Eb499Cb85d015`](https://explorer.mainnet.citrea.xyz/address/0xFdB0a83d94CD65151148a131167Eb499Cb85d015) |
+| EtherSwap | [`0xd02731fD8c5FDD53B613A699234FAd5EE8851B65`](https://citreascan.com/address/0xd02731fD8c5FDD53B613A699234FAd5EE8851B65) |
+| ERC20Swap | [`0xf2e019a371e5Fd32dB2fC564Ad9eAE9E433133cc`](https://citreascan.com/address/0xf2e019a371e5Fd32dB2fC564Ad9eAE9E433133cc) |
+| JUSD | [`0xFdB0a83d94CD65151148a131167Eb499Cb85d015`](https://citreascan.com/address/0xFdB0a83d94CD65151148a131167Eb499Cb85d015) |
 
 ### Token Compatibility
 
@@ -242,8 +242,8 @@ This creates a self-correcting mechanism that maintains the JUSD peg.
 
 | Environment | RPC URL |
 |-------------|---------|
-| Mainnet | `https://rpc.citrea.xyz` |
-| Testnet | `https://rpc.testnet.citrea.xyz` |
+| Mainnet | `https://rpc.citreascan.com` |
+| Testnet | `https://rpc.testnet.citreascan.com` |
 
 ## Summary
 
