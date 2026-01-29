@@ -235,14 +235,14 @@ export class SupportService implements OnModuleDestroy {
       return dateB - dateA;
     });
 
-    // Calculate stats
-    const claimed = swaps.filter((s) => s.status.includes('claimed')).length;
-    const expired = swaps.filter((s) => s.status.includes('expired')).length;
-    const refunded = swaps.filter((s) => s.status.includes('refunded')).length;
+    // Calculate stats (defensive null check for status)
+    const claimed = swaps.filter((s) => s.status?.includes('claimed')).length;
+    const expired = swaps.filter((s) => s.status?.includes('expired')).length;
+    const refunded = swaps.filter((s) => s.status?.includes('refunded')).length;
     const pending = swaps.filter(
-      (s) => s.status.includes('created') || s.status.includes('pending') || s.status.includes('set'),
+      (s) => s.status?.includes('created') || s.status?.includes('pending') || s.status?.includes('set'),
     ).length;
-    const failed = swaps.filter((s) => s.status.includes('failed')).length;
+    const failed = swaps.filter((s) => s.status?.includes('failed')).length;
 
     return {
       total: swaps.length,
@@ -318,7 +318,7 @@ export class SupportService implements OnModuleDestroy {
       id: row.id as string,
       pair,
       direction,
-      status: row.status as string,
+      status: (row.status as string) ?? '',
       failureReason: (row.failureReason as string) || undefined,
       fee: row.fee as string,
       referral: (row.referral as string) || undefined,
@@ -344,7 +344,7 @@ export class SupportService implements OnModuleDestroy {
       id: row.id as string,
       pair: row.pair as string,
       direction: 'cBTC -> Lightning',
-      status: row.status as string,
+      status: (row.status as string) ?? '',
       failureReason: (row.failureReason as string) || undefined,
       fee: row.fee as string,
       referral: (row.referral as string) || undefined,
@@ -370,7 +370,7 @@ export class SupportService implements OnModuleDestroy {
       id: row.id as string,
       pair: row.pair as string,
       direction: 'Lightning -> cBTC',
-      status: row.status as string,
+      status: (row.status as string) ?? '',
       failureReason: (row.failureReason as string) || undefined,
       fee: row.fee as string,
       referral: (row.referral as string) || undefined,
@@ -407,7 +407,7 @@ export class SupportService implements OnModuleDestroy {
   }
 
   private matchesStatusFilter(status: string, filter: SwapStatusFilter): boolean {
-    const s = status.toLowerCase();
+    const s = (status ?? '').toLowerCase();
     const patterns: Record<SwapStatusFilter, string[]> = {
       [SwapStatusFilter.ALL]: [],
       [SwapStatusFilter.CLAIMED]: ['claimed'],
