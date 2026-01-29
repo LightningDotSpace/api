@@ -1,7 +1,7 @@
 import { Controller, UseGuards } from '@nestjs/common';
-import { Body, Post } from '@nestjs/common/decorators';
+import { Body, Get, Post, Query } from '@nestjs/common/decorators';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth, ApiExcludeEndpoint } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiExcludeEndpoint, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { GetJwt } from 'src/shared/auth/get-jwt.decorator';
 import { JwtPayload } from 'src/shared/auth/jwt-payload.interface';
 import { RoleGuard } from 'src/shared/auth/role.guard';
@@ -10,11 +10,24 @@ import { BoltzQueryDto } from '../dto/boltz-query.dto';
 import { DbQueryDto } from '../dto/db-query.dto';
 import { DebugQueryDto } from '../dto/debug-query.dto';
 import { LogQueryDto, LogQueryResult } from '../dto/log-query.dto';
+import { SwapStatsQueryDto, SwapStatsResponseDto } from '../dto/swap-stats.dto';
 import { SupportService } from '../services/support.service';
 
+@ApiTags('Support')
 @Controller('support')
 export class SupportController {
   constructor(private readonly supportService: SupportService) {}
+
+  // --- PUBLIC ENDPOINTS --- //
+
+  @Get('swaps')
+  @ApiOperation({ summary: 'Get all swap statistics (public)' })
+  @ApiOkResponse({ type: SwapStatsResponseDto })
+  async getSwapStats(@Query() query: SwapStatsQueryDto): Promise<SwapStatsResponseDto> {
+    return this.supportService.getSwapStats(query);
+  }
+
+  // --- PROTECTED ENDPOINTS --- //
 
   @Post('db')
   @ApiBearerAuth()
