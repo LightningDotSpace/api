@@ -393,34 +393,29 @@ export class SupportService implements OnModuleDestroy {
     if (!value) return '';
     if (value instanceof Date) return value.toISOString();
     if (typeof value === 'string') return value;
-    return String(value);
+    if (typeof value === 'number') return new Date(value).toISOString();
+    return '';
   }
 
   private matchesFilter(swap: SwapDto, query: SwapStatsQueryDto): boolean {
     if (query.pair && swap.pair !== query.pair) return false;
     if (query.direction && swap.direction !== query.direction) return false;
-
     if (query.status && query.status !== SwapStatusFilter.ALL) {
-      const s = swap.status.toLowerCase();
-      switch (query.status) {
-        case SwapStatusFilter.CLAIMED:
-          if (!s.includes('claimed')) return false;
-          break;
-        case SwapStatusFilter.EXPIRED:
-          if (!s.includes('expired')) return false;
-          break;
-        case SwapStatusFilter.REFUNDED:
-          if (!s.includes('refunded')) return false;
-          break;
-        case SwapStatusFilter.PENDING:
-          if (!s.includes('created') && !s.includes('pending') && !s.includes('set')) return false;
-          break;
-        case SwapStatusFilter.FAILED:
-          if (!s.includes('failed')) return false;
-          break;
-      }
+      return this.matchesStatusFilter(swap.status, query.status);
     }
-
     return true;
+  }
+
+  private matchesStatusFilter(status: string, filter: SwapStatusFilter): boolean {
+    const s = status.toLowerCase();
+    const patterns: Record<SwapStatusFilter, string[]> = {
+      [SwapStatusFilter.ALL]: [],
+      [SwapStatusFilter.CLAIMED]: ['claimed'],
+      [SwapStatusFilter.EXPIRED]: ['expired'],
+      [SwapStatusFilter.REFUNDED]: ['refunded'],
+      [SwapStatusFilter.PENDING]: ['created', 'pending', 'set'],
+      [SwapStatusFilter.FAILED]: ['failed'],
+    };
+    return patterns[filter].some((p) => s.includes(p));
   }
 }
