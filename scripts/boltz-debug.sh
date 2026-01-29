@@ -70,22 +70,49 @@ fi
 
 API_URL="${DEBUG_API_URL:-https://lightning.space/v1}"
 
-# --- Authenticate ---
-echo "=== Authenticating to $API_URL ==="
-TOKEN_RESPONSE=$(curl -s -X POST "$API_URL/auth" \
-  -H "Content-Type: application/json" \
-  -d "{\"address\":\"$DEBUG_ADDRESS\",\"signature\":\"$DEBUG_SIGNATURE\"}")
+# --- Token Caching ---
+TOKEN_CACHE="/tmp/lds-debug-token-$(echo "$DEBUG_ADDRESS" | md5sum | cut -c1-8).json"
+TOKEN_MAX_AGE=3500  # ~58 minutes (JWT expires after 60 min)
+TOKEN=""
 
-TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.accessToken' 2>/dev/null)
+# Check if cached token exists and is still valid
+if [ -f "$TOKEN_CACHE" ]; then
+  CACHE_MOD_TIME=$(stat -f %m "$TOKEN_CACHE" 2>/dev/null || stat -c %Y "$TOKEN_CACHE" 2>/dev/null)
+  CURRENT_TIME=$(date +%s)
+  CACHE_AGE=$((CURRENT_TIME - CACHE_MOD_TIME))
 
-if [ "$TOKEN" == "null" ] || [ -z "$TOKEN" ]; then
-  echo "Authentication failed:"
-  echo "$TOKEN_RESPONSE" | jq . 2>/dev/null || echo "$TOKEN_RESPONSE"
-  exit 1
+  if [ $CACHE_AGE -lt $TOKEN_MAX_AGE ]; then
+    TOKEN=$(cat "$TOKEN_CACHE")
+    ROLE=$(echo "$TOKEN" | cut -d'.' -f2 | base64 -d 2>/dev/null | jq -r '.role' 2>/dev/null || echo "unknown")
+    echo "=== Using cached token (${CACHE_AGE}s old, role: $ROLE) ==="
+  else
+    echo "=== Token cache expired (${CACHE_AGE}s old), re-authenticating ==="
+    rm -f "$TOKEN_CACHE"
+  fi
 fi
 
-ROLE=$(echo "$TOKEN" | cut -d'.' -f2 | base64 -d 2>/dev/null | jq -r '.role' 2>/dev/null || echo "unknown")
-echo "Authenticated with role: $ROLE"
+# Authenticate if no valid cached token
+if [ -z "$TOKEN" ]; then
+  echo "=== Authenticating to $API_URL ==="
+  TOKEN_RESPONSE=$(curl -s -X POST "$API_URL/auth" \
+    -H "Content-Type: application/json" \
+    -d "{\"address\":\"$DEBUG_ADDRESS\",\"signature\":\"$DEBUG_SIGNATURE\"}")
+
+  TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.accessToken' 2>/dev/null)
+
+  if [ "$TOKEN" == "null" ] || [ -z "$TOKEN" ]; then
+    echo "Authentication failed:"
+    echo "$TOKEN_RESPONSE" | jq . 2>/dev/null || echo "$TOKEN_RESPONSE"
+    exit 1
+  fi
+
+  # Cache the token
+  echo "$TOKEN" > "$TOKEN_CACHE"
+  chmod 600 "$TOKEN_CACHE"
+
+  ROLE=$(echo "$TOKEN" | cut -d'.' -f2 | base64 -d 2>/dev/null | jq -r '.role' 2>/dev/null || echo "unknown")
+  echo "Authenticated with role: $ROLE (token cached)"
+fi
 echo ""
 
 # --- Execute query ---
@@ -104,13 +131,25 @@ RESULT=$(curl -s -X POST "$API_URL/support/debug/boltz" \
 echo "=== Result ==="
 
 if command -v jq &> /dev/null; then
-  # Check if it's an error
-  ERROR=$(echo "$RESULT" | jq -r '.message // empty' 2>/dev/null)
-  if [ -n "$ERROR" ]; then
-    echo "Error: $ERROR"
+  # Check if result is valid JSON
+  if ! echo "$RESULT" | jq -e . >/dev/null 2>&1; then
+    echo "Error: Invalid JSON response"
+    echo "$RESULT"
     exit 1
   fi
 
+  # Check if it's an error response (object with message field, not an array)
+  IS_ARRAY=$(echo "$RESULT" | jq -r 'if type == "array" then "yes" else "no" end' 2>/dev/null)
+
+  if [ "$IS_ARRAY" = "no" ]; then
+    ERROR=$(echo "$RESULT" | jq -r '.message // empty' 2>/dev/null)
+    if [ -n "$ERROR" ]; then
+      echo "Error: $ERROR"
+      exit 1
+    fi
+  fi
+
+  # Pretty print the result
   echo "$RESULT" | jq .
 else
   echo "$RESULT"
