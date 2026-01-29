@@ -205,26 +205,35 @@ export class SupportService implements OnModuleDestroy {
     const pool = this.getBoltzPool();
     const swaps: SwapDto[] = [];
 
-    // Fetch chain swaps
-    if (!query.type || query.type === SwapType.CHAIN) {
-      const chainSwaps = await this.fetchChainSwaps(pool, query);
-      swaps.push(...chainSwaps);
+    try {
+      // Fetch chain swaps
+      if (!query.type || query.type === SwapType.CHAIN) {
+        const chainSwaps = await this.fetchChainSwaps(pool, query);
+        swaps.push(...chainSwaps);
+      }
+
+      // Fetch submarine swaps (cBTC -> Lightning)
+      if (!query.type || query.type === SwapType.SUBMARINE) {
+        const submarineSwaps = await this.fetchSubmarineSwaps(pool, query);
+        swaps.push(...submarineSwaps);
+      }
+
+      // Fetch reverse swaps (Lightning -> cBTC)
+      if (!query.type || query.type === SwapType.REVERSE) {
+        const reverseSwaps = await this.fetchReverseSwaps(pool, query);
+        swaps.push(...reverseSwaps);
+      }
+    } catch (e) {
+      this.logger.error(`Failed to fetch swap stats: ${e.message}`);
+      throw new BadRequestException('Failed to fetch swap statistics');
     }
 
-    // Fetch submarine swaps (cBTC -> Lightning)
-    if (!query.type || query.type === SwapType.SUBMARINE) {
-      const submarineSwaps = await this.fetchSubmarineSwaps(pool, query);
-      swaps.push(...submarineSwaps);
-    }
-
-    // Fetch reverse swaps (Lightning -> cBTC)
-    if (!query.type || query.type === SwapType.REVERSE) {
-      const reverseSwaps = await this.fetchReverseSwaps(pool, query);
-      swaps.push(...reverseSwaps);
-    }
-
-    // Sort by createdAt descending
-    swaps.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    // Sort by createdAt descending (handle invalid dates)
+    swaps.sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime() || 0;
+      const dateB = new Date(b.createdAt).getTime() || 0;
+      return dateB - dateA;
+    });
 
     // Calculate stats
     const claimed = swaps.filter((s) => s.status.includes('claimed')).length;
