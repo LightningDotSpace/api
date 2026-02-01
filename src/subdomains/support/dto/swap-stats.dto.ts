@@ -69,8 +69,22 @@ export class SwapDto {
   @ApiProperty()
   updatedAt: string;
 
+  // Crypto details
+  @ApiPropertyOptional({ description: 'Preimage hash (links swap across chains)' })
+  preimageHash?: string;
+
+  @ApiPropertyOptional({ description: 'Preimage (revealed after claim)' })
+  preimage?: string;
+
+  @ApiPropertyOptional({ description: 'Swap version' })
+  version?: number;
+
+  // Source chain details
   @ApiProperty()
   sourceSymbol: string;
+
+  @ApiPropertyOptional({ description: 'Source chain ID (e.g., 137 for Polygon)' })
+  sourceChainId?: number;
 
   @ApiPropertyOptional()
   sourceAddress?: string;
@@ -81,11 +95,18 @@ export class SwapDto {
   @ApiPropertyOptional()
   sourceAmount?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'User lockup TX on source chain' })
   sourceTxId?: string;
 
+  @ApiPropertyOptional({ description: 'Boltz claim TX on source chain (from ponder-claim)' })
+  sourceClaimTxId?: string;
+
+  // Destination chain details
   @ApiProperty()
   destSymbol: string;
+
+  @ApiPropertyOptional({ description: 'Destination chain ID (e.g., 5115 for Citrea)' })
+  destChainId?: number;
 
   @ApiPropertyOptional()
   destAddress?: string;
@@ -96,8 +117,11 @@ export class SwapDto {
   @ApiPropertyOptional()
   destAmount?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Boltz lockup TX on destination chain' })
   destTxId?: string;
+
+  @ApiPropertyOptional({ description: 'User claim TX on destination chain (from ponder-claim)' })
+  destClaimTxId?: string;
 }
 
 export class SwapStatsResponseDto {
