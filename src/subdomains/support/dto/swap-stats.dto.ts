@@ -105,7 +105,7 @@ export class SwapDto {
   @ApiProperty()
   destSymbol: string;
 
-  @ApiPropertyOptional({ description: 'Destination chain ID (e.g., 5115 for Citrea)' })
+  @ApiPropertyOptional({ description: 'Destination chain ID (e.g., 4114 for Citrea)' })
   destChainId?: number;
 
   @ApiPropertyOptional()
