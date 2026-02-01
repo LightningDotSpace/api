@@ -10,12 +10,20 @@ import { DebugLogQueryTemplates, MssqlDebugConfig } from '../dto/debug.config';
 import { LogQueryDto, LogQueryResult } from '../dto/log-query.dto';
 import { SqlQueryValidator } from './sql-query-validator';
 import { SwapDto, SwapStatsQueryDto, SwapStatsResponseDto, SwapStatusFilter, SwapType } from '../dto/swap-stats.dto';
+import { getChainIdForSymbol } from '../constants/chain-ids';
+
+interface PonderLockup {
+  preimage_hash: string;
+  chain_id: number;
+  claim_tx_hash: string | null;
+}
 
 @Injectable()
 export class SupportService implements OnModuleDestroy {
   private readonly logger = new LightningLogger(SupportService);
   private readonly sqlValidator = new SqlQueryValidator();
   private boltzPool: Pool | null = null;
+  private ponderPool: Pool | null = null;
 
   constructor(
     private readonly dataSource: DataSource,
@@ -25,6 +33,9 @@ export class SupportService implements OnModuleDestroy {
   async onModuleDestroy(): Promise<void> {
     if (this.boltzPool) {
       await this.boltzPool.end();
+    }
+    if (this.ponderPool) {
+      await this.ponderPool.end();
     }
   }
 
@@ -46,6 +57,27 @@ export class SupportService implements OnModuleDestroy {
       });
     }
     return this.boltzPool;
+  }
+
+  private getPonderPool(): Pool | null {
+    if (!this.ponderPool) {
+      const pgConfig = Config.ponderPostgres;
+      if (!pgConfig.host || !pgConfig.database) {
+        // Ponder is optional - return null if not configured
+        return null;
+      }
+      this.ponderPool = new Pool({
+        host: pgConfig.host,
+        port: pgConfig.port,
+        database: pgConfig.database,
+        user: pgConfig.user,
+        password: pgConfig.password,
+        max: 5,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 10000,
+      });
+    }
+    return this.ponderPool;
   }
 
   async getRawData(query: DbQueryDto): Promise<any> {
@@ -199,6 +231,48 @@ export class SupportService implements OnModuleDestroy {
     return str.charAt(0).toLowerCase() + str.slice(1).split('_').join('.');
   }
 
+  /**
+   * Fetches claim TX hashes with chain IDs from Ponder-Claim database.
+   * Returns a map of preimageHash -> array of { chainId, claimTxHash }
+   *
+   * Note: Ponder generates PostgreSQL tables with snake_case column names.
+   */
+  private async fetchClaimTxsFromPonder(
+    preimageHashes: string[],
+  ): Promise<Map<string, Array<{ chainId: number; claimTxHash: string }>>> {
+    const result = new Map<string, Array<{ chainId: number; claimTxHash: string }>>();
+
+    if (preimageHashes.length === 0) {
+      return result;
+    }
+
+    const ponderPool = this.getPonderPool();
+    if (!ponderPool) {
+      return result;
+    }
+
+    try {
+      const { rows } = await ponderPool.query<PonderLockup>(
+        `SELECT preimage_hash, chain_id, claim_tx_hash
+         FROM lockups
+         WHERE preimage_hash = ANY($1) AND claim_tx_hash IS NOT NULL`,
+        [preimageHashes],
+      );
+
+      for (const row of rows) {
+        if (!row.claim_tx_hash) continue;
+
+        const existing = result.get(row.preimage_hash) || [];
+        existing.push({ chainId: row.chain_id, claimTxHash: row.claim_tx_hash });
+        result.set(row.preimage_hash, existing);
+      }
+    } catch (e) {
+      this.logger.warn(`Failed to fetch claim TXs from Ponder: ${e.message}`);
+    }
+
+    return result;
+  }
+
   // *** PUBLIC SWAP STATS *** //
 
   async getSwapStats(query: SwapStatsQueryDto): Promise<SwapStatsResponseDto> {
@@ -256,9 +330,10 @@ export class SupportService implements OnModuleDestroy {
   }
 
   private async fetchChainSwaps(pool: Pool, query: SwapStatsQueryDto): Promise<SwapDto[]> {
-    // Fetch chain swaps with their data
+    // Fetch chain swaps with their data (including preimageHash and preimage for claim TX lookup)
     const chainSwapsResult = await pool.query(`
-      SELECT cs.*,
+      SELECT cs.id, cs.pair, cs."orderSide", cs.status, cs."failureReason", cs.fee,
+             cs.referral, cs."createdAt", cs."updatedAt", cs."preimageHash", cs.preimage, cs.version,
              sd_base.symbol as base_symbol, sd_base."lockupAddress" as base_lockup,
              sd_base."claimAddress" as base_claim, sd_base."expectedAmount" as base_expected,
              sd_base.amount as base_amount, sd_base."transactionId" as base_tx,
@@ -274,8 +349,18 @@ export class SupportService implements OnModuleDestroy {
       LIMIT 1000
     `);
 
+    // Extract preimageHashes for claim TX lookup
+    // Boltz stores without 0x prefix, Ponder stores with 0x prefix
+    const preimageHashes = chainSwapsResult.rows
+      .map((row) => row.preimageHash as string)
+      .filter((hash): hash is string => !!hash)
+      .map((hash) => (hash.startsWith('0x') ? hash : `0x${hash}`));
+
+    // Fetch claim TXs from Ponder-Claim DB
+    const claimTxMap = await this.fetchClaimTxsFromPonder(preimageHashes);
+
     return chainSwapsResult.rows
-      .map((row) => this.mapChainSwap(row))
+      .map((row) => this.mapChainSwap(row, claimTxMap))
       .filter((swap) => this.matchesFilter(swap, query));
   }
 
@@ -307,11 +392,41 @@ export class SupportService implements OnModuleDestroy {
       .filter((swap) => this.matchesFilter(swap, query));
   }
 
-  private mapChainSwap(row: Record<string, unknown>): SwapDto {
+  private mapChainSwap(
+    row: Record<string, unknown>,
+    claimTxMap?: Map<string, Array<{ chainId: number; claimTxHash: string }>>,
+  ): SwapDto {
     const pair = row.pair as string;
     const [base, quote] = pair.split('/');
     const orderSide = row.orderSide as number;
     const direction = orderSide === 1 ? `${base} -> ${quote}` : `${quote} -> ${base}`;
+
+    // Determine source and destination symbols
+    const sourceSymbol = orderSide === 1 ? base : quote;
+    const destSymbol = orderSide === 1 ? quote : base;
+
+    // Get chain IDs for source and destination
+    const sourceChainId = getChainIdForSymbol(sourceSymbol);
+    const destChainId = getChainIdForSymbol(destSymbol);
+
+    // Look up claim TXs from Ponder data
+    let sourceClaimTxId: string | undefined;
+    let destClaimTxId: string | undefined;
+
+    const preimageHash = row.preimageHash as string;
+    if (preimageHash && claimTxMap) {
+      // Normalize to 0x prefix for lookup (Ponder stores with 0x, Boltz without)
+      const normalizedHash = preimageHash.startsWith('0x') ? preimageHash : `0x${preimageHash}`;
+      const claimTxs = claimTxMap.get(normalizedHash) || [];
+
+      for (const claimTx of claimTxs) {
+        if (sourceChainId && claimTx.chainId === sourceChainId) {
+          sourceClaimTxId = claimTx.claimTxHash;
+        } else if (destChainId && claimTx.chainId === destChainId) {
+          destClaimTxId = claimTx.claimTxHash;
+        }
+      }
+    }
 
     return {
       type: 'Chain Swap',
@@ -324,16 +439,26 @@ export class SupportService implements OnModuleDestroy {
       referral: (row.referral as string) || undefined,
       createdAt: this.toIsoString(row.createdAt),
       updatedAt: this.toIsoString(row.updatedAt),
-      sourceSymbol: orderSide === 1 ? base : quote,
+      // Crypto details
+      preimageHash: preimageHash || undefined,
+      preimage: (row.preimage as string) || undefined,
+      version: row.version as number | undefined,
+      // Source chain
+      sourceSymbol,
+      sourceChainId,
       sourceAddress: (orderSide === 1 ? row.base_lockup : row.quote_lockup) as string,
       sourceExpectedAmount: (orderSide === 1 ? row.base_expected : row.quote_expected) as string,
       sourceAmount: (orderSide === 1 ? row.base_amount : row.quote_amount) as string,
       sourceTxId: (orderSide === 1 ? row.base_tx : row.quote_tx) as string,
-      destSymbol: orderSide === 1 ? quote : base,
-      destAddress: ((orderSide === 1 ? row.quote_claim || row.quote_lockup : row.base_claim || row.base_lockup) as string),
+      sourceClaimTxId,
+      // Destination chain
+      destSymbol,
+      destChainId,
+      destAddress: (orderSide === 1 ? row.quote_claim || row.quote_lockup : row.base_claim || row.base_lockup) as string,
       destExpectedAmount: (orderSide === 1 ? row.quote_expected : row.base_expected) as string,
       destAmount: (orderSide === 1 ? row.quote_amount : row.base_amount) as string,
       destTxId: (orderSide === 1 ? row.quote_tx : row.base_tx) as string,
+      destClaimTxId,
     };
   }
 

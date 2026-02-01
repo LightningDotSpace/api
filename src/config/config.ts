@@ -193,6 +193,14 @@ export class Configuration {
     password: process.env.BOLTZ_PG_PASSWORD ?? '',
   };
 
+  ponderPostgres = {
+    host: process.env.PONDER_PG_HOST ?? '',
+    port: parseInt(process.env.PONDER_PG_PORT ?? '5432'),
+    database: process.env.PONDER_PG_DATABASE ?? '',
+    user: process.env.PONDER_PG_USER ?? '',
+    password: process.env.PONDER_PG_PASSWORD ?? '',
+  };
+
   request = {
     knownIps: process.env.REQUEST_KNOWN_IPS?.split(',') ?? [],
     limitCheck: process.env.REQUEST_LIMIT_CHECK === 'true',
