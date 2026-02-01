@@ -13,12 +13,9 @@ import { SwapDto, SwapStatsQueryDto, SwapStatsResponseDto, SwapStatusFilter, Swa
 import { getChainIdForSymbol } from '../constants/chain-ids';
 
 interface PonderLockup {
-  preimageHash: string;
-  chainId: number;
-  claimTxHash: string | null;
-  refundTxHash: string | null;
-  claimed: boolean;
-  refunded: boolean;
+  preimage_hash: string;
+  chain_id: number;
+  claim_tx_hash: string | null;
 }
 
 @Injectable()
@@ -235,56 +232,12 @@ export class SupportService implements OnModuleDestroy {
   }
 
   /**
-   * Fetches claim transaction hashes from Ponder-Claim database.
-   * Returns a map of preimageHash -> { sourceClaimTxId, destClaimTxId }
-   */
-  private async fetchClaimTxsFromPonder(
-    preimageHashes: string[],
-  ): Promise<Map<string, { sourceClaimTxId?: string; destClaimTxId?: string }>> {
-    const result = new Map<string, { sourceClaimTxId?: string; destClaimTxId?: string }>();
-
-    if (preimageHashes.length === 0) {
-      return result;
-    }
-
-    const ponderPool = this.getPonderPool();
-    if (!ponderPool) {
-      return result;
-    }
-
-    try {
-      // Query lockups table for all matching preimageHashes
-      const { rows } = await ponderPool.query<PonderLockup>(
-        `SELECT "preimageHash", "chainId", "claimTxHash", "refundTxHash", claimed, refunded
-         FROM lockups
-         WHERE "preimageHash" = ANY($1) AND "claimTxHash" IS NOT NULL`,
-        [preimageHashes],
-      );
-
-      // Group by preimageHash - each swap has 2 lockups (source + dest chain)
-      for (const row of rows) {
-        const existing = result.get(row.preimageHash) || {};
-        // We need to determine which chain is source vs dest
-        // This will be resolved later when we enrich the swap
-        if (!existing.sourceClaimTxId) {
-          existing.sourceClaimTxId = row.claimTxHash ?? undefined;
-        } else if (!existing.destClaimTxId) {
-          existing.destClaimTxId = row.claimTxHash ?? undefined;
-        }
-        result.set(row.preimageHash, existing);
-      }
-    } catch (e) {
-      this.logger.warn(`Failed to fetch claim TXs from Ponder: ${e.message}`);
-    }
-
-    return result;
-  }
-
-  /**
    * Fetches claim TX hashes with chain IDs from Ponder-Claim database.
    * Returns a map of preimageHash -> array of { chainId, claimTxHash }
+   *
+   * Note: Ponder generates PostgreSQL tables with snake_case column names.
    */
-  private async fetchClaimTxsWithChainFromPonder(
+  private async fetchClaimTxsFromPonder(
     preimageHashes: string[],
   ): Promise<Map<string, Array<{ chainId: number; claimTxHash: string }>>> {
     const result = new Map<string, Array<{ chainId: number; claimTxHash: string }>>();
@@ -300,18 +253,18 @@ export class SupportService implements OnModuleDestroy {
 
     try {
       const { rows } = await ponderPool.query<PonderLockup>(
-        `SELECT "preimageHash", "chainId", "claimTxHash"
+        `SELECT preimage_hash, chain_id, claim_tx_hash
          FROM lockups
-         WHERE "preimageHash" = ANY($1) AND "claimTxHash" IS NOT NULL`,
+         WHERE preimage_hash = ANY($1) AND claim_tx_hash IS NOT NULL`,
         [preimageHashes],
       );
 
       for (const row of rows) {
-        if (!row.claimTxHash) continue;
+        if (!row.claim_tx_hash) continue;
 
-        const existing = result.get(row.preimageHash) || [];
-        existing.push({ chainId: row.chainId, claimTxHash: row.claimTxHash });
-        result.set(row.preimageHash, existing);
+        const existing = result.get(row.preimage_hash) || [];
+        existing.push({ chainId: row.chain_id, claimTxHash: row.claim_tx_hash });
+        result.set(row.preimage_hash, existing);
       }
     } catch (e) {
       this.logger.warn(`Failed to fetch claim TXs from Ponder: ${e.message}`);
@@ -402,7 +355,7 @@ export class SupportService implements OnModuleDestroy {
       .filter((hash): hash is string => !!hash);
 
     // Fetch claim TXs from Ponder-Claim DB
-    const claimTxMap = await this.fetchClaimTxsWithChainFromPonder(preimageHashes);
+    const claimTxMap = await this.fetchClaimTxsFromPonder(preimageHashes);
 
     return chainSwapsResult.rows
       .map((row) => this.mapChainSwap(row, claimTxMap))
