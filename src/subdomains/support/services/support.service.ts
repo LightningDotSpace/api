@@ -350,9 +350,11 @@ export class SupportService implements OnModuleDestroy {
     `);
 
     // Extract preimageHashes for claim TX lookup
+    // Boltz stores without 0x prefix, Ponder stores with 0x prefix
     const preimageHashes = chainSwapsResult.rows
       .map((row) => row.preimageHash as string)
-      .filter((hash): hash is string => !!hash);
+      .filter((hash): hash is string => !!hash)
+      .map((hash) => (hash.startsWith('0x') ? hash : `0x${hash}`));
 
     // Fetch claim TXs from Ponder-Claim DB
     const claimTxMap = await this.fetchClaimTxsFromPonder(preimageHashes);
@@ -413,7 +415,9 @@ export class SupportService implements OnModuleDestroy {
 
     const preimageHash = row.preimageHash as string;
     if (preimageHash && claimTxMap) {
-      const claimTxs = claimTxMap.get(preimageHash) || [];
+      // Normalize to 0x prefix for lookup (Ponder stores with 0x, Boltz without)
+      const normalizedHash = preimageHash.startsWith('0x') ? preimageHash : `0x${preimageHash}`;
+      const claimTxs = claimTxMap.get(normalizedHash) || [];
 
       for (const claimTx of claimTxs) {
         if (sourceChainId && claimTx.chainId === sourceChainId) {
