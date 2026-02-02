@@ -12,7 +12,8 @@ import { QueueHandler } from 'src/shared/utils/queue-handler';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
 import { CoinGeckoService } from 'src/subdomains/pricing/services/coingecko.service';
 import { LightningWalletTotalBalanceDto } from 'src/subdomains/user/application/dto/lightning-wallet.dto';
-import { MonitoringBalanceEntity, MonitoringBlockchainBalance } from '../entities/monitoring-balance.entity';
+import { MonitoringBlockchainBalance } from '../dto/monitoring.dto';
+import { MonitoringBalanceEntity } from '../entities/monitoring-balance.entity';
 import { MonitoringBalanceRepository } from '../repositories/monitoring-balance.repository';
 import { MonitoringRepository } from '../repositories/monitoring.repository';
 
