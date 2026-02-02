@@ -148,11 +148,6 @@ export class Configuration {
       chainId: +(process.env.BASE_CHAIN_ID ?? -1),
       walletAddress: process.env.EVM_PAYMENT_ADDRESS ?? '',
     },
-    rootstock: {
-      gatewayUrl: process.env.ROOTSTOCK_GATEWAY_URL ?? '',
-      apiKey: process.env.ALCHEMY_API_KEY ?? '',
-      chainId: +(process.env.ROOTSTOCK_CHAIN_ID ?? -1),
-    },
     citrea: {
       gatewayUrl: process.env.CITREA_GATEWAY_URL ?? '',
       chainId: +(process.env.CITREA_CHAIN_ID ?? -1),

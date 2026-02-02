@@ -6,14 +6,17 @@ import { AlchemyWebhookModule } from '../alchemy/alchemy-webhook.module';
 import { AssetModule } from '../master-data/asset/asset.module';
 import { PricingModule } from '../pricing/pricing.module';
 import { MonitoringBalanceEntity } from './entities/monitoring-balance.entity';
+import { MonitoringEvmBalanceEntity } from './entities/monitoring-evm-balance.entity';
 import { MonitoringEntity } from './entities/monitoring.entity';
 import { MonitoringBalanceRepository } from './repositories/monitoring-balance.repository';
+import { MonitoringEvmBalanceRepository } from './repositories/monitoring-evm-balance.repository';
 import { MonitoringRepository } from './repositories/monitoring.repository';
+import { MonitoringEvmService } from './services/monitoring-evm.service';
 import { MonitoringService } from './services/monitoring.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([MonitoringEntity, MonitoringBalanceEntity]),
+    TypeOrmModule.forFeature([MonitoringEntity, MonitoringBalanceEntity, MonitoringEvmBalanceEntity]),
     PricingModule,
     AssetModule,
     BlockchainModule,
@@ -21,7 +24,13 @@ import { MonitoringService } from './services/monitoring.service';
     AlchemyWebhookModule,
   ],
   controllers: [],
-  providers: [MonitoringRepository, MonitoringBalanceRepository, MonitoringService],
-  exports: [MonitoringService],
+  providers: [
+    MonitoringRepository,
+    MonitoringBalanceRepository,
+    MonitoringEvmBalanceRepository,
+    MonitoringService,
+    MonitoringEvmService,
+  ],
+  exports: [MonitoringService, MonitoringEvmService],
 })
 export class MonitoringModule {}

@@ -6,6 +6,5 @@ export enum Blockchain {
   ARBITRUM = 'arbitrum',
   POLYGON = 'polygon',
   BASE = 'base',
-  ROOTSTOCK = 'rootstock',
   CITREA = 'citrea',
 }
