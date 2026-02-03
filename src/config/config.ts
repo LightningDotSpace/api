@@ -211,6 +211,10 @@ export class Configuration {
     claimApiUrl: process.env.SWAP_CLAIM_API_URL,
   };
 
+  boltzBalance = {
+    walletAddress: process.env.BOLTZ_WALLET_ADDRESS ?? '',
+  };
+
   // --- GETTERS --- //
   get baseUrl(): string {
     return this.environment === Environment.LOC
