@@ -1,17 +1,17 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { BoltzBalanceResponseDto } from '../dto/boltz-balance.dto';
+import { BalanceDto } from '../dto/boltz.dto';
 import { BoltzBalanceService } from '../services/boltz-balance.service';
 
-@ApiTags('Boltz Balance')
-@Controller('boltz-balance')
-export class BoltzBalanceController {
+@ApiTags('Boltz')
+@Controller('boltz')
+export class BoltzController {
   constructor(private readonly boltzBalanceService: BoltzBalanceService) {}
 
-  @Get()
+  @Get('balance')
   @ApiOperation({ summary: 'Get Boltz wallet balances (public)' })
-  @ApiOkResponse({ type: BoltzBalanceResponseDto })
-  async getWalletBalance(): Promise<BoltzBalanceResponseDto> {
+  @ApiOkResponse({ type: [BalanceDto] })
+  async getWalletBalance(): Promise<BalanceDto[]> {
     return this.boltzBalanceService.getWalletBalance();
   }
 }

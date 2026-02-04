@@ -211,7 +211,7 @@ export class Configuration {
     claimApiUrl: process.env.SWAP_CLAIM_API_URL,
   };
 
-  boltzBalance = {
+  boltz = {
     walletAddress: process.env.BOLTZ_WALLET_ADDRESS ?? '',
   };
 

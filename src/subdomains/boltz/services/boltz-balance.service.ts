@@ -6,13 +6,14 @@ import { BitcoinService } from 'src/integration/blockchain/bitcoin/bitcoin.servi
 import { LightningClient } from 'src/integration/blockchain/lightning/lightning-client';
 import { LightningHelper } from 'src/integration/blockchain/lightning/lightning-helper';
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
+import ERC20_ABI from 'src/integration/blockchain/shared/evm/abi/erc20.abi.json';
 import { Blockchain } from 'src/shared/enums/blockchain.enum';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { Util } from 'src/shared/utils/util';
 import { AlchemyNetworkMapper } from 'src/subdomains/alchemy/alchemy-network-mapper';
 import { AlchemyService } from 'src/subdomains/alchemy/services/alchemy.service';
 import { EvmUtil } from 'src/subdomains/evm/evm.util';
-import { BalanceDto, BoltzBalanceResponseDto } from '../dto/boltz-balance.dto';
+import { BalanceDto, Direction } from '../dto/boltz.dto';
 import { AssetBoltzRepository } from '../repositories/asset-boltz.repository';
 
 interface ChainConfig {
@@ -20,8 +21,6 @@ interface ChainConfig {
   chainId: number;
   usesAlchemy: boolean;
 }
-
-const ERC20_ABI = ['function balanceOf(address) view returns (uint256)', 'function decimals() view returns (uint8)'];
 
 @Injectable()
 export class BoltzBalanceService implements OnModuleInit {
@@ -46,7 +45,7 @@ export class BoltzBalanceService implements OnModuleInit {
 
   onModuleInit(): void {
     const config = GetConfig();
-    this.walletAddress = config.boltzBalance.walletAddress;
+    this.walletAddress = config.boltz.walletAddress;
     const blockchainConfig = config.blockchain;
 
     this.chains = [
@@ -60,19 +59,14 @@ export class BoltzBalanceService implements OnModuleInit {
     }
   }
 
-  async getWalletBalance(): Promise<BoltzBalanceResponseDto> {
-    const [btc, lightning, evm] = await Promise.all([
-      this.getBtcBalances(),
-      this.getLightningBalances(),
-      this.getEvmBalances(),
-    ]);
+  async getWalletBalance(): Promise<BalanceDto[]> {
+    const balances: BalanceDto[] = [];
 
-    return {
-      address: this.walletAddress,
-      btc,
-      lightning,
-      evm,
-    };
+    balances.push(... await this.getBtcBalances());
+    balances.push(... await this.getLightningBalances());
+    balances.push(... await this.getEvmBalances());
+
+    return balances;
   }
 
   private async getBtcBalances(): Promise<BalanceDto[]> {
@@ -103,8 +97,8 @@ export class BoltzBalanceService implements OnModuleInit {
       const outgoing = channels.reduce((sum, ch) => sum + Number(ch.local_balance), 0);
       const incoming = channels.reduce((sum, ch) => sum + Number(ch.remote_balance), 0);
 
-      balances.push({ blockchain: Blockchain.LIGHTNING, asset: 'BTC', balance: LightningHelper.satToBtc(outgoing), direction: 'outgoing' });
-      balances.push({ blockchain: Blockchain.LIGHTNING, asset: 'BTC', balance: LightningHelper.satToBtc(incoming), direction: 'incoming' });
+      balances.push({ blockchain: Blockchain.LIGHTNING, asset: 'BTC', balance: LightningHelper.satToBtc(outgoing), direction: Direction.OUTGOING});
+      balances.push({ blockchain: Blockchain.LIGHTNING, asset: 'BTC', balance: LightningHelper.satToBtc(incoming), direction: Direction.INCOMING });
     } catch (error) {
       this.logger.warn(`Failed to fetch Lightning balance: ${error.message}`);
     }
@@ -142,9 +136,8 @@ export class BoltzBalanceService implements OnModuleInit {
     try {
       const balanceWei = await this.citreaProvider.getBalance(this.walletAddress);
       const balance = EvmUtil.fromWeiAmount(balanceWei.toString());
-      const sats = LightningHelper.btcToSat(balance);
 
-      return { blockchain: Blockchain.CITREA, asset: 'cBTC', balance: LightningHelper.satToBtc(sats) };
+      return { blockchain: Blockchain.CITREA, asset: 'cBTC', balance };
     } catch (error) {
       this.logger.warn(`Failed to fetch Citrea native balance: ${error.message}`);
       return null;
