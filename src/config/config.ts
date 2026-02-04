@@ -212,7 +212,7 @@ export class Configuration {
   };
 
   boltz = {
-    walletAddress: process.env.BOLTZ_WALLET_ADDRESS ?? '',
+    evmWalletAddress: process.env.BOLTZ_WALLET_ADDRESS ?? '',
   };
 
   // --- GETTERS --- //

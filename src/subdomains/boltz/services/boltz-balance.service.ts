@@ -45,7 +45,7 @@ export class BoltzBalanceService implements OnModuleInit {
 
   onModuleInit(): void {
     const config = GetConfig();
-    this.walletAddress = config.boltz.walletAddress;
+    this.walletAddress = config.boltz.evmWalletAddress;
     const blockchainConfig = config.blockchain;
 
     this.chains = [
