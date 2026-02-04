@@ -4,6 +4,7 @@ import { LnbitsWebhookModule } from 'src/integration/blockchain/lightning/lnbits
 import { IntegrationModule } from 'src/integration/integration.module';
 import { SharedModule } from 'src/shared/shared.module';
 import { AuthService } from 'src/subdomains/user/application/services/auth.service';
+import { BoltzModule } from '../boltz/boltz.module';
 import { LightningTransactionModule } from '../lightning/lightning-transaction.module';
 import { AssetModule } from '../master-data/asset/asset.module';
 import { MonitoringModule } from '../monitoring/monitoring.module';
@@ -43,6 +44,7 @@ import { WalletEntity } from './domain/entities/wallet.entity';
     SharedModule,
     IntegrationModule,
     MonitoringModule,
+    BoltzModule,
     AssetModule,
     LnbitsWebhookModule,
     LightningTransactionModule,
