@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Blockchain } from 'src/shared/enums/blockchain.enum';
 
 export enum Direction {
@@ -16,7 +16,7 @@ export class BalanceDto {
   @ApiProperty({ description: 'Balance amount' })
   balance: number;
 
-  @ApiProperty({ description: 'Direction (only for Lightning)', required: false, enum: Direction })
+  @ApiPropertyOptional({ description: 'Direction (only for Lightning)', required: false, enum: Direction })
   direction?: Direction;
 }
 

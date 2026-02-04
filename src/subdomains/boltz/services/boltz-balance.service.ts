@@ -29,7 +29,7 @@ export class BoltzBalanceService implements OnModuleInit {
   private readonly bitcoinClient: BitcoinClient;
   private readonly lightningClient: LightningClient;
 
-  private walletAddress = '';
+  private evmWalletAddress = '';
   private citreaProvider: ethers.providers.JsonRpcProvider | null = null;
   private chains: ChainConfig[] = [];
 
@@ -45,7 +45,7 @@ export class BoltzBalanceService implements OnModuleInit {
 
   onModuleInit(): void {
     const config = GetConfig();
-    this.walletAddress = config.boltz.evmWalletAddress;
+    this.evmWalletAddress = config.boltz.evmWalletAddress;
     const blockchainConfig = config.blockchain;
 
     this.chains = [
@@ -131,10 +131,10 @@ export class BoltzBalanceService implements OnModuleInit {
   }
 
   private async getCitreaNativeBalance(): Promise<BalanceDto | null> {
-    if (!this.citreaProvider || !this.walletAddress) return null;
+    if (!this.citreaProvider || !this.evmWalletAddress) return null;
 
     try {
-      const balanceWei = await this.citreaProvider.getBalance(this.walletAddress);
+      const balanceWei = await this.citreaProvider.getBalance(this.evmWalletAddress);
       const balance = EvmUtil.fromWeiAmount(balanceWei.toString());
 
       return { blockchain: Blockchain.CITREA, asset: 'cBTC', balance };
@@ -150,13 +150,13 @@ export class BoltzBalanceService implements OnModuleInit {
     try {
       if (!AlchemyNetworkMapper.toAlchemyNetworkByChainId(chain.chainId)) return balances;
 
-      if (!this.walletAddress) return balances;
+      if (!this.evmWalletAddress) return balances;
 
       const tokens = await this.assetBoltzRepository.getByBlockchain(chain.blockchain);
       if (tokens.length === 0) return balances;
 
       const tokenAddresses = tokens.map((t) => t.address);
-      const tokenBalances = await this.alchemyService.getTokenBalancesByAddresses(chain.chainId, this.walletAddress, tokenAddresses);
+      const tokenBalances = await this.alchemyService.getTokenBalancesByAddresses(chain.chainId, this.evmWalletAddress, tokenAddresses);
 
       for (const tokenBalance of tokenBalances) {
         const token = tokens.find((t) => Util.equalsIgnoreCase(t.address,tokenBalance.contractAddress));
@@ -180,7 +180,7 @@ export class BoltzBalanceService implements OnModuleInit {
   private async getDirectTokenBalances(chain: ChainConfig): Promise<BalanceDto[]> {
     const balances: BalanceDto[] = [];
 
-    if (!this.citreaProvider || !this.walletAddress) return balances;
+    if (!this.citreaProvider || !this.evmWalletAddress) return balances;
     if (chain.blockchain !== Blockchain.CITREA) return balances;
 
     const tokens = await this.assetBoltzRepository.getByBlockchain(chain.blockchain);
@@ -189,7 +189,7 @@ export class BoltzBalanceService implements OnModuleInit {
     for (const token of tokens) {
       try {
         const contract = new ethers.Contract(token.address, ERC20_ABI, this.citreaProvider);
-        const rawBalance: ethers.BigNumber = await contract.balanceOf(this.walletAddress);
+        const rawBalance: ethers.BigNumber = await contract.balanceOf(this.evmWalletAddress);
 
         balances.push({
           blockchain: chain.blockchain,
