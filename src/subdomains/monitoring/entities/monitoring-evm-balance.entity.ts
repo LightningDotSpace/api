@@ -4,9 +4,9 @@ import { Column, Entity, Index } from 'typeorm';
 import { EvmTokenBalanceJson } from '../dto/monitoring.dto';
 
 @Entity('monitoring_evm_balance')
-@Index(['blockchain'], { unique: false })
 export class MonitoringEvmBalanceEntity extends IEntity {
   @Column({ type: 'varchar', length: 50 })
+  @Index({ unique: false })
   blockchain: Blockchain;
 
   @Column({ type: 'varchar', length: 10 })
