@@ -9,6 +9,7 @@ export enum Process {
   UPDATE_WALLET_BALANCE = 'UpdateWalletBalance',
   UPDATE_LIGHTNING_USER_TRANSACTION = 'UpdateLightingUserTransaction',
   UPDATE_PAYMENT_REQUEST = 'UpdatePaymentRequest',
+  MONITORING = 'Monitoring',
 }
 
 export enum Environment {
@@ -208,6 +209,11 @@ export class Configuration {
 
   boltz = {
     evmWalletAddress: process.env.BOLTZ_WALLET_ADDRESS ?? '',
+  };
+
+  telegram = {
+    botToken: process.env.TELEGRAM_BOT_TOKEN ?? '',
+    chatId: process.env.TELEGRAM_CHAT_ID ?? '',
   };
 
   // --- GETTERS --- //
