@@ -19,6 +19,7 @@ import { AssetBoltzRepository } from '../repositories/asset-boltz.repository';
 interface ChainConfig {
   blockchain: Blockchain;
   chainId: number;
+  nativeCoin: string;
   usesAlchemy: boolean;
 }
 
@@ -31,7 +32,7 @@ export class BoltzBalanceService implements OnModuleInit {
 
   private evmWalletAddress = '';
   private citreaProvider: ethers.providers.JsonRpcProvider | null = null;
-  private chains: ChainConfig[] = [];
+  private chainConfigs: ChainConfig[] = [];
 
   constructor(
     bitcoinService: BitcoinService,
@@ -48,10 +49,10 @@ export class BoltzBalanceService implements OnModuleInit {
     this.evmWalletAddress = config.boltz.evmWalletAddress;
     const blockchainConfig = config.blockchain;
 
-    this.chains = [
-      { blockchain: Blockchain.ETHEREUM, chainId: blockchainConfig.ethereum.chainId, usesAlchemy: true },
-      { blockchain: Blockchain.POLYGON, chainId: blockchainConfig.polygon.chainId, usesAlchemy: true },
-      { blockchain: Blockchain.CITREA, chainId: blockchainConfig.citrea.chainId, usesAlchemy: false },
+    this.chainConfigs = [
+      { blockchain: Blockchain.ETHEREUM, chainId: blockchainConfig.ethereum.chainId, nativeCoin: 'ETH', usesAlchemy: true },
+      { blockchain: Blockchain.POLYGON, chainId: blockchainConfig.polygon.chainId, nativeCoin: 'POL', usesAlchemy: true },
+      { blockchain: Blockchain.CITREA, chainId: blockchainConfig.citrea.chainId, nativeCoin: 'cBTC', usesAlchemy: false },
     ];
 
     if (blockchainConfig.citrea.gatewayUrl) {
@@ -76,14 +77,14 @@ export class BoltzBalanceService implements OnModuleInit {
       const onchainNode = await this.bitcoinClient.getWalletBalance();
       balances.push({ blockchain: Blockchain.BITCOIN, asset: 'BTC', balance: LightningHelper.satToBtc(onchainNode) });
     } catch (error) {
-      this.logger.warn(`Failed to fetch BTC onchain balance: ${error.message}`);
+      this.logger.error(`Failed to fetch BTC onchain balance: ${error.message}`);
     }
 
     try {
       const lndNode = await this.lightningClient.getLndConfirmedWalletBalance();
       balances.push({ blockchain: Blockchain.LIGHTNING, asset: 'BTC', balance: LightningHelper.satToBtc(lndNode) });
     } catch (error) {
-      this.logger.warn(`Failed to fetch LND wallet balance: ${error.message}`);
+      this.logger.error(`Failed to fetch LND wallet balance: ${error.message}`);
     }
 
     return balances;
@@ -100,34 +101,56 @@ export class BoltzBalanceService implements OnModuleInit {
       balances.push({ blockchain: Blockchain.LIGHTNING, asset: 'BTC', balance: LightningHelper.satToBtc(outgoing), direction: Direction.OUTGOING});
       balances.push({ blockchain: Blockchain.LIGHTNING, asset: 'BTC', balance: LightningHelper.satToBtc(incoming), direction: Direction.INCOMING });
     } catch (error) {
-      this.logger.warn(`Failed to fetch Lightning balance: ${error.message}`);
+      this.logger.error(`Failed to fetch Lightning balance: ${error.message}`);
     }
 
     return balances;
   }
 
-  private async getEvmBalances(): Promise<BalanceDto[]> {
+  async getEvmBalances(): Promise<BalanceDto[]> {
     const balances: BalanceDto[] = [];
 
     // Citrea cBTC (native balance)
     const citreaBalance = await this.getCitreaNativeBalance();
     if (citreaBalance) balances.push(citreaBalance);
 
-    // Token balances from all chains
-    for (const chain of this.chains) {
+    // Native and token balances from all chains
+    for (const chainConfig of this.chainConfigs) {
       try {
-        if (chain.chainId <= 0) continue;
+        if (chainConfig.chainId <= 0) continue;
 
-        const tokenBalances = chain.usesAlchemy
-          ? await this.getAlchemyTokenBalances(chain)
-          : await this.getDirectTokenBalances(chain);
-        balances.push(...tokenBalances);
+        if (chainConfig.usesAlchemy) {
+          // Native balance
+          const nativeBalance = await this.getAlchemyNativeBalance(chainConfig);
+          if (nativeBalance) balances.push(nativeBalance);
+
+          // Token balances
+          const tokenBalances = await this.getAlchemyTokenBalances(chainConfig);
+          balances.push(...tokenBalances);
+        } else {
+          const tokenBalances = await this.getDirectTokenBalances(chainConfig);
+          balances.push(...tokenBalances);
+        }
       } catch (error) {
-        this.logger.warn(`Failed to fetch balances for ${chain.blockchain}: ${error.message}`);
+        this.logger.error(`Failed to fetch balances for ${chainConfig.blockchain}: ${error.message}`);
       }
     }
 
     return balances;
+  }
+
+  private async getAlchemyNativeBalance(chainConfig: ChainConfig): Promise<BalanceDto | null> {
+    if (!this.evmWalletAddress) return null;
+
+    try {
+      const balanceWei = await this.alchemyService.getNativeCoinBalance(chainConfig.chainId, this.evmWalletAddress);
+      const balance = EvmUtil.fromWeiAmount(balanceWei.toString());
+
+      return { blockchain: chainConfig.blockchain, asset: chainConfig.nativeCoin, balance };
+    } catch (error) {
+      this.logger.error(`Failed to fetch native balance for ${chainConfig.blockchain}: ${error.message}`);
+      return null;
+    }
   }
 
   private async getCitreaNativeBalance(): Promise<BalanceDto | null> {
@@ -139,24 +162,24 @@ export class BoltzBalanceService implements OnModuleInit {
 
       return { blockchain: Blockchain.CITREA, asset: 'cBTC', balance };
     } catch (error) {
-      this.logger.warn(`Failed to fetch Citrea native balance: ${error.message}`);
+      this.logger.error(`Failed to fetch Citrea native balance: ${error.message}`);
       return null;
     }
   }
 
-  private async getAlchemyTokenBalances(chain: ChainConfig): Promise<BalanceDto[]> {
+  private async getAlchemyTokenBalances(chainConfig: ChainConfig): Promise<BalanceDto[]> {
     const balances: BalanceDto[] = [];
 
     try {
-      if (!AlchemyNetworkMapper.toAlchemyNetworkByChainId(chain.chainId)) return balances;
+      if (!AlchemyNetworkMapper.toAlchemyNetworkByChainId(chainConfig.chainId)) return balances;
 
       if (!this.evmWalletAddress) return balances;
 
-      const tokens = await this.assetBoltzRepository.getByBlockchain(chain.blockchain);
+      const tokens = await this.assetBoltzRepository.getByBlockchain(chainConfig.blockchain);
       if (tokens.length === 0) return balances;
 
       const tokenAddresses = tokens.map((t) => t.address);
-      const tokenBalances = await this.alchemyService.getTokenBalancesByAddresses(chain.chainId, this.evmWalletAddress, tokenAddresses);
+      const tokenBalances = await this.alchemyService.getTokenBalancesByAddresses(chainConfig.chainId, this.evmWalletAddress, tokenAddresses);
 
       for (const tokenBalance of tokenBalances) {
         const token = tokens.find((t) => Util.equalsIgnoreCase(t.address,tokenBalance.contractAddress));
@@ -165,25 +188,25 @@ export class BoltzBalanceService implements OnModuleInit {
         const rawBalance = BigInt(tokenBalance.tokenBalance ?? '0');
 
         balances.push({
-          blockchain: chain.blockchain,
+          blockchain: chainConfig.blockchain,
           asset: token.name,
           balance: EvmUtil.fromWeiAmount(rawBalance.toString(), token.decimals),
         });
       }
     } catch (error) {
-      this.logger.warn(`Failed to fetch Alchemy token balances for ${chain.blockchain}: ${error.message}`);
+      this.logger.error(`Failed to fetch Alchemy token balances for ${chainConfig.blockchain}: ${error.message}`);
     }
 
     return balances;
   }
 
-  private async getDirectTokenBalances(chain: ChainConfig): Promise<BalanceDto[]> {
+  private async getDirectTokenBalances(chainConfig: ChainConfig): Promise<BalanceDto[]> {
     const balances: BalanceDto[] = [];
 
     if (!this.citreaProvider || !this.evmWalletAddress) return balances;
-    if (chain.blockchain !== Blockchain.CITREA) return balances;
+    if (chainConfig.blockchain !== Blockchain.CITREA) return balances;
 
-    const tokens = await this.assetBoltzRepository.getByBlockchain(chain.blockchain);
+    const tokens = await this.assetBoltzRepository.getByBlockchain(chainConfig.blockchain);
     if (tokens.length === 0) return balances;
 
     for (const token of tokens) {
@@ -192,12 +215,12 @@ export class BoltzBalanceService implements OnModuleInit {
         const rawBalance: ethers.BigNumber = await contract.balanceOf(this.evmWalletAddress);
 
         balances.push({
-          blockchain: chain.blockchain,
+          blockchain: chainConfig.blockchain,
           asset: token.name,
           balance: EvmUtil.fromWeiAmount(rawBalance.toString(), token.decimals),
         });
       } catch (error) {
-        this.logger.warn(`Failed to fetch ${token.name} balance on ${chain.blockchain}: ${error.message}`);
+        this.logger.warn(`Failed to fetch ${token.name} balance on ${chainConfig.blockchain}: ${error.message}`);
       }
     }
 
