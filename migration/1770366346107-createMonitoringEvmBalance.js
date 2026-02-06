@@ -7,8 +7,8 @@
  * @class
  * @implements {MigrationInterface}
  */
-module.exports = class CreateMonitoringEvmBalance1770363785003 {
-    name = 'CreateMonitoringEvmBalance1770363785003'
+module.exports = class CreateMonitoringEvmBalance1770366346107 {
+    name = 'CreateMonitoringEvmBalance1770366346107'
 
     /**
      * @param {QueryRunner} queryRunner
