@@ -59,6 +59,13 @@ export abstract class EvmClient {
     return evmTokenBalances;
   }
 
+  async getTokenBalanceByAddress(tokenAddress: string, decimals: number): Promise<number> {
+    const contract = this.getERC20ContractForDex(tokenAddress);
+    const balance = await contract.balanceOf(Config.payment.evmAddress);
+
+    return EvmUtil.fromWeiAmount(balance, decimals);
+  }
+
   // --- PRIVATE HELPER METHODS --- //
 
   private async getTokenByAddress(address: string): Promise<Token> {

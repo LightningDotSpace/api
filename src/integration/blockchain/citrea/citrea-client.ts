@@ -1,27 +1,26 @@
-import { Config } from 'src/config/config';
+import { GetConfig } from 'src/config/config';
 import { EvmUtil } from 'src/subdomains/evm/evm.util';
-import { AssetTransferEntity } from 'src/subdomains/master-data/asset/entities/asset-transfer.entity';
 import { LightningHelper } from '../lightning/lightning-helper';
-import { EvmTokenBalance } from '../shared/evm/dto/evm-token-balance.dto';
 import { EvmClient, EvmClientParams } from '../shared/evm/evm-client';
 
 export class CitreaClient extends EvmClient {
-  constructor(private readonly params: EvmClientParams) {
+  private readonly walletAddress: string;
+
+  constructor(params: EvmClientParams) {
     super(params);
+
+    this.walletAddress = EvmUtil.createWallet({ seed: GetConfig().evm.walletSeed, index: 0 }).address;
   }
 
   async getNativeCoinBalance(): Promise<number> {
-    const walletAddress = EvmUtil.createWallet({ seed: Config.evm.walletSeed, index: 0 }).address;
-
-    const balance = await this.provider.getBalance(walletAddress);
+    const balance = await this.provider.getBalance(this.walletAddress);
     return LightningHelper.btcToSat(EvmUtil.fromWeiAmount(balance.toString()));
   }
 
-  async getTokenBalance(_asset: AssetTransferEntity): Promise<number> {
-    throw new Error('Method not implemented.');
-  }
+  async getTokenBalanceByAddress(tokenAddress: string, decimals: number): Promise<number> {
+    const contract = this.getERC20ContractForDex(tokenAddress);
+    const balance = await contract.balanceOf(this.walletAddress);
 
-  async getTokenBalances(_assets: AssetTransferEntity[]): Promise<EvmTokenBalance[]> {
-    throw new Error('Method not implemented.');
+    return EvmUtil.fromWeiAmount(balance, decimals);
   }
 }

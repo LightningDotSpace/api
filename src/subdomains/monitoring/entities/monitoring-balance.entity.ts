@@ -4,14 +4,7 @@ import { AssetAccountEntity } from 'src/subdomains/master-data/asset/entities/as
 import { Price } from 'src/subdomains/support/dto/price.dto';
 import { LightningWalletTotalBalanceDto } from 'src/subdomains/user/application/dto/lightning-wallet.dto';
 import { Column, Entity, ManyToOne } from 'typeorm';
-
-export interface MonitoringBlockchainBalance {
-  onchainBalance: number;
-  lndOnchainBalance: number;
-  lightningBalance: number;
-  rootstockBalance: number;
-  citreaBalance: number;
-}
+import { MonitoringBlockchainBalance } from '../dto/monitoring.dto';
 
 @Entity('monitoring_balance')
 export class MonitoringBalanceEntity extends IEntity {
@@ -26,9 +19,6 @@ export class MonitoringBalanceEntity extends IEntity {
 
   @Column({ type: 'float', default: 0 })
   lightningBalance: number;
-
-  @Column({ type: 'float', default: 0 })
-  rootstockBalance: number;
 
   @Column({ type: 'float', default: 0 })
   citreaBalance: number;
@@ -59,7 +49,6 @@ export class MonitoringBalanceEntity extends IEntity {
     entity.onchainBalance = blockchainBalance.onchainBalance;
     entity.lndOnchainBalance = blockchainBalance.lndOnchainBalance;
     entity.lightningBalance = blockchainBalance.lightningBalance;
-    entity.rootstockBalance = blockchainBalance.rootstockBalance;
     entity.citreaBalance = blockchainBalance.citreaBalance;
     entity.customerBalance = customerBalance.totalBalance;
 
@@ -67,7 +56,6 @@ export class MonitoringBalanceEntity extends IEntity {
       entity.onchainBalance +
       entity.lndOnchainBalance +
       entity.lightningBalance +
-      entity.rootstockBalance +
       entity.citreaBalance +
       internalBalance.totalBalance -
       entity.customerBalance;
@@ -99,6 +87,6 @@ export class MonitoringBalanceEntity extends IEntity {
   // --- ENTITY METHODS --- //
 
   checksum(): number {
-    return this.onchainBalance + this.lightningBalance + this.customerBalance;
+    return this.onchainBalance + this.lightningBalance + this.citreaBalance + this.customerBalance;
   }
 }

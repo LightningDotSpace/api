@@ -9,6 +9,7 @@ export enum Process {
   UPDATE_WALLET_BALANCE = 'UpdateWalletBalance',
   UPDATE_LIGHTNING_USER_TRANSACTION = 'UpdateLightingUserTransaction',
   UPDATE_PAYMENT_REQUEST = 'UpdatePaymentRequest',
+  MONITORING = 'Monitoring',
 }
 
 export enum Environment {
@@ -148,11 +149,6 @@ export class Configuration {
       chainId: +(process.env.BASE_CHAIN_ID ?? -1),
       walletAddress: process.env.EVM_PAYMENT_ADDRESS ?? '',
     },
-    rootstock: {
-      gatewayUrl: process.env.ROOTSTOCK_GATEWAY_URL ?? '',
-      apiKey: process.env.ALCHEMY_API_KEY ?? '',
-      chainId: +(process.env.ROOTSTOCK_CHAIN_ID ?? -1),
-    },
     citrea: {
       gatewayUrl: process.env.CITREA_GATEWAY_URL ?? '',
       chainId: +(process.env.CITREA_CHAIN_ID ?? -1),
@@ -213,6 +209,11 @@ export class Configuration {
 
   boltz = {
     evmWalletAddress: process.env.BOLTZ_WALLET_ADDRESS ?? '',
+  };
+
+  telegram = {
+    botToken: process.env.TELEGRAM_BOT_TOKEN ?? '',
+    chatId: process.env.TELEGRAM_CHAT_ID ?? '',
   };
 
   // --- GETTERS --- //

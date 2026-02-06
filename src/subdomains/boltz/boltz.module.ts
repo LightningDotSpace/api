@@ -11,6 +11,6 @@ import { BoltzBalanceService } from './services/boltz-balance.service';
   imports: [TypeOrmModule.forFeature([AssetBoltzEntity]), BlockchainModule, AlchemyModule],
   controllers: [BoltzController],
   providers: [AssetBoltzRepository, BoltzBalanceService],
-  exports: [],
+  exports: [BoltzBalanceService],
 })
 export class BoltzModule {}

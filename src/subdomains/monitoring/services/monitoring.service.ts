@@ -5,7 +5,6 @@ import { CitreaClient } from 'src/integration/blockchain/citrea/citrea-client';
 import { LndChannelDto } from 'src/integration/blockchain/lightning/dto/lnd.dto';
 import { LightningClient } from 'src/integration/blockchain/lightning/lightning-client';
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
-import { RootstockClient } from 'src/integration/blockchain/rootstock/rootstock-client';
 import { EvmRegistryService } from 'src/integration/blockchain/shared/evm/registry/evm-registry.service';
 import { Blockchain } from 'src/shared/enums/blockchain.enum';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
@@ -13,7 +12,8 @@ import { QueueHandler } from 'src/shared/utils/queue-handler';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
 import { CoinGeckoService } from 'src/subdomains/pricing/services/coingecko.service';
 import { LightningWalletTotalBalanceDto } from 'src/subdomains/user/application/dto/lightning-wallet.dto';
-import { MonitoringBalanceEntity, MonitoringBlockchainBalance } from '../entities/monitoring-balance.entity';
+import { MonitoringBlockchainBalance } from '../dto/monitoring.dto';
+import { MonitoringBalanceEntity } from '../entities/monitoring-balance.entity';
 import { MonitoringBalanceRepository } from '../repositories/monitoring-balance.repository';
 import { MonitoringRepository } from '../repositories/monitoring.repository';
 
@@ -23,7 +23,6 @@ export class MonitoringService implements OnModuleInit {
 
   private readonly bitcoinClient: BitcoinClient;
   private readonly lightningClient: LightningClient;
-  private rootstockClient: RootstockClient;
   private citreaClient: CitreaClient;
 
   private readonly processBalancesQueue: QueueHandler;
@@ -44,7 +43,6 @@ export class MonitoringService implements OnModuleInit {
   }
 
   onModuleInit() {
-    this.rootstockClient = this.evmRegistryService.getClient(Blockchain.ROOTSTOCK) as RootstockClient;
     this.citreaClient = this.evmRegistryService.getClient(Blockchain.CITREA) as CitreaClient;
   }
 
@@ -161,7 +159,6 @@ export class MonitoringService implements OnModuleInit {
       onchainBalance: await this.bitcoinClient.getWalletBalance(),
       lndOnchainBalance: await this.lightningClient.getLndConfirmedWalletBalance(),
       lightningBalance: await this.lightningClient.getLndLightningBalance(),
-      rootstockBalance: await this.rootstockClient.getNativeCoinBalance(),
       citreaBalance: await this.citreaClient.getNativeCoinBalance(),
     };
   }
