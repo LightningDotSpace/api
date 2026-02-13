@@ -55,9 +55,9 @@ export class MonitoringController {
         const [capacity, localBalance, remoteBalance] = c.value.split(',').map(Number);
         return {
           name: c.name,
-          capacity: capacity ?? 0,
-          localBalance: localBalance ?? 0,
-          remoteBalance: remoteBalance ?? 0,
+          capacity: capacity || 0,
+          localBalance: localBalance || 0,
+          remoteBalance: remoteBalance || 0,
         };
       }),
       balances: balances.map((b) => ({
