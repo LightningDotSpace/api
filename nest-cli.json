@@ -2,7 +2,7 @@
   "collection": "@nestjs/schematics",
   "sourceRoot": "src",
   "compilerOptions": {
-    "assets": ["assets/home.html", "assets/monitoring.html"],
+    "assets": ["assets/home.html", "assets/monitoring.html", "assets/monitoring.js"],
     "watchAssets": true
   }
 }
