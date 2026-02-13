@@ -2,6 +2,7 @@ import { Controller, Get, Res } from '@nestjs/common';
 import { ApiExcludeEndpoint } from '@nestjs/swagger';
 import { Response } from 'express';
 import { readFileSync } from 'fs';
+import { join } from 'path';
 import { MonitoringBalanceRepository } from '../repositories/monitoring-balance.repository';
 import { MonitoringEvmBalanceRepository } from '../repositories/monitoring-evm-balance.repository';
 import { MonitoringRepository } from '../repositories/monitoring.repository';
@@ -17,7 +18,7 @@ export class MonitoringController {
   @Get()
   @ApiExcludeEndpoint()
   async monitoringPage(@Res() res: Response): Promise<void> {
-    res.send(readFileSync('src/assets/monitoring.html').toString());
+    res.send(readFileSync(join(__dirname, '..', '..', '..', 'assets', 'monitoring.html')).toString());
   }
 
   @Get('data')
