@@ -52,12 +52,12 @@ export class MonitoringController {
 
     return {
       channels: channels.map((c) => {
-        const value = JSON.parse(c.value) as { capacity: number; local_balance: number; remote_balance: number };
+        const [capacity, localBalance, remoteBalance] = c.value.split(',').map(Number);
         return {
           name: c.name,
-          capacity: value.capacity,
-          localBalance: value.local_balance,
-          remoteBalance: value.remote_balance,
+          capacity: capacity ?? 0,
+          localBalance: localBalance ?? 0,
+          remoteBalance: remoteBalance ?? 0,
         };
       }),
       balances: balances.map((b) => ({
