@@ -10,6 +10,20 @@ export class MonitoringEvmBalanceRepository extends BaseRepository<MonitoringEvm
     super(MonitoringEvmBalanceEntity, manager);
   }
 
+  async getLatestEvmBalances(): Promise<MonitoringEvmBalanceEntity[]> {
+    return this.createQueryBuilder('b')
+      .innerJoin(
+        (qb) =>
+          qb
+            .select('MAX(sub.id)', 'maxId')
+            .from(MonitoringEvmBalanceEntity, 'sub')
+            .groupBy('sub.blockchain'),
+        'latest',
+        'b.id = latest.maxId',
+      )
+      .getMany();
+  }
+
   async saveIfBalanceDiff(entity: MonitoringEvmBalanceEntity): Promise<MonitoringEvmBalanceEntity> {
     const lastEntity = await this.getLastByBlockchain(entity.blockchain);
     if (!lastEntity) return this.save(entity);

@@ -8,6 +8,7 @@ import { AlchemyWebhookModule } from '../alchemy/alchemy-webhook.module';
 import { BoltzModule } from '../boltz/boltz.module';
 import { AssetModule } from '../master-data/asset/asset.module';
 import { PricingModule } from '../pricing/pricing.module';
+import { MonitoringController } from './controllers/monitoring.controller';
 import { MonitoringBalanceEntity } from './entities/monitoring-balance.entity';
 import { MonitoringEvmBalanceEntity } from './entities/monitoring-evm-balance.entity';
 import { MonitoringEntity } from './entities/monitoring.entity';
@@ -30,7 +31,7 @@ import { MonitoringService } from './services/monitoring.service';
     AlchemyWebhookModule,
     TelegramModule,
   ],
-  controllers: [],
+  controllers: [MonitoringController],
   providers: [
     MonitoringRepository,
     MonitoringBalanceRepository,
