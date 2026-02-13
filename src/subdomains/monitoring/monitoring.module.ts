@@ -11,6 +11,7 @@ import { PricingModule } from '../pricing/pricing.module';
 import { MonitoringBalanceEntity } from './entities/monitoring-balance.entity';
 import { MonitoringEvmBalanceEntity } from './entities/monitoring-evm-balance.entity';
 import { MonitoringEntity } from './entities/monitoring.entity';
+import { MonitoringController } from './controllers/monitoring.controller';
 import { MonitoringBalanceRepository } from './repositories/monitoring-balance.repository';
 import { MonitoringEvmBalanceRepository } from './repositories/monitoring-evm-balance.repository';
 import { MonitoringRepository } from './repositories/monitoring.repository';
@@ -30,7 +31,7 @@ import { MonitoringService } from './services/monitoring.service';
     AlchemyWebhookModule,
     TelegramModule,
   ],
-  controllers: [],
+  controllers: [MonitoringController],
   providers: [
     MonitoringRepository,
     MonitoringBalanceRepository,
