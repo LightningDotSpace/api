@@ -21,6 +21,14 @@ export class MonitoringController {
     res.send(readFileSync(join(__dirname, '..', '..', '..', 'assets', 'monitoring.html')).toString());
   }
 
+  @Get('monitoring.js')
+  @ApiExcludeEndpoint()
+  async monitoringScript(@Res() res: Response): Promise<void> {
+    res.type('application/javascript').send(
+      readFileSync(join(__dirname, '..', '..', '..', 'assets', 'monitoring.js')).toString(),
+    );
+  }
+
   @Get('data')
   @ApiExcludeEndpoint()
   async monitoringData(): Promise<{
