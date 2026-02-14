@@ -31,6 +31,8 @@ export class AlchemyWebhookService implements OnModuleInit {
   }
 
   async onModuleInit() {
+    if (!GetConfig().alchemy.authToken) return;
+
     const allWebhooks = await this.getAllWebhooks();
     allWebhooks.forEach((w) => this.webhookCache.set(w.id, w.signingKey));
   }

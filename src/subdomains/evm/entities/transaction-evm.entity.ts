@@ -23,7 +23,7 @@ export class TransactionEvmEntity extends IEntity {
   @Column()
   transaction: string;
 
-  @Column({ length: 'MAX', nullable: true })
+  @Column({ type: 'text', nullable: true })
   errorMessage?: string;
 
   @OneToOne(() => UserTransactionEntity, (tx) => tx.evmTransaction, { nullable: true, eager: true })

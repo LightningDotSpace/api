@@ -28,7 +28,10 @@ export abstract class EvmPaymentStrategy extends RegisterStrategy implements OnM
     this.addressWebhookMessageQueue = new QueueHandler();
 
     const network = AlchemyNetworkMapper.toAlchemyNetworkByBlockchain(this.blockchain);
-    if (!network) throw new Error(`Cannot detect network by blockchain ${this.blockchain}`);
+    if (!network) {
+      this.logger.info(`No network configured for blockchain ${this.blockchain}, skipping webhook setup`);
+      return;
+    }
 
     this.alchemyWebhookService
       .getFrankencoinPaymentWebhookObservable(network)

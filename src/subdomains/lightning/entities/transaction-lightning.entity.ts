@@ -60,13 +60,13 @@ export class TransactionLightningEntity extends IEntity {
   @Column({ type: 'datetime', nullable: true })
   confirmedTimestamp?: Date;
 
-  @Column({ length: 'MAX', nullable: true })
+  @Column({ type: 'text', nullable: true })
   description?: string;
 
   @Column({ nullable: true })
   reason?: string;
 
-  @Column({ length: 'MAX', nullable: true })
+  @Column({ type: 'text', nullable: true })
   paymentRequest?: string;
 
   @OneToMany(() => UserTransactionEntity, (tx) => tx.lightningTransaction, { eager: true })

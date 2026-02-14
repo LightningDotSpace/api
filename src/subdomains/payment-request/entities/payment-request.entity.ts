@@ -35,7 +35,7 @@ export class PaymentRequestEntity extends IEntity {
   @Column({ type: 'float' })
   transferAmount: number;
 
-  @Column({ length: 'MAX' })
+  @Column({ type: 'text' })
   paymentRequest: string;
 
   @Column({ type: 'datetime' })
@@ -44,7 +44,7 @@ export class PaymentRequestEntity extends IEntity {
   @Column()
   paymentMethod: PaymentRequestMethod;
 
-  @Column({ length: 'MAX', nullable: true })
+  @Column({ type: 'text', nullable: true })
   errorMessage?: string;
 
   @ManyToOne(() => LightningWalletEntity, { eager: true })
