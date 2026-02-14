@@ -25,7 +25,7 @@ import {
 } from 'src/subdomains/user/domain/entities/user-transaction.entity';
 import { LightningWalletEntity } from '../../domain/entities/lightning-wallet.entity';
 import { UserTransactionDto } from '../dto/user-transaction.dto';
-import { LightingWalletRepository } from '../repositories/lightning-wallet.repository';
+import { LightningWalletRepository } from '../repositories/lightning-wallet.repository';
 import { WalletRepository } from '../repositories/wallet.repository';
 
 interface LightningWalletInfoDto {
@@ -51,7 +51,7 @@ export class LightningWalletService {
     private readonly lightningTransactionService: LightningTransactionService,
     private readonly paymentRequestService: PaymentRequestService,
     private readonly userTransactionRepository: UserTransactionRepository,
-    private readonly lightingWalletRepository: LightingWalletRepository,
+    private readonly lightingWalletRepository: LightningWalletRepository,
     private readonly walletRepository: WalletRepository,
   ) {
     this.client = lightningService.getDefaultClient();

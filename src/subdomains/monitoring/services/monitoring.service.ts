@@ -15,7 +15,7 @@ import { QueueHandler } from 'src/shared/utils/queue-handler';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
 import { CoinGeckoService } from 'src/subdomains/pricing/services/coingecko.service';
 import { LightningWalletTotalBalanceDto } from 'src/subdomains/user/application/dto/lightning-wallet.dto';
-import { LightingWalletRepository } from 'src/subdomains/user/application/repositories/lightning-wallet.repository';
+import { LightningWalletRepository } from 'src/subdomains/user/application/repositories/lightning-wallet.repository';
 import { MonitoringBlockchainBalance } from '../dto/monitoring.dto';
 import { MonitoringBalanceEntity } from '../entities/monitoring-balance.entity';
 import { MonitoringBalanceRepository } from '../repositories/monitoring-balance.repository';
@@ -39,7 +39,7 @@ export class MonitoringService implements OnModuleInit {
     private readonly evmRegistryService: EvmRegistryService,
     private readonly monitoringRepository: MonitoringRepository,
     private readonly monitoringBalanceRepository: MonitoringBalanceRepository,
-    private readonly lightingWalletRepository: LightingWalletRepository,
+    private readonly lightingWalletRepository: LightningWalletRepository,
   ) {
     this.bitcoinClient = bitcoinservice.getDefaultClient();
     this.lightningClient = lightningService.getDefaultClient();
