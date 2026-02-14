@@ -25,7 +25,9 @@ export class MonitoringEvmBalanceRepository extends BaseRepository<MonitoringEvm
         .getRawMany();
     }
 
-    const format = grouping === 'hourly' ? 'yyyy-MM-dd HH:00' : 'yyyy-MM-dd';
+    const allowedFormats: Record<string, string> = { hourly: 'yyyy-MM-dd HH:00', daily: 'yyyy-MM-dd' };
+    const format = allowedFormats[grouping];
+    if (!format) throw new Error(`Invalid grouping: ${grouping}`);
 
     return this.createQueryBuilder('b')
       .innerJoin(
