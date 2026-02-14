@@ -1,8 +1,9 @@
-import { Controller, Get, Res } from '@nestjs/common';
+import { Controller, Get, Query, Res } from '@nestjs/common';
 import { ApiExcludeEndpoint } from '@nestjs/swagger';
 import { Response } from 'express';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { EvmTokenBalanceJson } from '../dto/monitoring.dto';
 import { MonitoringBalanceRepository } from '../repositories/monitoring-balance.repository';
 import { MonitoringEvmBalanceRepository } from '../repositories/monitoring-evm-balance.repository';
 import { MonitoringRepository } from '../repositories/monitoring.repository';
@@ -117,5 +118,154 @@ export class MonitoringController {
       })),
       timestamp: new Date().toISOString(),
     };
+  }
+
+  @Get('btc/history')
+  @ApiExcludeEndpoint()
+  async btcHistory(
+    @Query('range') range: string,
+  ): Promise<{ points: { timestamp: string; netBalance: number }[]; range: string }> {
+    const { fromDate, grouping } = this.parseRange(range);
+
+    const [balanceHistory, evmHistory] = await Promise.all([
+      this.monitoringBalanceRepo.getBalanceHistory('Bitcoin', fromDate, grouping),
+      this.monitoringEvmBalanceRepo.getEvmBalanceHistory(fromDate, grouping),
+    ]);
+
+    return { points: this.mergeBtcHistory(balanceHistory, evmHistory), range: range || '24h' };
+  }
+
+  @Get('usd/history')
+  @ApiExcludeEndpoint()
+  async usdHistory(
+    @Query('range') range: string,
+  ): Promise<{ points: { timestamp: string; totalBalance: number }[]; range: string }> {
+    const { fromDate, grouping } = this.parseRange(range);
+
+    const evmHistory = await this.monitoringEvmBalanceRepo.getEvmBalanceHistory(fromDate, grouping);
+
+    return { points: this.buildUsdHistory(evmHistory), range: range || '24h' };
+  }
+
+  // --- PRIVATE HELPERS --- //
+
+  private parseRange(range: string): { fromDate: Date; grouping: 'raw' | 'hourly' | 'daily' } {
+    const now = new Date();
+
+    switch (range) {
+      case '7d':
+        return { fromDate: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), grouping: 'hourly' };
+      case '30d':
+        return { fromDate: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), grouping: 'daily' };
+      default:
+        return { fromDate: new Date(now.getTime() - 24 * 60 * 60 * 1000), grouping: 'raw' };
+    }
+  }
+
+  private parseTokenBalances(json: string): EvmTokenBalanceJson[] {
+    if (!json) return [];
+
+    try {
+      const parsed = JSON.parse(json) as { tokens: EvmTokenBalanceJson[] };
+      return parsed.tokens ?? [];
+    } catch {
+      return [];
+    }
+  }
+
+  private mergeBtcHistory(
+    balanceHistory: { timestamp: string; onchainBalance: number; lndOnchainBalance: number; lightningBalance: number; citreaBalance: number; customerBalance: number }[],
+    evmHistory: { timestamp: string; blockchain: string; nativeBalance: number; tokenBalances: string }[],
+  ): { timestamp: string; netBalance: number }[] {
+    const allTimestamps = new Set<string>();
+    for (const b of balanceHistory) allTimestamps.add(new Date(b.timestamp).toISOString());
+    for (const e of evmHistory) allTimestamps.add(new Date(e.timestamp).toISOString());
+
+    const sorted = [...allTimestamps].sort();
+
+    let lastBalance: typeof balanceHistory[0] | null = null;
+    const lastEvm: Record<string, typeof evmHistory[0]> = {};
+    let balIdx = 0;
+    let evmIdx = 0;
+
+    const points: { timestamp: string; netBalance: number }[] = [];
+
+    for (const ts of sorted) {
+      while (balIdx < balanceHistory.length && new Date(balanceHistory[balIdx].timestamp).toISOString() <= ts) {
+        lastBalance = balanceHistory[balIdx];
+        balIdx++;
+      }
+
+      while (evmIdx < evmHistory.length && new Date(evmHistory[evmIdx].timestamp).toISOString() <= ts) {
+        lastEvm[evmHistory[evmIdx].blockchain] = evmHistory[evmIdx];
+        evmIdx++;
+      }
+
+      const onchain = lastBalance ? (Number(lastBalance.onchainBalance) + Number(lastBalance.lndOnchainBalance) + Number(lastBalance.lightningBalance) + Number(lastBalance.citreaBalance)) / 1e8 : 0;
+      const customer = lastBalance ? Number(lastBalance.customerBalance) / 1e8 : 0;
+
+      let wbtc = 0;
+      let wbtce = 0;
+
+      if (lastEvm['ethereum']) {
+        const tokens = this.parseTokenBalances(lastEvm['ethereum'].tokenBalances);
+        const t = tokens.find((tk) => tk.symbol === 'WBTC');
+        if (t) wbtc = t.balance;
+      }
+
+      if (lastEvm['citrea']) {
+        const tokens = this.parseTokenBalances(lastEvm['citrea'].tokenBalances);
+        const t = tokens.find((tk) => tk.symbol === 'WBTCe');
+        if (t) wbtce = t.balance;
+      }
+
+      points.push({
+        timestamp: ts,
+        netBalance: onchain + wbtc + wbtce - customer,
+      });
+    }
+
+    return points;
+  }
+
+  private buildUsdHistory(
+    evmHistory: { timestamp: string; blockchain: string; nativeBalance: number; tokenBalances: string }[],
+  ): { timestamp: string; totalBalance: number }[] {
+    const usdTokens = [
+      { symbol: 'JUSD', chain: 'citrea' },
+      { symbol: 'USDC', chain: 'ethereum' },
+      { symbol: 'USDT', chain: 'ethereum' },
+      { symbol: 'USDT', chain: 'polygon' },
+    ];
+
+    const allTimestamps = new Set<string>();
+    for (const e of evmHistory) allTimestamps.add(new Date(e.timestamp).toISOString());
+
+    const sorted = [...allTimestamps].sort();
+
+    const lastEvm: Record<string, typeof evmHistory[0]> = {};
+    let evmIdx = 0;
+
+    const points: { timestamp: string; totalBalance: number }[] = [];
+
+    for (const ts of sorted) {
+      while (evmIdx < evmHistory.length && new Date(evmHistory[evmIdx].timestamp).toISOString() <= ts) {
+        lastEvm[evmHistory[evmIdx].blockchain] = evmHistory[evmIdx];
+        evmIdx++;
+      }
+
+      let total = 0;
+      for (const def of usdTokens) {
+        if (lastEvm[def.chain]) {
+          const tokens = this.parseTokenBalances(lastEvm[def.chain].tokenBalances);
+          const t = tokens.find((tk) => tk.symbol === def.symbol);
+          if (t) total += t.balance;
+        }
+      }
+
+      points.push({ timestamp: ts, totalBalance: total });
+    }
+
+    return points;
   }
 }

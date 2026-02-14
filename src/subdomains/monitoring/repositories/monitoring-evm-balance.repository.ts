@@ -10,6 +10,43 @@ export class MonitoringEvmBalanceRepository extends BaseRepository<MonitoringEvm
     super(MonitoringEvmBalanceEntity, manager);
   }
 
+  async getEvmBalanceHistory(
+    fromDate: Date,
+    grouping: 'raw' | 'hourly' | 'daily',
+  ): Promise<{ timestamp: string; blockchain: string; nativeBalance: number; tokenBalances: string }[]> {
+    if (grouping === 'raw') {
+      return this.createQueryBuilder('b')
+        .select('b.created', 'timestamp')
+        .addSelect('b.blockchain', 'blockchain')
+        .addSelect('b.nativeBalance', 'nativeBalance')
+        .addSelect('b.tokenBalances', 'tokenBalances')
+        .where('b.created >= :fromDate', { fromDate })
+        .orderBy('b.created', 'ASC')
+        .getRawMany();
+    }
+
+    const format = grouping === 'hourly' ? 'yyyy-MM-dd HH:00' : 'yyyy-MM-dd';
+
+    return this.createQueryBuilder('b')
+      .innerJoin(
+        (qb) =>
+          qb
+            .select('MAX(sub.id)', 'maxId')
+            .from(MonitoringEvmBalanceEntity, 'sub')
+            .where('sub.created >= :fromDate', { fromDate })
+            .groupBy(`sub.blockchain, FORMAT(sub.created, '${format}')`),
+        'latest',
+        'b.id = latest.maxId',
+      )
+      .select('b.created', 'timestamp')
+      .addSelect('b.blockchain', 'blockchain')
+      .addSelect('b.nativeBalance', 'nativeBalance')
+      .addSelect('b.tokenBalances', 'tokenBalances')
+      .orderBy('b.created', 'ASC')
+      .setParameters({ fromDate })
+      .getRawMany();
+  }
+
   async getLatestEvmBalances(): Promise<MonitoringEvmBalanceEntity[]> {
     return this.createQueryBuilder('b')
       .innerJoin(
