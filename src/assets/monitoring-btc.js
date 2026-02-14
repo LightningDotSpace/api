@@ -24,7 +24,7 @@ async function loadData() {
     var data = await res.json();
     render(data);
   } catch (e) {
-    content.innerHTML = '<div class="error">Failed to load data: ' + e.message + '</div>';
+    content.textContent = 'Failed to load data: ' + e.message;
   }
 }
 
@@ -129,8 +129,9 @@ async function loadChart(range) {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var data = await res.json();
     renderChart(data.points);
-  } catch (_) {
-    // silently ignore chart errors
+  } catch (e) {
+    var container = document.querySelector('.chart-container');
+    if (container) container.textContent = 'Failed to load chart: ' + e.message;
   }
 }
 

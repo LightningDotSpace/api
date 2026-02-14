@@ -134,7 +134,8 @@ export class MonitoringController {
       this.monitoringEvmBalanceRepo.getLastEvmBalancesBefore(fromDate),
     ]);
 
-    return { points: this.mergeBtcHistory(balanceHistory, evmHistory, seedBalance, seedEvmBalances), range: range || '24h' };
+    const safeRange = this.sanitizeRange(range);
+    return { points: this.mergeBtcHistory(balanceHistory, evmHistory, seedBalance, seedEvmBalances), range: safeRange };
   }
 
   @Get('usd/history')
@@ -149,10 +150,16 @@ export class MonitoringController {
       this.monitoringEvmBalanceRepo.getLastEvmBalancesBefore(fromDate),
     ]);
 
-    return { points: this.buildUsdHistory(evmHistory, seedEvmBalances), range: range || '24h' };
+    const safeRange = this.sanitizeRange(range);
+    return { points: this.buildUsdHistory(evmHistory, seedEvmBalances), range: safeRange };
   }
 
   // --- PRIVATE HELPERS --- //
+
+  private sanitizeRange(range: string): string {
+    const valid = ['24h', '7d', '30d'];
+    return valid.includes(range) ? range : '24h';
+  }
 
   private parseRange(range: string): { fromDate: Date; grouping: 'raw' | 'hourly' | 'daily' } {
     const now = new Date();
