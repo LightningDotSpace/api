@@ -9,7 +9,8 @@ export class CitreaClient extends EvmClient {
   constructor(params: EvmClientParams) {
     super(params);
 
-    this.walletAddress = EvmUtil.createWallet({ seed: GetConfig().evm.walletSeed, index: 0 }).address;
+    const seed = GetConfig().evm.walletSeed;
+    this.walletAddress = seed ? EvmUtil.createWallet({ seed, index: 0 }).address : '';
   }
 
   async getNativeCoinBalance(): Promise<number> {

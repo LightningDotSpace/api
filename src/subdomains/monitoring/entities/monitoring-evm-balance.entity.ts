@@ -15,7 +15,7 @@ export class MonitoringEvmBalanceEntity extends IEntity {
   @Column({ type: 'float', default: 0 })
   nativeBalance: number;
 
-  @Column({ type: 'nvarchar', length: 'max', nullable: true })
+  @Column({ type: 'text', nullable: true })
   tokenBalances: string;
 
   // --- FACTORY METHOD --- //
