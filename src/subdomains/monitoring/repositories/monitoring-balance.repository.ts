@@ -9,6 +9,73 @@ export class MonitoringBalanceRepository extends BaseRepository<MonitoringBalanc
     super(MonitoringBalanceEntity, manager);
   }
 
+  async getBalanceHistory(
+    assetName: string,
+    fromDate: Date,
+    grouping: 'raw' | 'hourly' | 'daily',
+  ): Promise<{ timestamp: string; onchainBalance: number; lndOnchainBalance: number; lightningBalance: number; citreaBalance: number; customerBalance: number }[]> {
+    if (grouping === 'raw') {
+      return this.createQueryBuilder('b')
+        .leftJoin('b.asset', 'asset')
+        .select('b.created', 'timestamp')
+        .addSelect('b.onchainBalance', 'onchainBalance')
+        .addSelect('b.lndOnchainBalance', 'lndOnchainBalance')
+        .addSelect('b.lightningBalance', 'lightningBalance')
+        .addSelect('b.citreaBalance', 'citreaBalance')
+        .addSelect('b.customerBalance', 'customerBalance')
+        .where('asset.name = :assetName', { assetName })
+        .andWhere('b.created >= :fromDate', { fromDate })
+        .orderBy('b.created', 'ASC')
+        .getRawMany();
+    }
+
+    const format = grouping === 'hourly' ? 'yyyy-MM-dd HH:00' : 'yyyy-MM-dd';
+
+    return this.createQueryBuilder('b')
+      .innerJoin(
+        (qb) =>
+          qb
+            .select('MAX(sub.id)', 'maxId')
+            .from(MonitoringBalanceEntity, 'sub')
+            .leftJoin('sub.asset', 'a')
+            .where('a.name = :assetName', { assetName })
+            .andWhere('sub.created >= :fromDate', { fromDate })
+            .groupBy(`FORMAT(sub.created, '${format}')`),
+        'latest',
+        'b.id = latest.maxId',
+      )
+      .select('b.created', 'timestamp')
+      .addSelect('b.onchainBalance', 'onchainBalance')
+      .addSelect('b.lndOnchainBalance', 'lndOnchainBalance')
+      .addSelect('b.lightningBalance', 'lightningBalance')
+      .addSelect('b.citreaBalance', 'citreaBalance')
+      .addSelect('b.customerBalance', 'customerBalance')
+      .orderBy('b.created', 'ASC')
+      .setParameters({ assetName, fromDate })
+      .getRawMany();
+  }
+
+  async getLastBalanceBefore(
+    assetName: string,
+    beforeDate: Date,
+  ): Promise<{ timestamp: string; onchainBalance: number; lndOnchainBalance: number; lightningBalance: number; citreaBalance: number; customerBalance: number } | undefined> {
+    const results = await this.createQueryBuilder('b')
+      .leftJoin('b.asset', 'asset')
+      .select('b.created', 'timestamp')
+      .addSelect('b.onchainBalance', 'onchainBalance')
+      .addSelect('b.lndOnchainBalance', 'lndOnchainBalance')
+      .addSelect('b.lightningBalance', 'lightningBalance')
+      .addSelect('b.citreaBalance', 'citreaBalance')
+      .addSelect('b.customerBalance', 'customerBalance')
+      .where('asset.name = :assetName', { assetName })
+      .andWhere('b.created < :beforeDate', { beforeDate })
+      .orderBy('b.created', 'DESC')
+      .limit(1)
+      .getRawMany();
+
+    return results[0];
+  }
+
   async getLatestBalances(): Promise<MonitoringBalanceEntity[]> {
     return this.createQueryBuilder('b')
       .innerJoin(
