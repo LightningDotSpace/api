@@ -79,8 +79,7 @@ export class MonitoringService implements OnModuleInit {
       const internalBalances = await this.lightingWalletRepository.getInternalBalances(internalWalletIds);
       const customerBalances = await this.lightingWalletRepository.getCustomerBalances(internalWalletIds);
 
-      await this.processBalances(internalBalances, customerBalances);
-      await this.processChannels();
+      await this.processBalanceMonitoring(internalBalances, customerBalances);
     } catch (e) {
       this.logger.error('Error during scheduled balance monitoring', e);
     }
