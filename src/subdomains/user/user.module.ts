@@ -12,7 +12,7 @@ import { PaymentRequestModule } from '../payment-request/payment-request.module'
 import { AuthController } from './api/controllers/auth.controller';
 import { UserController } from './api/controllers/user.controller';
 import { LightningWalletSynchronizeController } from './application/controller/lightning-wallet-sync.controller';
-import { LightingWalletRepository } from './application/repositories/lightning-wallet.repository';
+import { LightningWalletRepository } from './application/repositories/lightning-wallet.repository';
 import { UserBoltcardRepository } from './application/repositories/user-boltcard.repository';
 import { UserTransactionRepository } from './application/repositories/user-transaction.repository';
 import { UserRepository } from './application/repositories/user.repository';
@@ -55,7 +55,7 @@ import { WalletEntity } from './domain/entities/wallet.entity';
     UserRepository,
     WalletProviderRepository,
     WalletRepository,
-    LightingWalletRepository,
+    LightningWalletRepository,
     UserTransactionRepository,
     UserBoltcardRepository,
     AuthService,

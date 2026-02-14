@@ -9,7 +9,7 @@ import { BoltzModule } from '../boltz/boltz.module';
 import { AssetModule } from '../master-data/asset/asset.module';
 import { PricingModule } from '../pricing/pricing.module';
 import { LightningWalletEntity } from '../user/domain/entities/lightning-wallet.entity';
-import { LightingWalletRepository } from '../user/application/repositories/lightning-wallet.repository';
+import { LightningWalletRepository } from '../user/application/repositories/lightning-wallet.repository';
 import { MonitoringController } from './controllers/monitoring.controller';
 import { MonitoringBalanceEntity } from './entities/monitoring-balance.entity';
 import { MonitoringEvmBalanceEntity } from './entities/monitoring-evm-balance.entity';
@@ -38,7 +38,7 @@ import { MonitoringService } from './services/monitoring.service';
     MonitoringRepository,
     MonitoringBalanceRepository,
     MonitoringEvmBalanceRepository,
-    LightingWalletRepository,
+    LightningWalletRepository,
     MonitoringService,
     MonitoringEvmService,
     BalanceAlertService,

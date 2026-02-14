@@ -5,7 +5,7 @@ import { LightningWalletEntity } from '../../domain/entities/lightning-wallet.en
 import { LightningWalletTotalBalanceDto } from '../dto/lightning-wallet.dto';
 
 @Injectable()
-export class LightingWalletRepository extends BaseRepository<LightningWalletEntity> {
+export class LightningWalletRepository extends BaseRepository<LightningWalletEntity> {
   constructor(manager: EntityManager) {
     super(LightningWalletEntity, manager);
   }
