@@ -213,24 +213,19 @@ async function loadUtxos() {
 function renderUtxos(data) {
   var container = document.getElementById('utxo-content');
   var html = '<table>';
-  html += '<tr><th>TXID</th><th>Vout</th><th>Address</th><th class="number">BTC</th><th class="number">Confirmations</th></tr>';
+  html += '<tr><th>Address</th><th class="number">BTC</th></tr>';
 
   for (var i = 0; i < data.utxos.length; i++) {
     var u = data.utxos[i];
-    var shortTxid = u.txid.substring(0, 8) + '...' + u.txid.substring(u.txid.length - 8);
     html += '<tr>';
-    html += '<td><a href="https://mempool.space/tx/' + u.txid + '" target="_blank" rel="noopener">' + shortTxid + '</a></td>';
-    html += '<td>' + u.vout + '</td>';
-    html += '<td>' + u.address + '</td>';
+    html += '<td><a href="https://mempool.space/address/' + u.address + '" target="_blank" rel="noopener">' + u.address + '</a></td>';
     html += '<td class="number">' + fmtBtc(u.amount) + '</td>';
-    html += '<td class="number">' + u.confirmations.toLocaleString() + '</td>';
     html += '</tr>';
   }
 
   html += '<tr class="total-row">';
-  html += '<td>' + data.count + ' UTXOs</td><td></td><td></td>';
+  html += '<td>' + data.count + ' UTXOs</td>';
   html += '<td class="number">' + fmtBtc(data.totalAmount) + '</td>';
-  html += '<td></td>';
   html += '</tr>';
   html += '</table>';
 
