@@ -67,6 +67,14 @@ export class LightningWalletService {
     return this.lightningWalletRepository.getByWalletId(walletId);
   }
 
+  async getInternalBalances(internalWalletIds: string[]) {
+    return this.lightningWalletRepository.getInternalBalances(internalWalletIds);
+  }
+
+  async getCustomerBalances(excludeWalletIds: string[]) {
+    return this.lightningWalletRepository.getCustomerBalances(excludeWalletIds);
+  }
+
   async updateLightningWalletBalances(): Promise<void> {
     const userTransactionBalances = await this.userTransactionRepository.getBalances();
 
