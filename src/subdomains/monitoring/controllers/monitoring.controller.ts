@@ -29,6 +29,34 @@ export class MonitoringController {
     );
   }
 
+  @Get('btc')
+  @ApiExcludeEndpoint()
+  async btcPage(@Res() res: Response): Promise<void> {
+    res.send(readFileSync(join(__dirname, '..', '..', '..', 'assets', 'monitoring-btc.html')).toString());
+  }
+
+  @Get('btc.js')
+  @ApiExcludeEndpoint()
+  async btcScript(@Res() res: Response): Promise<void> {
+    res.type('application/javascript').send(
+      readFileSync(join(__dirname, '..', '..', '..', 'assets', 'monitoring-btc.js')).toString(),
+    );
+  }
+
+  @Get('usd')
+  @ApiExcludeEndpoint()
+  async usdPage(@Res() res: Response): Promise<void> {
+    res.send(readFileSync(join(__dirname, '..', '..', '..', 'assets', 'monitoring-usd.html')).toString());
+  }
+
+  @Get('usd.js')
+  @ApiExcludeEndpoint()
+  async usdScript(@Res() res: Response): Promise<void> {
+    res.type('application/javascript').send(
+      readFileSync(join(__dirname, '..', '..', '..', 'assets', 'monitoring-usd.js')).toString(),
+    );
+  }
+
   @Get('data')
   @ApiExcludeEndpoint()
   async monitoringData(): Promise<{
