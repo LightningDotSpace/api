@@ -6,6 +6,13 @@ function fmtUsd(n) {
   });
 }
 
+var EVM_WALLET = '0xDDA7efc856833960694cb26cb583e0CCCA497b87';
+var EXPLORERS = {
+  ethereum: 'https://etherscan.io/address/' + EVM_WALLET,
+  citrea: 'https://citreascan.com/address/' + EVM_WALLET,
+  polygon: 'https://polygonscan.com/address/' + EVM_WALLET,
+};
+
 var USD_TOKENS = [
   { symbol: 'JUSD', chain: 'citrea', label: 'Citrea' },
   { symbol: 'USDC', chain: 'ethereum', label: 'Ethereum' },
@@ -49,7 +56,7 @@ function render(data) {
         }
       }
     }
-    holdings.push({ token: def.symbol, chain: def.label, usd: balance });
+    holdings.push({ token: def.symbol, chain: def.label, usd: balance, explorer: EXPLORERS[def.chain] || '' });
     totalHoldings += balance;
   }
 
@@ -64,7 +71,11 @@ function render(data) {
     var h = holdings[i];
     html += '<tr>';
     html += '<td>' + h.token + '</td>';
-    html += '<td>' + h.chain + '</td>';
+    if (h.explorer) {
+      html += '<td><a href="' + h.explorer + '" target="_blank" rel="noopener">' + h.chain + '</a></td>';
+    } else {
+      html += '<td>' + h.chain + '</td>';
+    }
     html += '<td class="number">' + fmtUsd(h.usd) + '</td>';
     html += '</tr>';
   }

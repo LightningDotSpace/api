@@ -16,6 +16,12 @@ function satsToBtc(sats) {
   return (sats || 0) / 100000000;
 }
 
+var EVM_WALLET = '0xDDA7efc856833960694cb26cb583e0CCCA497b87';
+var EXPLORERS = {
+  ethereum: 'https://etherscan.io/address/' + EVM_WALLET,
+  citrea: 'https://citreascan.com/address/' + EVM_WALLET,
+};
+
 async function loadData() {
   var content = document.getElementById('content');
   try {
@@ -62,12 +68,12 @@ function render(data) {
   var customerBtc = btcBalance ? satsToBtc(btcBalance.customerBalance) : 0;
 
   var holdings = [
-    { source: 'Onchain BTC', location: 'Bitcoin', btc: onchainBtc },
-    { source: 'LND Onchain', location: 'LND Wallet', btc: lndOnchain },
-    { source: 'Lightning', location: 'LN Channels', btc: lightning },
-    { source: 'cBTC', location: 'Citrea', btc: cbtc },
-    { source: 'WBTC', location: 'Ethereum', btc: wbtcEthereum },
-    { source: 'WBTCe', location: 'Citrea', btc: wbtceCitrea },
+    { source: 'Onchain BTC', location: 'Bitcoin', btc: onchainBtc, explorer: '' },
+    { source: 'LND Onchain', location: 'LND Wallet', btc: lndOnchain, explorer: '' },
+    { source: 'Lightning', location: 'LN Channels', btc: lightning, explorer: '' },
+    { source: 'cBTC', location: 'Citrea', btc: cbtc, explorer: EXPLORERS.citrea },
+    { source: 'WBTC', location: 'Ethereum', btc: wbtcEthereum, explorer: EXPLORERS.ethereum },
+    { source: 'WBTCe', location: 'Citrea', btc: wbtceCitrea, explorer: EXPLORERS.citrea },
   ];
 
   var totalHoldings = 0;
@@ -88,7 +94,11 @@ function render(data) {
     var h = holdings[i];
     html += '<tr>';
     html += '<td>' + h.source + '</td>';
-    html += '<td>' + h.location + '</td>';
+    if (h.explorer) {
+      html += '<td><a href="' + h.explorer + '" target="_blank" rel="noopener">' + h.location + '</a></td>';
+    } else {
+      html += '<td>' + h.location + '</td>';
+    }
     html += '<td class="number">' + fmtBtc(h.btc) + '</td>';
     html += '</tr>';
   }
@@ -213,24 +223,19 @@ async function loadUtxos() {
 function renderUtxos(data) {
   var container = document.getElementById('utxo-content');
   var html = '<table>';
-  html += '<tr><th>TXID</th><th>Vout</th><th>Address</th><th class="number">BTC</th><th class="number">Confirmations</th></tr>';
+  html += '<tr><th>Address</th><th class="number">BTC</th></tr>';
 
   for (var i = 0; i < data.utxos.length; i++) {
     var u = data.utxos[i];
-    var shortTxid = u.txid.substring(0, 8) + '...' + u.txid.substring(u.txid.length - 8);
     html += '<tr>';
-    html += '<td><a href="https://mempool.space/tx/' + u.txid + '" target="_blank" rel="noopener">' + shortTxid + '</a></td>';
-    html += '<td>' + u.vout + '</td>';
-    html += '<td>' + u.address + '</td>';
+    html += '<td><a href="https://mempool.space/address/' + u.address + '" target="_blank" rel="noopener">' + u.address + '</a></td>';
     html += '<td class="number">' + fmtBtc(u.amount) + '</td>';
-    html += '<td class="number">' + u.confirmations.toLocaleString() + '</td>';
     html += '</tr>';
   }
 
   html += '<tr class="total-row">';
-  html += '<td>' + data.count + ' UTXOs</td><td></td><td></td>';
+  html += '<td>' + data.count + ' UTXOs</td>';
   html += '<td class="number">' + fmtBtc(data.totalAmount) + '</td>';
-  html += '<td></td>';
   html += '</tr>';
   html += '</table>';
 
