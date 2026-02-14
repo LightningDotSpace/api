@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Config } from 'src/config/config';
 import {
   LnBitsTransactionDto,
@@ -46,6 +46,7 @@ export class LightningWalletService {
   constructor(
     readonly lightningService: LightningService,
     readonly lnbitsWebHookService: LnbitsWebHookService,
+    @Inject(forwardRef(() => MonitoringService))
     private readonly monitoringService: MonitoringService,
     private readonly assetService: AssetService,
     private readonly lightningTransactionService: LightningTransactionService,

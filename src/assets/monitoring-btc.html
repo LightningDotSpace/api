@@ -71,6 +71,14 @@
     }
     .range-buttons button.active { color: #4fc3f7; border-color: #4fc3f7; }
     .range-buttons button:hover { color: #fff; }
+    .expandable { cursor: pointer; }
+    .expandable td:first-child::before { content: '\25B6 '; font-size: 9px; color: #555; }
+    .expandable.open td:first-child::before { content: '\25BC '; }
+    .utxo-details { display: none; }
+    .utxo-details.open { display: table-row; }
+    .utxo-details td { padding: 0; }
+    .utxo-details table { margin: 0; font-size: 12px; background: #111; }
+    .utxo-details th, .utxo-details td { padding: 4px 12px; border-bottom: 1px solid #1a1a1a; }
   </style>
 </head>
 <body>
@@ -96,13 +104,6 @@
 
   <div id="content">
     <div class="loading">Loading BTC monitoring data...</div>
-  </div>
-
-  <div class="section">
-    <h2>Bitcoin Core UTXOs (On-Chain Verification)</h2>
-    <div id="utxo-content">
-      <div class="loading">Loading UTXO data...</div>
-    </div>
   </div>
 
   <script src="/monitoring/chart.min.js"></script>

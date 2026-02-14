@@ -92,15 +92,24 @@ function render(data) {
   html += '<tr><th>Source</th><th>Location</th><th class="number">BTC</th></tr>';
   for (var i = 0; i < holdings.length; i++) {
     var h = holdings[i];
-    html += '<tr>';
-    html += '<td>' + h.source + '</td>';
-    if (h.explorer) {
-      html += '<td><a href="' + h.explorer + '" target="_blank" rel="noopener">' + h.location + '</a></td>';
-    } else {
+    if (h.source === 'Onchain BTC') {
+      html += '<tr class="expandable" id="onchain-row">';
+      html += '<td>' + h.source + '</td>';
       html += '<td>' + h.location + '</td>';
+      html += '<td class="number">' + fmtBtc(h.btc) + '</td>';
+      html += '</tr>';
+      html += '<tr class="utxo-details" id="utxo-row"><td colspan="3"><div id="utxo-content"><span class="loading">Loading UTXOs...</span></div></td></tr>';
+    } else {
+      html += '<tr>';
+      html += '<td>' + h.source + '</td>';
+      if (h.explorer) {
+        html += '<td><a href="' + h.explorer + '" target="_blank" rel="noopener">' + h.location + '</a></td>';
+      } else {
+        html += '<td>' + h.location + '</td>';
+      }
+      html += '<td class="number">' + fmtBtc(h.btc) + '</td>';
+      html += '</tr>';
     }
-    html += '<td class="number">' + fmtBtc(h.btc) + '</td>';
-    html += '</tr>';
   }
   html += '<tr class="total-row">';
   html += '<td>Total</td><td></td>';
@@ -124,6 +133,20 @@ function render(data) {
   html += '</div>';
 
   content.innerHTML = html;
+
+  var onchainRow = document.getElementById('onchain-row');
+  var utxoRow = document.getElementById('utxo-row');
+  var utxosLoaded = false;
+  if (onchainRow && utxoRow) {
+    onchainRow.addEventListener('click', function () {
+      onchainRow.classList.toggle('open');
+      utxoRow.classList.toggle('open');
+      if (!utxosLoaded) {
+        utxosLoaded = true;
+        loadUtxos();
+      }
+    });
+  }
 }
 
 var btcChart = null;
@@ -244,7 +267,6 @@ function renderUtxos(data) {
 
 loadData();
 loadChart('24h');
-loadUtxos();
 
 var rangeButtons = document.querySelectorAll('.range-buttons button[data-range]');
 for (var i = 0; i < rangeButtons.length; i++) {
