@@ -4,8 +4,9 @@ import { WsAdapter } from '@nestjs/platform-ws';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as AppInsights from 'applicationinsights';
 import cors from 'cors';
-import { json } from 'express';
+import { json, Request, Response } from 'express';
 import helmet from 'helmet';
+import { createProxyMiddleware, fixRequestBody } from 'http-proxy-middleware';
 import morgan from 'morgan';
 import { AppModule } from './app.module';
 import { Config } from './config/config';
@@ -27,12 +28,57 @@ async function bootstrap() {
 
   app.use('*', json({ type: 'application/json', limit: '10mb' }));
 
-  app.setGlobalPrefix(Config.version, { exclude: ['', '.well-known/(.*)'] });
+  app.setGlobalPrefix(Config.version, { exclude: ['', '.well-known/(.*)', 'monitoring', 'monitoring/data', 'monitoring/monitoring.js'] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.useGlobalFilters(new ApiExceptionFilter());
 
   app.useWebSocketAdapter(new WsAdapter(app));
 
+  // --- REWRITE SWAP URL --- //
+  if (Config.swap.apiUrl) {
+    const rewriteUrl = `/${Config.version}/swap`;
+
+    const forwardProxy = createProxyMiddleware<Request, Response>({
+      target: Config.swap.apiUrl,
+      changeOrigin: true,
+      ws: true,
+      toProxy: true,
+      secure: false,
+      pathRewrite: { [rewriteUrl]: '' },
+      on: {
+        proxyReq(proxyReq, req: Request) {
+          // remove port from IP (not supported by Boltz backend)
+          if (req.ip) proxyReq.setHeader('X-Forwarded-For', req.ip.split(':')[0]);
+
+          fixRequestBody(proxyReq, req);
+        },
+      },
+    });
+    app.use(rewriteUrl, forwardProxy);
+
+    const server = app.getHttpServer();
+    server.on('upgrade', forwardProxy.upgrade);
+  }
+
+  // --- REWRITE BOLTZ CLAIM URL --- //
+  if (Config.swap.claimApiUrl) {
+    const rewriteUrl = `/${Config.version}/claim`;
+    const forwardProxy = createProxyMiddleware<Request, Response>({
+      target: Config.swap.claimApiUrl,
+      changeOrigin: true,
+      toProxy: true,
+      secure: false,
+      pathRewrite: { [rewriteUrl]: '' },
+      on: {
+        proxyReq(proxyReq, req: Request) {
+          fixRequestBody(proxyReq, req);
+        },
+      },
+    });
+    app.use(rewriteUrl, forwardProxy);
+  }
+
+  // --- SWAGGER --- //
   const swaggerOptions = new DocumentBuilder()
     .setTitle('lightning.space API')
     .setDescription(

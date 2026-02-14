@@ -14,8 +14,8 @@ import { UserBoltcardService } from '../services/user-boltcard.service';
 @Controller('synchronize')
 export class LightningWalletSynchronizeController {
   constructor(
-    private lightningWalletService: LightningWalletService,
-    private userBoltcardService: UserBoltcardService,
+    private readonly lightningWalletService: LightningWalletService,
+    private readonly userBoltcardService: UserBoltcardService,
   ) {}
 
   @Post('userTransactions')

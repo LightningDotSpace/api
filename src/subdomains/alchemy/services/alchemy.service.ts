@@ -6,7 +6,7 @@ import { AlchemyNetworkMapper } from '../alchemy-network-mapper';
 
 @Injectable()
 export class AlchemyService {
-  private alchemyMap = new Map<AlchemyNetwork, Alchemy>();
+  private readonly alchemyMap = new Map<AlchemyNetwork, Alchemy>();
 
   async getNativeCoinBalance(chainId: number, address: string): Promise<AlchemyBigNumber> {
     const alchemy = this.getAlchemy(chainId);
@@ -15,12 +15,13 @@ export class AlchemyService {
   }
 
   async getTokenBalances(chainId: number, address: string, assets: AssetTransferEntity[]): Promise<TokenBalance[]> {
-    const alchemy = this.getAlchemy(chainId);
-
     const contractAddresses = assets.filter((a) => a.address != null).map((a) => a.address);
+    return this.getTokenBalancesByAddresses(chainId, address, contractAddresses);
+  }
 
-    const tokenBalancesResponse = await alchemy.core.getTokenBalances(address, contractAddresses);
-
+  async getTokenBalancesByAddresses(chainId: number, walletAddress: string, contractAddresses: string[]): Promise<TokenBalance[]> {
+    const alchemy = this.getAlchemy(chainId);
+    const tokenBalancesResponse = await alchemy.core.getTokenBalances(walletAddress, contractAddresses);
     return tokenBalancesResponse.tokenBalances;
   }
 

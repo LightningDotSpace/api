@@ -1,26 +1,34 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, OnModuleInit } from '@nestjs/common';
+import { BitcoinClient } from 'src/integration/blockchain/bitcoin/bitcoin-client';
+import { BitcoinService } from 'src/integration/blockchain/bitcoin/bitcoin.service';
+import { CitreaClient } from 'src/integration/blockchain/citrea/citrea-client';
 import { LndChannelDto } from 'src/integration/blockchain/lightning/dto/lnd.dto';
 import { LightningClient } from 'src/integration/blockchain/lightning/lightning-client';
 import { LightningService } from 'src/integration/blockchain/lightning/services/lightning.service';
 import { EvmRegistryService } from 'src/integration/blockchain/shared/evm/registry/evm-registry.service';
+import { Blockchain } from 'src/shared/enums/blockchain.enum';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { QueueHandler } from 'src/shared/utils/queue-handler';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
 import { CoinGeckoService } from 'src/subdomains/pricing/services/coingecko.service';
 import { LightningWalletTotalBalanceDto } from 'src/subdomains/user/application/dto/lightning-wallet.dto';
+import { MonitoringBlockchainBalance } from '../dto/monitoring.dto';
 import { MonitoringBalanceEntity } from '../entities/monitoring-balance.entity';
 import { MonitoringBalanceRepository } from '../repositories/monitoring-balance.repository';
 import { MonitoringRepository } from '../repositories/monitoring.repository';
 
 @Injectable()
-export class MonitoringService {
+export class MonitoringService implements OnModuleInit {
   private readonly logger = new LightningLogger(MonitoringService);
 
-  private readonly client: LightningClient;
+  private readonly bitcoinClient: BitcoinClient;
+  private readonly lightningClient: LightningClient;
+  private citreaClient: CitreaClient;
 
   private readonly processBalancesQueue: QueueHandler;
 
   constructor(
+    bitcoinservice: BitcoinService,
     lightningService: LightningService,
     private readonly coinGeckoService: CoinGeckoService,
     private readonly assetService: AssetService,
@@ -28,9 +36,14 @@ export class MonitoringService {
     private readonly monitoringRepository: MonitoringRepository,
     private readonly monitoringBalanceRepository: MonitoringBalanceRepository,
   ) {
-    this.client = lightningService.getDefaultClient();
+    this.bitcoinClient = bitcoinservice.getDefaultClient();
+    this.lightningClient = lightningService.getDefaultClient();
 
     this.processBalancesQueue = new QueueHandler();
+  }
+
+  onModuleInit() {
+    this.citreaClient = this.evmRegistryService.getClient(Blockchain.CITREA) as CitreaClient;
   }
 
   // --- LIGHTNING --- //
@@ -54,8 +67,7 @@ export class MonitoringService {
     customerBalances: LightningWalletTotalBalanceDto[],
   ): Promise<void> {
     try {
-      const onchainBalance = await this.getOnchainBalance();
-      const lightningBalance = await this.getLightningBalance();
+      const blockchainBalance = await this.getBlockchainBalances();
 
       const btcAccountAsset = await this.assetService.getBtcAccountAssetOrThrow();
       const btcAccountAssetId = btcAccountAsset.id;
@@ -72,7 +84,7 @@ export class MonitoringService {
 
       const customerFiatBalances = customerBalances.filter((b) => b.assetId !== btcAccountAssetId);
 
-      await this.processBtcBalance(onchainBalance, lightningBalance, internalBtcBalance, customerBtcBalance);
+      await this.processBtcBalance(blockchainBalance, internalBtcBalance, customerBtcBalance);
       await this.processFiatBalances(customerFiatBalances);
     } catch (e) {
       this.logger.error('Error while processing balances', e);
@@ -98,8 +110,7 @@ export class MonitoringService {
   }
 
   private async processBtcBalance(
-    onchainBalance: number,
-    lightningBalance: number,
+    blockchainBalance: MonitoringBlockchainBalance,
     internalBtcBalance: LightningWalletTotalBalanceDto,
     customerBtcBalance: LightningWalletTotalBalanceDto,
   ) {
@@ -107,8 +118,7 @@ export class MonitoringService {
     if (!chfPrice.isValid) throw new InternalServerErrorException(`Invalid price from BTC to CHF`);
 
     const btcMonitoringEntity = MonitoringBalanceEntity.createAsBtcEntity(
-      onchainBalance,
-      lightningBalance,
+      blockchainBalance,
       internalBtcBalance,
       customerBtcBalance,
       chfPrice,
@@ -144,15 +154,16 @@ export class MonitoringService {
     return balance;
   }
 
-  private async getOnchainBalance(): Promise<number> {
-    return this.client.getLndConfirmedWalletBalance();
-  }
-
-  private async getLightningBalance(): Promise<number> {
-    return this.client.getLndLightningBalance();
+  private async getBlockchainBalances(): Promise<MonitoringBlockchainBalance> {
+    return {
+      onchainBalance: await this.bitcoinClient.getWalletBalance(),
+      lndOnchainBalance: await this.lightningClient.getLndConfirmedWalletBalance(),
+      lightningBalance: await this.lightningClient.getLndLightningBalance(),
+      citreaBalance: await this.citreaClient.getNativeCoinBalance(),
+    };
   }
 
   private async getChannels(): Promise<LndChannelDto[]> {
-    return this.client.getChannels();
+    return this.lightningClient.getChannels();
   }
 }

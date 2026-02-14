@@ -9,6 +9,7 @@ export enum Process {
   UPDATE_WALLET_BALANCE = 'UpdateWalletBalance',
   UPDATE_LIGHTNING_USER_TRANSACTION = 'UpdateLightingUserTransaction',
   UPDATE_PAYMENT_REQUEST = 'UpdatePaymentRequest',
+  MONITORING = 'Monitoring',
 }
 
 export enum Environment {
@@ -97,6 +98,11 @@ export class Configuration {
   };
 
   blockchain = {
+    bitcoin: {
+      gatewayUrl: process.env.BITCOIN_GATEWAY_URL ?? '',
+      rpcUser: process.env.BITCOIN_RPC_USER ?? '',
+      rpcPassword: process.env.BITCOIN_RPC_PASSWORD ?? '',
+    },
     lightning: {
       lnbits: {
         adminUserId: process.env.LIGHTNING_LNBITS_ADMIN_USER_ID ?? '',
@@ -155,6 +161,14 @@ export class Configuration {
       chainId: +(process.env.BASE_CHAIN_ID ?? -1),
       walletAddress: process.env.EVM_PAYMENT_ADDRESS ?? '',
     },
+    citrea: {
+      gatewayUrl: process.env.CITREA_GATEWAY_URL ?? '',
+      chainId: +(process.env.CITREA_CHAIN_ID ?? -1),
+    },
+  };
+
+  evm = {
+    walletSeed: process.env.EVM_WALLET_SEED ?? '',
   };
 
   alchemy = {
@@ -172,9 +186,46 @@ export class Configuration {
     apiKey: process.env.COIN_GECKO_API_KEY,
   };
 
+  azure = {
+    appInsights: {
+      appId: process.env.AZURE_APP_INSIGHTS_APP_ID ?? '',
+      apiKey: process.env.AZURE_APP_INSIGHTS_API_KEY ?? '',
+    },
+  };
+
+  boltzPostgres = {
+    host: process.env.BOLTZ_PG_HOST ?? '',
+    port: parseInt(process.env.BOLTZ_PG_PORT ?? '5432'),
+    database: process.env.BOLTZ_PG_DATABASE ?? '',
+    user: process.env.BOLTZ_PG_USER ?? '',
+    password: process.env.BOLTZ_PG_PASSWORD ?? '',
+  };
+
+  ponderPostgres = {
+    host: process.env.PONDER_PG_HOST ?? '',
+    port: parseInt(process.env.PONDER_PG_PORT ?? '5432'),
+    database: process.env.PONDER_PG_DATABASE ?? '',
+    user: process.env.PONDER_PG_USER ?? '',
+    password: process.env.PONDER_PG_PASSWORD ?? '',
+  };
+
   request = {
     knownIps: process.env.REQUEST_KNOWN_IPS?.split(',') ?? [],
     limitCheck: process.env.REQUEST_LIMIT_CHECK === 'true',
+  };
+
+  swap = {
+    apiUrl: process.env.SWAP_API_URL,
+    claimApiUrl: process.env.SWAP_CLAIM_API_URL,
+  };
+
+  boltz = {
+    evmWalletAddress: process.env.BOLTZ_WALLET_ADDRESS ?? '',
+  };
+
+  telegram = {
+    botToken: process.env.TELEGRAM_BOT_TOKEN ?? '',
+    chatId: process.env.TELEGRAM_CHAT_ID ?? '',
   };
 
   // --- GETTERS --- //

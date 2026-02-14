@@ -9,6 +9,10 @@ export class MonitoringRepository extends BaseRepository<MonitoringEntity> {
     super(MonitoringEntity, manager);
   }
 
+  async getLatestChannels(): Promise<MonitoringEntity[]> {
+    return this.findBy({ type: Equal('lightningchannel') });
+  }
+
   async saveIfValueDiff(entity: MonitoringEntity): Promise<MonitoringEntity> {
     const existEntity = await this.findOneBy({ type: Equal(entity.type), name: Equal(entity.name) });
     if (!existEntity) return this.save(entity);
