@@ -34,7 +34,7 @@ export class Configuration {
   database: TypeOrmModuleOptions = {
     type: 'mssql',
     host: process.env.SQL_HOST,
-    port: Number.parseInt(process.env.SQL_PORT ?? '3000'),
+    port: Number.parseInt(process.env.SQL_PORT ?? '1433'),
     username: process.env.SQL_USERNAME,
     password: process.env.SQL_PASSWORD,
     database: process.env.SQL_DB,

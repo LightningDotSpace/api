@@ -1,4 +1,4 @@
-import { GetConfig } from 'src/config/config';
+import { Environment, GetConfig } from 'src/config/config';
 import { EvmUtil } from 'src/subdomains/evm/evm.util';
 import { LightningHelper } from '../lightning/lightning-helper';
 import { EvmClient, EvmClientParams } from '../shared/evm/evm-client';
@@ -9,7 +9,11 @@ export class CitreaClient extends EvmClient {
   constructor(params: EvmClientParams) {
     super(params);
 
-    this.walletAddress = EvmUtil.createWallet({ seed: GetConfig().evm.walletSeed, index: 0 }).address;
+    const config = GetConfig();
+    this.walletAddress =
+      config.environment === Environment.LOC
+        ? ''
+        : EvmUtil.createWallet({ seed: config.evm.walletSeed, index: 0 }).address;
   }
 
   async getNativeCoinBalance(): Promise<number> {
