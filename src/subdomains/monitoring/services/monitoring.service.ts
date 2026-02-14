@@ -1,4 +1,6 @@
 import { Injectable, InternalServerErrorException, OnModuleInit } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { Config, Process } from 'src/config/config';
 import { BitcoinClient } from 'src/integration/blockchain/bitcoin/bitcoin-client';
 import { BitcoinService } from 'src/integration/blockchain/bitcoin/bitcoin.service';
 import { CitreaClient } from 'src/integration/blockchain/citrea/citrea-client';
@@ -8,10 +10,12 @@ import { LightningService } from 'src/integration/blockchain/lightning/services/
 import { EvmRegistryService } from 'src/integration/blockchain/shared/evm/registry/evm-registry.service';
 import { Blockchain } from 'src/shared/enums/blockchain.enum';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
+import { Lock } from 'src/shared/utils/lock';
 import { QueueHandler } from 'src/shared/utils/queue-handler';
 import { AssetService } from 'src/subdomains/master-data/asset/services/asset.service';
 import { CoinGeckoService } from 'src/subdomains/pricing/services/coingecko.service';
 import { LightningWalletTotalBalanceDto } from 'src/subdomains/user/application/dto/lightning-wallet.dto';
+import { LightingWalletRepository } from 'src/subdomains/user/application/repositories/lightning-wallet.repository';
 import { MonitoringBlockchainBalance } from '../dto/monitoring.dto';
 import { MonitoringBalanceEntity } from '../entities/monitoring-balance.entity';
 import { MonitoringBalanceRepository } from '../repositories/monitoring-balance.repository';
@@ -35,6 +39,7 @@ export class MonitoringService implements OnModuleInit {
     private readonly evmRegistryService: EvmRegistryService,
     private readonly monitoringRepository: MonitoringRepository,
     private readonly monitoringBalanceRepository: MonitoringBalanceRepository,
+    private readonly lightingWalletRepository: LightingWalletRepository,
   ) {
     this.bitcoinClient = bitcoinservice.getDefaultClient();
     this.lightningClient = lightningService.getDefaultClient();
@@ -60,6 +65,23 @@ export class MonitoringService implements OnModuleInit {
       .catch((e) => {
         this.logger.error('Error while processing new balances and channels', e);
       });
+  }
+
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Lock(1800)
+  async processScheduledBalanceMonitoring(): Promise<void> {
+    if (Config.processDisabled(Process.MONITORING)) return;
+
+    try {
+      const internalWalletIds = Config.blockchain.lightning.lnbits.internalWalletIds;
+      const internalBalances = await this.lightingWalletRepository.getInternalBalances(internalWalletIds);
+      const customerBalances = await this.lightingWalletRepository.getCustomerBalances(internalWalletIds);
+
+      await this.processBalances(internalBalances, customerBalances);
+      await this.processChannels();
+    } catch (e) {
+      this.logger.error('Error during scheduled balance monitoring', e);
+    }
   }
 
   private async processBalances(
