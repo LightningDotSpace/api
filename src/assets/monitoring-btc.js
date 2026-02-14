@@ -200,3 +200,10 @@ function renderChart(points) {
 
 loadData();
 loadChart('24h');
+
+var rangeButtons = document.querySelectorAll('.range-buttons button[data-range]');
+for (var i = 0; i < rangeButtons.length; i++) {
+  rangeButtons[i].addEventListener('click', function () {
+    loadChart(this.getAttribute('data-range'));
+  });
+}
