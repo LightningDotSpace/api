@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LnbitsWebhookModule } from 'src/integration/blockchain/lightning/lnbits-webhook.module';
 import { IntegrationModule } from 'src/integration/integration.module';
@@ -43,7 +43,7 @@ import { WalletEntity } from './domain/entities/wallet.entity';
     ]),
     SharedModule,
     IntegrationModule,
-    MonitoringModule,
+    forwardRef(() => MonitoringModule),
     BoltzModule,
     AssetModule,
     LnbitsWebhookModule,

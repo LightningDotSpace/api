@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BlockchainModule } from 'src/integration/blockchain/blockchain.module';
 import { EvmRegistryModule } from 'src/integration/blockchain/shared/evm/registry/evm-registry.module';
@@ -8,8 +8,7 @@ import { AlchemyWebhookModule } from '../alchemy/alchemy-webhook.module';
 import { BoltzModule } from '../boltz/boltz.module';
 import { AssetModule } from '../master-data/asset/asset.module';
 import { PricingModule } from '../pricing/pricing.module';
-import { LightningWalletEntity } from '../user/domain/entities/lightning-wallet.entity';
-import { LightningWalletRepository } from '../user/application/repositories/lightning-wallet.repository';
+import { UserModule } from '../user/user.module';
 import { MonitoringController } from './controllers/monitoring.controller';
 import { MonitoringBalanceEntity } from './entities/monitoring-balance.entity';
 import { MonitoringEvmBalanceEntity } from './entities/monitoring-evm-balance.entity';
@@ -23,7 +22,8 @@ import { MonitoringService } from './services/monitoring.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([MonitoringEntity, MonitoringBalanceEntity, MonitoringEvmBalanceEntity, LightningWalletEntity]),
+    TypeOrmModule.forFeature([MonitoringEntity, MonitoringBalanceEntity, MonitoringEvmBalanceEntity]),
+    forwardRef(() => UserModule),
     SharedModule,
     PricingModule,
     AssetModule,
@@ -38,7 +38,6 @@ import { MonitoringService } from './services/monitoring.service';
     MonitoringRepository,
     MonitoringBalanceRepository,
     MonitoringEvmBalanceRepository,
-    LightningWalletRepository,
     MonitoringService,
     MonitoringEvmService,
     BalanceAlertService,
