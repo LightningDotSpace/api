@@ -28,7 +28,7 @@ async function bootstrap() {
 
   app.use('*', json({ type: 'application/json', limit: '10mb' }));
 
-  app.setGlobalPrefix(Config.version, { exclude: ['', '.well-known/(.*)', 'monitoring', 'monitoring/data', 'monitoring/monitoring.js'] });
+  app.setGlobalPrefix(Config.version, { exclude: ['', '.well-known/(.*)', 'monitoring', 'monitoring/(.*)'] });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   app.useGlobalFilters(new ApiExceptionFilter());
 

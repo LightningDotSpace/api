@@ -2,7 +2,7 @@
   "collection": "@nestjs/schematics",
   "sourceRoot": "src",
   "compilerOptions": {
-    "assets": ["assets/home.html", "assets/monitoring.html", "assets/monitoring.js"],
+    "assets": ["assets/home.html", "assets/monitoring.html", "assets/monitoring.js", "assets/monitoring-btc.html", "assets/monitoring-btc.js", "assets/monitoring-usd.html", "assets/monitoring-usd.js", "assets/chart.min.js", "assets/chartjs-adapter-date-fns.min.js"],
     "watchAssets": true
   }
 }
