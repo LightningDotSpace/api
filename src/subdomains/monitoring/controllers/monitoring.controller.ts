@@ -3,6 +3,8 @@ import { ApiExcludeEndpoint } from '@nestjs/swagger';
 import { Response } from 'express';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { UnspentUtxo } from 'src/integration/blockchain/bitcoin/bitcoin-client';
+import { BitcoinService } from 'src/integration/blockchain/bitcoin/bitcoin.service';
 import { EvmTokenBalanceJson } from '../dto/monitoring.dto';
 import { MonitoringBalanceRepository } from '../repositories/monitoring-balance.repository';
 import { MonitoringEvmBalanceRepository } from '../repositories/monitoring-evm-balance.repository';
@@ -14,6 +16,7 @@ export class MonitoringController {
     private readonly monitoringRepo: MonitoringRepository,
     private readonly monitoringBalanceRepo: MonitoringBalanceRepository,
     private readonly monitoringEvmBalanceRepo: MonitoringEvmBalanceRepository,
+    private readonly bitcoinService: BitcoinService,
   ) {}
 
   @Get()
@@ -42,6 +45,14 @@ export class MonitoringController {
     res.type('application/javascript').send(
       readFileSync(join(__dirname, '..', '..', '..', 'assets', 'monitoring-btc.js')).toString(),
     );
+  }
+
+  @Get('btc/utxos')
+  @ApiExcludeEndpoint()
+  async btcUtxos(): Promise<{ utxos: UnspentUtxo[]; count: number; totalAmount: number }> {
+    const utxos = await this.bitcoinService.getDefaultClient().listUnspent();
+    const totalAmount = utxos.reduce((sum, u) => sum + u.amount, 0);
+    return { utxos, count: utxos.length, totalAmount };
   }
 
   @Get('usd')

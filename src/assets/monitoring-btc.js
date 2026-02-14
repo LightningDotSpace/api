@@ -198,8 +198,48 @@ function renderChart(points) {
   });
 }
 
+async function loadUtxos() {
+  var container = document.getElementById('utxo-content');
+  try {
+    var res = await fetch('/monitoring/btc/utxos');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    renderUtxos(data);
+  } catch (e) {
+    container.innerHTML = '<div class="error">Failed to load UTXOs: ' + e.message + '</div>';
+  }
+}
+
+function renderUtxos(data) {
+  var container = document.getElementById('utxo-content');
+  var html = '<table>';
+  html += '<tr><th>TXID</th><th>Vout</th><th>Address</th><th class="number">BTC</th><th class="number">Confirmations</th></tr>';
+
+  for (var i = 0; i < data.utxos.length; i++) {
+    var u = data.utxos[i];
+    var shortTxid = u.txid.substring(0, 8) + '...' + u.txid.substring(u.txid.length - 8);
+    html += '<tr>';
+    html += '<td><a href="https://mempool.space/tx/' + u.txid + '" target="_blank" rel="noopener">' + shortTxid + '</a></td>';
+    html += '<td>' + u.vout + '</td>';
+    html += '<td>' + u.address + '</td>';
+    html += '<td class="number">' + fmtBtc(u.amount) + '</td>';
+    html += '<td class="number">' + u.confirmations.toLocaleString() + '</td>';
+    html += '</tr>';
+  }
+
+  html += '<tr class="total-row">';
+  html += '<td>' + data.count + ' UTXOs</td><td></td><td></td>';
+  html += '<td class="number">' + fmtBtc(data.totalAmount) + '</td>';
+  html += '<td></td>';
+  html += '</tr>';
+  html += '</table>';
+
+  container.innerHTML = html;
+}
+
 loadData();
 loadChart('24h');
+loadUtxos();
 
 var rangeButtons = document.querySelectorAll('.range-buttons button[data-range]');
 for (var i = 0; i < rangeButtons.length; i++) {
