@@ -155,9 +155,9 @@ export class MonitoringController {
     const { fromDate, grouping } = this.parseRange(range);
 
     const [balanceHistory, evmHistory, seedBalance, seedEvmBalances] = await Promise.all([
-      this.monitoringBalanceRepo.getBalanceHistory('Bitcoin', fromDate, grouping),
+      this.monitoringBalanceRepo.getBalanceHistory('BTC', fromDate, grouping),
       this.monitoringEvmBalanceRepo.getEvmBalanceHistory(fromDate, grouping),
-      this.monitoringBalanceRepo.getLastBalanceBefore('Bitcoin', fromDate),
+      this.monitoringBalanceRepo.getLastBalanceBefore('BTC', fromDate),
       this.monitoringEvmBalanceRepo.getLastEvmBalancesBefore(fromDate),
     ]);
 
