@@ -116,4 +116,86 @@ function render(data) {
   content.innerHTML = html;
 }
 
+var btcChart = null;
+
+async function loadChart(range) {
+  var buttons = document.querySelectorAll('.range-buttons button');
+  for (var i = 0; i < buttons.length; i++) {
+    buttons[i].classList.toggle('active', buttons[i].textContent === range);
+  }
+
+  try {
+    var res = await fetch('/monitoring/btc/history?range=' + range);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    renderChart(data.points);
+  } catch (_) {
+    // silently ignore chart errors
+  }
+}
+
+function renderChart(points) {
+  var ctx = document.getElementById('btcChart');
+  if (!ctx) return;
+
+  if (btcChart) btcChart.destroy();
+
+  var labels = [];
+  var netData = [];
+
+  for (var i = 0; i < points.length; i++) {
+    labels.push(new Date(points[i].timestamp));
+    netData.push(points[i].netBalance);
+  }
+
+  btcChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Net BTC Balance',
+          data: netData,
+          borderColor: '#4fc3f7',
+          backgroundColor: 'rgba(79,195,247,0.1)',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          tension: 0.2,
+          fill: true,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#888', font: { family: "'Courier New', monospace", size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: function (ctx) { return ctx.dataset.label + ': ' + fmtBtc(ctx.parsed.y) + ' BTC'; },
+          },
+        },
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: { tooltipFormat: 'MMM d, HH:mm' },
+          grid: { color: '#1a1a1a' },
+          ticks: { color: '#555', font: { family: "'Courier New', monospace", size: 10 }, maxTicksLimit: 8 },
+        },
+        y: {
+          grid: { color: '#1a1a1a' },
+          ticks: {
+            color: '#555',
+            font: { family: "'Courier New', monospace", size: 10 },
+            callback: function (v) { return v.toFixed(4); },
+          },
+        },
+      },
+    },
+  });
+}
+
 loadData();
+loadChart('24h');
