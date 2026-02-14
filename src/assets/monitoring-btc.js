@@ -34,7 +34,7 @@ function render(data) {
 
   var btcBalance = null;
   for (var i = 0; i < data.balances.length; i++) {
-    if (data.balances[i].assetSymbol === 'BTC') {
+    if (data.balances[i].assetName === 'BTC') {
       btcBalance = data.balances[i];
       break;
     }

@@ -10,8 +10,8 @@ const MOCK_DATA = {
   ],
   balances: [
     {
-      assetName: 'Bitcoin',
-      assetSymbol: 'BTC',
+      assetName: 'BTC',
+      assetSymbol: 'B',
       onchainBalance: 35390000,
       lndOnchainBalance: 35300000,
       lightningBalance: 128180000,
@@ -110,6 +110,8 @@ const server = http.createServer((req, res) => {
     '/monitoring/btc.js': 'monitoring-btc.js',
     '/monitoring/usd': 'monitoring-usd.html',
     '/monitoring/usd.js': 'monitoring-usd.js',
+    '/monitoring/chart.min.js': 'chart.min.js',
+    '/monitoring/chartjs-adapter-date-fns.min.js': 'chartjs-adapter-date-fns.min.js',
   };
 
   const file = routes[req.url];

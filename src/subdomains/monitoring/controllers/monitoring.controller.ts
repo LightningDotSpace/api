@@ -58,6 +58,22 @@ export class MonitoringController {
     );
   }
 
+  @Get('chart.min.js')
+  @ApiExcludeEndpoint()
+  async chartJs(@Res() res: Response): Promise<void> {
+    res.type('application/javascript').send(
+      readFileSync(join(__dirname, '..', '..', '..', 'assets', 'chart.min.js')).toString(),
+    );
+  }
+
+  @Get('chartjs-adapter-date-fns.min.js')
+  @ApiExcludeEndpoint()
+  async chartAdapterJs(@Res() res: Response): Promise<void> {
+    res.type('application/javascript').send(
+      readFileSync(join(__dirname, '..', '..', '..', 'assets', 'chartjs-adapter-date-fns.min.js')).toString(),
+    );
+  }
+
   @Get('data')
   @ApiExcludeEndpoint()
   async monitoringData(): Promise<{
