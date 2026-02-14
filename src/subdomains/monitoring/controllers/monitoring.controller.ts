@@ -127,12 +127,14 @@ export class MonitoringController {
   ): Promise<{ points: { timestamp: string; netBalance: number }[]; range: string }> {
     const { fromDate, grouping } = this.parseRange(range);
 
-    const [balanceHistory, evmHistory] = await Promise.all([
+    const [balanceHistory, evmHistory, seedBalance, seedEvmBalances] = await Promise.all([
       this.monitoringBalanceRepo.getBalanceHistory('Bitcoin', fromDate, grouping),
       this.monitoringEvmBalanceRepo.getEvmBalanceHistory(fromDate, grouping),
+      this.monitoringBalanceRepo.getLastBalanceBefore('Bitcoin', fromDate),
+      this.monitoringEvmBalanceRepo.getLastEvmBalancesBefore(fromDate),
     ]);
 
-    return { points: this.mergeBtcHistory(balanceHistory, evmHistory), range: range || '24h' };
+    return { points: this.mergeBtcHistory(balanceHistory, evmHistory, seedBalance, seedEvmBalances), range: range || '24h' };
   }
 
   @Get('usd/history')
@@ -142,9 +144,12 @@ export class MonitoringController {
   ): Promise<{ points: { timestamp: string; totalBalance: number }[]; range: string }> {
     const { fromDate, grouping } = this.parseRange(range);
 
-    const evmHistory = await this.monitoringEvmBalanceRepo.getEvmBalanceHistory(fromDate, grouping);
+    const [evmHistory, seedEvmBalances] = await Promise.all([
+      this.monitoringEvmBalanceRepo.getEvmBalanceHistory(fromDate, grouping),
+      this.monitoringEvmBalanceRepo.getLastEvmBalancesBefore(fromDate),
+    ]);
 
-    return { points: this.buildUsdHistory(evmHistory), range: range || '24h' };
+    return { points: this.buildUsdHistory(evmHistory, seedEvmBalances), range: range || '24h' };
   }
 
   // --- PRIVATE HELPERS --- //
@@ -176,6 +181,8 @@ export class MonitoringController {
   private mergeBtcHistory(
     balanceHistory: { timestamp: string; onchainBalance: number; lndOnchainBalance: number; lightningBalance: number; citreaBalance: number; customerBalance: number }[],
     evmHistory: { timestamp: string; blockchain: string; nativeBalance: number; tokenBalances: string }[],
+    seedBalance?: { timestamp: string; onchainBalance: number; lndOnchainBalance: number; lightningBalance: number; citreaBalance: number; customerBalance: number },
+    seedEvmBalances?: { timestamp: string; blockchain: string; nativeBalance: number; tokenBalances: string }[],
   ): { timestamp: string; netBalance: number }[] {
     const allTimestamps = new Set<string>();
     for (const b of balanceHistory) allTimestamps.add(new Date(b.timestamp).toISOString());
@@ -183,8 +190,9 @@ export class MonitoringController {
 
     const sorted = [...allTimestamps].sort();
 
-    let lastBalance: typeof balanceHistory[0] | null = null;
+    let lastBalance: typeof balanceHistory[0] | null = seedBalance ?? null;
     const lastEvm: Record<string, typeof evmHistory[0]> = {};
+    if (seedEvmBalances) for (const e of seedEvmBalances) lastEvm[e.blockchain] = e;
     let balIdx = 0;
     let evmIdx = 0;
 
@@ -230,6 +238,7 @@ export class MonitoringController {
 
   private buildUsdHistory(
     evmHistory: { timestamp: string; blockchain: string; nativeBalance: number; tokenBalances: string }[],
+    seedEvmBalances?: { timestamp: string; blockchain: string; nativeBalance: number; tokenBalances: string }[],
   ): { timestamp: string; totalBalance: number }[] {
     const usdTokens = [
       { symbol: 'JUSD', chain: 'citrea' },
@@ -244,6 +253,7 @@ export class MonitoringController {
     const sorted = [...allTimestamps].sort();
 
     const lastEvm: Record<string, typeof evmHistory[0]> = {};
+    if (seedEvmBalances) for (const e of seedEvmBalances) lastEvm[e.blockchain] = e;
     let evmIdx = 0;
 
     const points: { timestamp: string; totalBalance: number }[] = [];

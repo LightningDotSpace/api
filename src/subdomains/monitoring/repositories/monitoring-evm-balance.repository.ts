@@ -47,6 +47,28 @@ export class MonitoringEvmBalanceRepository extends BaseRepository<MonitoringEvm
       .getRawMany();
   }
 
+  async getLastEvmBalancesBefore(
+    beforeDate: Date,
+  ): Promise<{ timestamp: string; blockchain: string; nativeBalance: number; tokenBalances: string }[]> {
+    return this.createQueryBuilder('b')
+      .innerJoin(
+        (qb) =>
+          qb
+            .select('MAX(sub.id)', 'maxId')
+            .from(MonitoringEvmBalanceEntity, 'sub')
+            .where('sub.created < :beforeDate', { beforeDate })
+            .groupBy('sub.blockchain'),
+        'latest',
+        'b.id = latest.maxId',
+      )
+      .select('b.created', 'timestamp')
+      .addSelect('b.blockchain', 'blockchain')
+      .addSelect('b.nativeBalance', 'nativeBalance')
+      .addSelect('b.tokenBalances', 'tokenBalances')
+      .setParameters({ beforeDate })
+      .getRawMany();
+  }
+
   async getLatestEvmBalances(): Promise<MonitoringEvmBalanceEntity[]> {
     return this.createQueryBuilder('b')
       .innerJoin(
