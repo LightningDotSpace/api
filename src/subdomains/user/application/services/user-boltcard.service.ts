@@ -24,7 +24,7 @@ export class UserBoltcardService {
     readonly lnbitsWebHookService: LnbitsWebHookService,
     private readonly lightningWalletService: LightningWalletService,
     private readonly userBoltcardRepository: UserBoltcardRepository,
-    private readonly lightingWalletRepository: LightningWalletRepository,
+    private readonly lightningWalletRepository: LightningWalletRepository,
     private readonly walletRepository: WalletRepository,
   ) {
     this.client = lightningService.getDefaultClient();
@@ -89,7 +89,7 @@ export class UserBoltcardService {
         }
       }
     } else {
-      const lightningWalletIterator = this.lightingWalletRepository.getRawIterator<{ adminKey: string }>(
+      const lightningWalletIterator = this.lightningWalletRepository.getRawIterator<{ adminKey: string }>(
         100,
         'adminKey',
       );

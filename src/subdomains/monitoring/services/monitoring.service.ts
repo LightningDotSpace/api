@@ -39,7 +39,7 @@ export class MonitoringService implements OnModuleInit {
     private readonly evmRegistryService: EvmRegistryService,
     private readonly monitoringRepository: MonitoringRepository,
     private readonly monitoringBalanceRepository: MonitoringBalanceRepository,
-    private readonly lightingWalletRepository: LightningWalletRepository,
+    private readonly lightningWalletRepository: LightningWalletRepository,
   ) {
     this.bitcoinClient = bitcoinservice.getDefaultClient();
     this.lightningClient = lightningService.getDefaultClient();
@@ -76,8 +76,8 @@ export class MonitoringService implements OnModuleInit {
 
     try {
       const internalWalletIds = Config.blockchain.lightning.lnbits.internalWalletIds;
-      const internalBalances = await this.lightingWalletRepository.getInternalBalances(internalWalletIds);
-      const customerBalances = await this.lightingWalletRepository.getCustomerBalances(internalWalletIds);
+      const internalBalances = await this.lightningWalletRepository.getInternalBalances(internalWalletIds);
+      const customerBalances = await this.lightningWalletRepository.getCustomerBalances(internalWalletIds);
 
       await this.processBalances(internalBalances, customerBalances);
       await this.processChannels();

@@ -51,7 +51,7 @@ export class LightningWalletService {
     private readonly lightningTransactionService: LightningTransactionService,
     private readonly paymentRequestService: PaymentRequestService,
     private readonly userTransactionRepository: UserTransactionRepository,
-    private readonly lightingWalletRepository: LightningWalletRepository,
+    private readonly lightningWalletRepository: LightningWalletRepository,
     private readonly walletRepository: WalletRepository,
   ) {
     this.client = lightningService.getDefaultClient();
@@ -64,14 +64,14 @@ export class LightningWalletService {
   }
 
   async getLightningWallet(walletId: string): Promise<LightningWalletEntity> {
-    return this.lightingWalletRepository.getByWalletId(walletId);
+    return this.lightningWalletRepository.getByWalletId(walletId);
   }
 
   async updateLightningWalletBalances(): Promise<void> {
     const userTransactionBalances = await this.userTransactionRepository.getBalances();
 
     for (const userTransactionBalance of userTransactionBalances) {
-      await this.lightingWalletRepository.update(
+      await this.lightningWalletRepository.update(
         { id: userTransactionBalance.lightningWalletId },
         {
           balance: userTransactionBalance.balance,
@@ -81,8 +81,8 @@ export class LightningWalletService {
 
     const internalWalletIds = Config.blockchain.lightning.lnbits.internalWalletIds;
 
-    const internalBalances = await this.lightingWalletRepository.getInternalBalances(internalWalletIds);
-    const customerBalances = await this.lightingWalletRepository.getCustomerBalances(internalWalletIds);
+    const internalBalances = await this.lightningWalletRepository.getInternalBalances(internalWalletIds);
+    const customerBalances = await this.lightningWalletRepository.getCustomerBalances(internalWalletIds);
 
     await this.monitoringService.processBalanceMonitoring(internalBalances, customerBalances);
   }
@@ -110,7 +110,7 @@ export class LightningWalletService {
         ...(await this.getUserTransactionEntities(lightningWalletInfo, startDate, endDate, withBalance)),
       );
     } else {
-      const lightningWalletIterator = this.lightingWalletRepository.getRawIterator<LightningWalletInfoDto>(
+      const lightningWalletIterator = this.lightningWalletRepository.getRawIterator<LightningWalletInfoDto>(
         100,
         'id AS lightningWalletId, lnbitsWalletId, adminKey, assetId AS accountAssetId',
       );
