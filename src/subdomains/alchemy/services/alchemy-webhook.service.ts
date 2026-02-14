@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { AddressActivityWebhook, Alchemy, Network, Webhook, WebhookType } from 'alchemy-sdk';
 import { Observable, Subject, filter } from 'rxjs';
-import { Config, GetConfig } from 'src/config/config';
+import { Config, Environment, GetConfig } from 'src/config/config';
 import { Blockchain } from 'src/shared/enums/blockchain.enum';
 import { Util } from 'src/shared/utils/util';
 import { AlchemyNetworkMapper } from '../alchemy-network-mapper';
@@ -31,7 +31,7 @@ export class AlchemyWebhookService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    if (!GetConfig().alchemy.authToken) return;
+    if (GetConfig().environment === Environment.LOC) return;
 
     const allWebhooks = await this.getAllWebhooks();
     allWebhooks.forEach((w) => this.webhookCache.set(w.id, w.signingKey));

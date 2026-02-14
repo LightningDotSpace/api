@@ -1,4 +1,5 @@
 import { Inject, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Environment, GetConfig } from 'src/config/config';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { QueueHandler } from 'src/shared/utils/queue-handler';
 import { Util } from 'src/shared/utils/util';
@@ -27,11 +28,10 @@ export abstract class EvmPaymentStrategy extends RegisterStrategy implements OnM
 
     this.addressWebhookMessageQueue = new QueueHandler();
 
+    if (GetConfig().environment === Environment.LOC) return;
+
     const network = AlchemyNetworkMapper.toAlchemyNetworkByBlockchain(this.blockchain);
-    if (!network) {
-      this.logger.info(`No network configured for blockchain ${this.blockchain}, skipping webhook setup`);
-      return;
-    }
+    if (!network) throw new Error(`Cannot detect network by blockchain ${this.blockchain}`);
 
     this.alchemyWebhookService
       .getFrankencoinPaymentWebhookObservable(network)
