@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Observable, map } from 'rxjs';
-import { Configuration, GetConfig } from 'src/config/config';
+import { EMPTY, Observable, map } from 'rxjs';
+import { Configuration, Environment, GetConfig } from 'src/config/config';
 import { LightningLogger } from 'src/shared/services/lightning-logger';
 import { LndOnchainTransactionDto, LndTransactionDto } from '../dto/lnd.dto';
 import { LightningWebSocketClient } from '../lightning-ws-client';
@@ -19,6 +19,15 @@ export class LightningWebSocketService {
 
   constructor() {
     const config = GetConfig();
+
+    if (config.environment === Environment.LOC) {
+      this.logger.info('Local environment detected, skipping WebSocket connections');
+      this.onChainTransactions = EMPTY;
+      this.invoiceTransactions = EMPTY;
+      this.paymentTransactions = EMPTY;
+      return;
+    }
+
     this.setupOnchainWebSocketClient(config);
     this.setupInvoiceWebSocketClient(config);
     this.setupPaymentWebSocketClient(config);
