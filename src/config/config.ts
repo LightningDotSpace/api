@@ -46,6 +46,7 @@ export class Configuration {
     connectionTimeout: 30000,
     requestTimeout: 30000,
     logging: false,
+    options: { trustServerCertificate: this.environment === Environment.LOC },
   };
 
   auth = {
